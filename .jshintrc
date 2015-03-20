@@ -5,7 +5,6 @@
 
     // Predefined globals whom JSHint will ignore.
     "node"          : true,
-    "predef"        : ["decodeURIComponent"],
 
     // Development.
     "debug"         : false,  // Allow debugger statements e.g. browser breakpoints.
@@ -49,9 +48,9 @@
     "quotmark"      : "single", // use single quotes
 
     // Metrics
-    "maxparams"     : 5,
+    "maxparams"     : 4,
     "maxdepth"      : 2,
     "maxstatements" : 50,
-    "maxcomplexity" : 5,
+    "maxcomplexity" : 20,
     "maxlen"        : 100
 }
