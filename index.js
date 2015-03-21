@@ -1,7 +1,7 @@
 'use strict';
 
 require('./lib/loadenv.js');
-var debug = require('debug')('sisqo:index.js');
+var debug = require('debug')('navi:index.js');
 
 if (process.env.NEWRELIC_KEY) {
   require('newrelic');
