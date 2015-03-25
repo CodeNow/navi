@@ -6,30 +6,38 @@ var expect = require('code').expect;
 var sinon = require('sinon');
 
 var HostLookup = require('../../lib/models/host-lookup.js');
-
+var ctx = {};
 lab.experiment('hostLookup.js unit test', function () {
+  lab.beforeEach(function(done) {
+    ctx.hostLookup = new HostLookup();
+    done();
+  });
   lab.experiment('lookup', function () {
-    lab.it('should use cookie to return host', function(done) {
-      var hostLookup = new HostLookup();
-      var req = {test: 'test'};
-      var shouldUseStub = sinon.stub(hostLookup.cookie, 'shouldUse').returns(true);
-      var getHostStub = sinon.stub(hostLookup.cookie, 'getHost').yields();
-
-      hostLookup.lookup(req, function(err) {
-        if (err) { return done(err); }
-
-        expect(shouldUseStub.calledWith(req)).to.be.true();
-        expect(getHostStub.calledWith(req)).to.be.true();
-
-        shouldUseStub.restore();
-        getHostStub.restore();
+    lab.experiment('using cookie driver', function () {
+      lab.beforeEach(function(done) {
+        ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(true);
         done();
       });
+      lab.afterEach(function(done) {
+        expect(ctx.shouldUseStubCookie.called).to.be.true();
+        ctx.shouldUseStubCookie.restore();
+        done();
+      });
+      lab.it('should use cookie driver', function(done) {
+        var req = {test: 'test'};
+        var getHostStub = sinon.stub(ctx.hostLookup.cookie, 'getHost').yields();
+
+        ctx.hostLookup.lookup(req, function(err) {
+          if (err) { return done(err); }
+
+          expect(getHostStub.calledWith(req)).to.be.true();
+          getHostStub.restore();
+          done();
+        });
+      });
     });
-    lab.experiment('using api lookup', function () {
-      var ctx = {};
+    lab.experiment('using api driver', function () {
       lab.beforeEach(function(done) {
-        ctx.hostLookup = new HostLookup();
         ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(false);
         ctx.shouldUseStubApi = sinon.stub(ctx.hostLookup.api, 'shouldUse').returns(true);
         done();
@@ -69,10 +77,8 @@ lab.experiment('hostLookup.js unit test', function () {
         });
       });
     });
-    lab.experiment('using api lookup', function () {
-      var ctx = {};
+    lab.experiment('using no driver', function () {
       lab.beforeEach(function(done) {
-        ctx.hostLookup = new HostLookup();
         ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(false);
         ctx.shouldUseStubApi = sinon.stub(ctx.hostLookup.api, 'shouldUse').returns(false);
         done();
