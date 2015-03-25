@@ -35,12 +35,12 @@ lab.experiment('proxy.js unit test', function () {
   lab.experiment('requestHandler', function () {
     lab.it('should lookup and proxy request', function(done) {
       var proxy = new Proxy();
-      var listenStub = sinon.stub(proxy.hostLookup, 'lookup').yields();
+      var lookupStub = sinon.stub(proxy.hostLookup, 'lookup').yields();
       var webStub = sinon.stub(proxy.proxy, 'web', function() {
-        expect(listenStub.calledOnce).to.equal(true);
+        expect(lookupStub.calledOnce).to.equal(true);
         expect(webStub.calledOnce).to.equal(true);
 
-        listenStub.restore();
+        lookupStub.restore();
         webStub.restore();
         done();
       });
@@ -50,12 +50,14 @@ lab.experiment('proxy.js unit test', function () {
     });
     lab.it('should call respond error if lookup errors', function(done) {
       var proxy = new Proxy();
-      var listenStub = sinon.stub(proxy.hostLookup, 'lookup').yields('some error');
-      var webStub = sinon.stub(proxy, 'handleError', function() {
-        expect(listenStub.calledOnce).to.equal(true);
+      var lookupStub = sinon.stub(proxy.hostLookup, 'lookup').yields('some error');
+      var error = require('../../lib/error.js');
 
-        listenStub.restore();
-        webStub.restore();
+      var handleErrorStub = sinon.stub(error, 'errorResponder', function() {
+        expect(lookupStub.calledOnce).to.equal(true);
+
+        lookupStub.restore();
+        handleErrorStub.restore();
         done();
       });
       var res = {};
@@ -71,21 +73,6 @@ lab.experiment('proxy.js unit test', function () {
         done();
       });
       proxy.wsRequestHandler();
-    });
-  });
-  lab.experiment('handleError', function () {
-    lab.it('send 500 error', function(done) {
-      var proxy = new Proxy();
-      var res = {
-        writeHead: function (code) {
-          expect(code).to.equal(500);
-        },
-        end: function (message) {
-          expect(message).to.exist();
-          done();
-        }
-      };
-      proxy.handleError(res);
     });
   });
 });
