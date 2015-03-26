@@ -90,7 +90,6 @@ lab.experiment('cookie.js unit test', function () {
           expect(setCookie).to.equal('Set-Cookie');
           var test = cookie.parse(cookieStr);
           expect(test[process.env.COOKIE_NAME]).to.equal(testHost);
-          console.log('test', test);
           expect(test['Max-Age']).to.equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
           expect(test.Domain).to.equal(process.env.COOKIE_DOMAIN);
         }
