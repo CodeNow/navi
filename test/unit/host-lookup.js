@@ -7,7 +7,7 @@ var sinon = require('sinon');
 
 var HostLookup = require('../../lib/models/host-lookup.js');
 var ctx = {};
-lab.experiment('hostLookup.js unit test', function () {
+lab.experiment('host-lookup.js unit test', function () {
   lab.beforeEach(function(done) {
     ctx.hostLookup = new HostLookup();
     done();
@@ -27,7 +27,7 @@ lab.experiment('hostLookup.js unit test', function () {
         var req = {test: 'test'};
         var getHostStub = sinon.stub(ctx.hostLookup.cookie, 'getHost').yields();
 
-        ctx.hostLookup.lookup(req, function(err) {
+        ctx.hostLookup.lookup(req, {}, function(err) {
           if (err) { return done(err); }
 
           expect(getHostStub.calledWith(req)).to.be.true();
@@ -54,7 +54,7 @@ lab.experiment('hostLookup.js unit test', function () {
         var testErr = 'some Err';
         var getHostStub = sinon.stub(ctx.hostLookup.api, 'getHost').yields(testErr);
 
-        ctx.hostLookup.lookup(req, function(err) {
+        ctx.hostLookup.lookup(req, {}, function(err) {
           expect(err).to.equal(testErr);
           getHostStub.restore();
           done();
@@ -63,14 +63,15 @@ lab.experiment('hostLookup.js unit test', function () {
       lab.it('should use api to return host and save cookie', function(done) {
         var req = {test: 'test'};
         var host = 'localhost:3232';
+        var res = {send: 'some res'};
         var saveHostStub = sinon.stub(ctx.hostLookup.cookie, 'saveHost').returns();
         var getHostStub = sinon.stub(ctx.hostLookup.api, 'getHost').yields(null, host);
 
-        ctx.hostLookup.lookup(req, function(err) {
+        ctx.hostLookup.lookup(req, res, function(err) {
           if (err) { return done(err); }
 
           expect(getHostStub.calledWith(req)).to.be.true();
-          expect(saveHostStub.calledWith(req, host)).to.be.true();
+          expect(saveHostStub.calledWith(res, host)).to.be.true();
           saveHostStub.restore();
           getHostStub.restore();
           done();
@@ -92,7 +93,7 @@ lab.experiment('hostLookup.js unit test', function () {
       });
       lab.it('should error if we cant use any drivers', function(done) {
         var req = {test: 'test'};
-        ctx.hostLookup.lookup(req, function(err) {
+        ctx.hostLookup.lookup(req, {}, function(err) {
           expect(err).to.exist();
           done();
         });
