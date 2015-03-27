@@ -11,15 +11,14 @@ var expect = Code.expect;
 var loadenv = require('loadenv');
 
 describe('loadenv', function () {
-  var NODE_ENV = process.env.NODE_ENV;
+  var env = process.env;
   beforeEach(function (done) {
-    process.env.NODE_ENV = 'bogus';
     process.env = {};
-    console.log(process.env);
+    process.env.NODE_ENV = 'bogus';
     done();
   });
   afterEach(function (done) {
-    process.env.NODE_ENV = NODE_ENV;
+    process.env = env; // restore
     done();
   });
   it('should error if missing required keys', function (done) {
