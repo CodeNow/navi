@@ -32,7 +32,7 @@ describe('api-client', function () {
     done();
   });
 
-  describe('constructor', function() {
+  describe('constructor', function () {
 
     it('should initialize the api-client', function (done) {
       var client = ctx.client;
@@ -46,31 +46,49 @@ describe('api-client', function () {
       expect(client.loggedIn).to.be.true();
       done();
     });
+    describe('login error', function () {
+      it('should throw an error', function (done) {
+        var client = ctx.client;
+        var spy = ctx.githubLoginSpy;
+        expect(client.host).to.equal(process.env.API_HOST);
+        expect(client.loggedIn).to.be.false();
+        expect(spy.calledOnce);
+        expect(spy.firstCall.args[0]).to.equal(process.env.HELLO_RUNNABLE_GITHUB_TOKEN);
+        // mock login
+        expect(ctx.login.bind(null, new Error())).to.throw(Error);
+        expect(client.loggedIn).to.be.false();
+        done();
+      });
+    });
   });
 
   describe('ensureAuth', function () {
     beforeEach(function (done) {
-      ctx.testMethodInternalSpy = sinon.spy();
-      ctx.client.testMethod = function (a, b, c) {
-        if (!this.ensureAuth('testMethod', arguments)) { return; }
-        ctx.testMethodInternalSpy(a, b, c);
-      };
-      done();
-    });
-    afterEach(function (done) {
-      delete ctx.client.testMethod;
+      ctx.methodsUsingEnsureAuth = [
+        'fetchInstanceForUrl',
+        'fetchInstanceDepWithContext'
+      ];
       done();
     });
 
     it('should queue calls until login occurs', function (done) {
       var client = ctx.client;
+      var methodKeys = ctx.methodsUsingEnsureAuth;
+      methodKeys.forEach(function (key) {
+        client[key]('foo','bar','qux');
+      });
       // mock login
-      client.testMethod('foo','bar','qux');
-      expect(ctx.githubLoginSpy.calledOnce).to.be.true();
+      methodKeys.forEach(function (key) { // mock all functions
+        sinon.stub(client, key);
+      });
       ctx.login();
-      expect(ctx.testMethodInternalSpy.called).to.be.true();
-      expect(ctx.testMethodInternalSpy.firstCall).to.exist();
-      expect(ctx.testMethodInternalSpy.firstCall.args).to.deep.equal(['foo','bar','qux']);
+      methodKeys.forEach(function (key) {
+        var spy = client[key];
+        expect(spy.calledOnce).to.be.true();
+        expect(spy.firstCall).to.exist();
+        expect(spy.firstCall.args).to.deep.equal(['foo','bar','qux']);
+        spy.restore();
+      });
       done();
     });
   });
@@ -199,11 +217,70 @@ describe('api-client', function () {
         var fetchDepSpyCb = last(fetchDepSpy.firstCall.args);
         fetchDepSpyCb(null, depInstance);
       });
+
+      describe('fetch errors', function () {
+
+        it('should callback error if fetchInstances errors', function (done) {
+          var url = 'http://api-codenow.runnableapp.com/auth/github';
+          var name = 'api';
+          var referer = 'http://web-codenow.runnableapp.com/auth/github';
+          var fetchInstancesSpy = ctx.fetchInstancesSpy;
+          var masterInstances = [];
+          var fetchErr = new Error();
+          fetchInstancesSpy
+            .onCall(0)
+            .returns({ models: masterInstances });
+          ctx.client.fetchInstanceForUrl(url, name, referer, function (err) {
+            expect(err).to.equal(fetchErr);
+            done();
+          });
+          expect(fetchInstancesSpy.calledOnce).to.be.true();
+          expect(fetchInstancesSpy.firstCall.args[0]).to.exist();
+          expect(fetchInstancesSpy.firstCall.args[0].url)
+            .to.equal('http://api-codenow.runnableapp.com');
+          var fetchInstancesCb = last(fetchInstancesSpy.firstCall.args);
+          fetchInstancesCb(fetchErr);
+        });
+        it('should callback error if fetchDependencies errors', function (done) {
+          var url = 'http://api-codenow.runnableapp.com/auth/github';
+          var name = 'api';
+          var referer = 'http://web-codenow.runnableapp.com/auth/github';
+          var fetchErr = new Error();
+          var fetchInstancesSpy = ctx.fetchInstancesSpy;
+          var masterInstance = {};
+          keypather.set(masterInstance, 'attrs.contextVersion.context', mockContextId);
+          keypather.set(masterInstance, 'attrs.owner.username', 'username');
+          var masterInstances = [ masterInstance ];
+          fetchInstancesSpy
+            .onCall(0)
+            .returns({ models: masterInstances });
+          ctx.client.fetchInstanceForUrl(url, name, referer, function (err) {
+            expect(err).to.equals(fetchErr);
+            done();
+          });
+          expect(fetchInstancesSpy.calledOnce).to.be.true();
+          expect(fetchInstancesSpy.firstCall.args[0]).to.deep.equal({
+            url: 'http://api-codenow.runnableapp.com',
+            name: name
+          });
+          var fetchDepSpy = sinon.stub(ctx.client, 'fetchInstanceDepWithContext');
+          var fetchInstancesCb = last(fetchInstancesSpy.firstCall.args);
+          fetchInstancesCb(null, []); // respond empty here.. use return value for expects
+          expect(fetchDepSpy.calledOnce).to.be.true();
+          expect(fetchDepSpy.firstCall).to.exist();
+          expect(fetchDepSpy.firstCall.args[0]).to.deep.equal({
+            url: 'http://web-codenow.runnableapp.com',
+            githubUsername: masterInstance.attrs.owner.username
+          });
+          var fetchDepSpyCb = last(fetchDepSpy.firstCall.args);
+          fetchDepSpyCb(fetchErr);
+        });
+      });
     });
 
     describe('fetchInstanceDepWithContext', function () {
 
-      it('shouldl callback error if fetchInstances errors', function (done) {
+      it('should callback error if fetchInstances errors', function (done) {
         var query = {};
         var context = mockContextId;
         var instance = { fetchDependencies: sinon.spy() };
@@ -240,7 +317,7 @@ describe('api-client', function () {
         fetchInstancesCb(null, []); // respond empty here.. use return value for expects
       });
 
-      it('should callback error if fetchDependencies errors', function(done) {
+      it('should callback error if fetchDependencies errors', function (done) {
         var query = {};
         var context = mockContextId;
         var instance = { fetchDependencies: noop };
@@ -269,7 +346,7 @@ describe('api-client', function () {
         fetchDependenciesCb(fetchErr);
       });
 
-      it('should callback dep[0] from fetchDependencies', function(done) {
+      it('should callback dep[0] from fetchDependencies', function (done) {
         var query = {};
         var context = mockContextId;
         var instance = { fetchDependencies: noop };
