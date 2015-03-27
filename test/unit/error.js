@@ -43,6 +43,8 @@ lab.experiment('error.js unit test', function () {
 
       expect(rollbar.init.calledOnce).to.be.false();
       process.env.ROLLBAR_KEY = oldEnv;
+
+      rollbar.init.restore();
       done();
     });
   });
