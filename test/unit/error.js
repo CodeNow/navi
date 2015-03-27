@@ -4,6 +4,7 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
+var Boom = require('boom');
 
 var error = require('../../lib/error.js');
 
@@ -100,11 +101,12 @@ lab.experiment('error.js unit test', function () {
     lab.it('should return error with data', function(done) {
       var testErr = 'some err';
       var someData = 'some data';
-
-      var test = error.create(testErr, someData);
-      expect(test instanceof Error).to.be.true();
+      var testCode = '423';
+      var test = error.create(testCode, testErr, someData);
+      expect(test.isBoom).to.be.true();
+      expect(test.output.statusCode).to.equal(testCode);
+      expect(test.output.payload.message).to.equal(testErr);
       expect(test.data).to.equal(someData);
-      expect(test.message).to.equal(testErr);
       done();
     });
   });
