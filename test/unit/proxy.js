@@ -5,74 +5,81 @@ var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
 
-var Proxy = require('../../lib/models/proxy.js');
+var ProxyServer = require('../../lib/models/proxy.js');
 
+var ctx = {};
 lab.experiment('proxy.js unit test', function () {
-  lab.experiment('Proxy', function () {
-    lab.it('should load without throwing', function(done) {
-      try {
-        new Proxy();
-      } catch (err) {
-        return done(err);
-      }
-      done();
-    });
+  lab.beforeEach(function(done) {
+    ctx.proxyServer = new ProxyServer();
+    done();
   });
   lab.experiment('start', function () {
     lab.it('should start http server', function(done) {
-      var proxy = new Proxy();
-      var listenStub = sinon.stub(proxy.server, 'listen', function(port, cb) {
-        expect(port).to.equal(process.env.HTTP_PORT);
-        cb();
-      });
-      proxy.start(function(err) {
+      sinon.stub(ctx.proxyServer.server, 'listen').yields();
+      ctx.proxyServer.start(function(err) {
         if (err) { return done(err); }
-        listenStub.restore();
+          expect(ctx.proxyServer.server.listen
+            .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
+
+        ctx.proxyServer.server.listen.restore();
+        done();
+      });
+    });
+  });
+  lab.experiment('stop', function () {
+    lab.it('should close http server', function(done) {
+      sinon.stub(ctx.proxyServer.server, 'close').yields();
+      ctx.proxyServer.stop(function(err) {
+        if (err) { return done(err); }
+        expect(ctx.proxyServer.server.close.calledOnce).to.be.true();
+        ctx.proxyServer.server.close.restore();
         done();
       });
     });
   });
   lab.experiment('requestHandler', function () {
     lab.it('should lookup and proxy request', function(done) {
-      var proxy = new Proxy();
-      var lookupStub = sinon.stub(proxy.hostLookup, 'lookup').yields();
-      var webStub = sinon.stub(proxy.proxy, 'web', function() {
-        expect(lookupStub.calledOnce).to.equal(true);
-        expect(webStub.calledOnce).to.equal(true);
+      var req = {check: 'something'};
+      var res = {test: 'tester'};
+      sinon.stub(ctx.proxyServer.hostLookup, 'lookup').yields();
+      sinon.stub(ctx.proxyServer.proxy, 'web', function() {
 
-        lookupStub.restore();
-        webStub.restore();
+        expect(ctx.proxyServer.hostLookup.lookup
+          .withArgs(req, res).calledOnce).to.be.true();
+
+        expect(ctx.proxyServer.proxy.web
+          .withArgs(req, res).calledOnce).to.be.true();
+
+        ctx.proxyServer.hostLookup.lookup.restore();
+        ctx.proxyServer.proxy.web.restore();
         done();
       });
-      var res = {};
-      var req = {};
-      proxy.requestHandler(res, req);
+      ctx.proxyServer.requestHandler(req, res);
     });
     lab.it('should call respond error if lookup errors', function(done) {
-      var proxy = new Proxy();
-      var lookupStub = sinon.stub(proxy.hostLookup, 'lookup').yields('some error');
+      var req = {check: 'something'};
+      var res = {test: 'tester'};
+      sinon.stub(ctx.proxyServer.hostLookup, 'lookup').yields('some error');
       var error = require('../../lib/error.js');
 
-      var handleErrorStub = sinon.stub(error, 'errorResponder', function() {
-        expect(lookupStub.calledOnce).to.equal(true);
+      sinon.stub(error, 'errorResponder', function() {
+        expect(ctx.proxyServer.hostLookup.lookup
+          .withArgs(req, res).calledOnce).to.be.true();
 
-        lookupStub.restore();
-        handleErrorStub.restore();
+        ctx.proxyServer.hostLookup.lookup.restore();
+        error.errorResponder.restore();
         done();
       });
-      var res = {};
-      var req = {};
-      proxy.requestHandler(res, req);
+      ctx.proxyServer.requestHandler(req, res);
     });
   });
   lab.experiment('wsRequestHandler', function () {
     lab.it('should proxy ws', function(done) {
-      var proxy = new Proxy();
-      var wsStub = sinon.stub(proxy.proxy, 'ws', function() {
-        wsStub.restore();
+     sinon.stub(ctx.proxyServer.proxy, 'ws', function() {
+        ctx.proxyServer.proxy.ws.restore();
         done();
       });
-      proxy.wsRequestHandler();
+      ctx.proxyServer.wsRequestHandler();
     });
   });
 });
