@@ -9,3 +9,4 @@ DATADOG_HOST='localhost'
 DATADOG_PORT=8125
 COOKIE_NAME='runnable-proxy-cookie'
 COOKIE_MAX_AGE_SECONDS=1
+NODE_ENV='development'

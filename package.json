@@ -24,6 +24,7 @@
   "homepage": "https://github.com/CodeNow/navi",
   "dependencies": {
     "101": "^0.14.0",
+    "auto-debug": "^1.0.1",
     "boom": "^2.6.1",
     "cookie": "^0.1.2",
     "debug": "^2.1.3",
