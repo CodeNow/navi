@@ -2,9 +2,9 @@
 
 var http = require('http');
 
-module.exports.create = function (port, host, text) {
+module.exports.create = function (port, host, text, cb) {
   return http.createServer(function (req, res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.end(text);
-  }).listen(port, host);
+  }).listen(port, host, cb);
 };
