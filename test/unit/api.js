@@ -70,7 +70,8 @@ lab.experiment('api.js unit test', function () {
         done();
       });
       lab.it('should get backend', function(done) {
-        var host = 'localhost:1234';
+        var hostName = 'localhost';
+        var host = hostName + ':1234';
         var testArgs = {
           headers: {
             host: host
@@ -78,7 +79,7 @@ lab.experiment('api.js unit test', function () {
         };
         ctx.api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(ctx.getNameFromHostStub.calledWith(host)).to.be.true();
+          expect(ctx.getNameFromHostStub.calledWith(hostName)).to.be.true();
           expect(ctx.getBackendStub.calledWith(host, testName)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -92,7 +93,7 @@ lab.experiment('api.js unit test', function () {
           }
         };
         ctx.api.getHost(testArgs, function() {
-          expect(ctx.getNameFromHostStub.calledWith(host+':80')).to.be.true();
+          expect(ctx.getNameFromHostStub.calledWith(host)).to.be.true();
           expect(ctx.getBackendStub.calledWith(host+':80', testName)).to.be.true();
           done();
         });
