@@ -1,11 +1,12 @@
 'use strict';
 var debug = require('auto-debug')();
 
-var app = require('./lib/app.js');
+var App = require('./lib/app.js');
+var app = new App();
 
 app.start(function (err) {
   if (err) {
-    debug.error('failed to start');
+    debug('failed to start');
     process.exit(1);
   }
 });
