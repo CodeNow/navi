@@ -2,15 +2,16 @@
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
+var describe = lab.describe;
+var it = lab.test;
 var expect = require('code').expect;
 var sinon = require('sinon');
-var Boom = require('boom');
 
 var error = require('../../lib/error.js');
 
-lab.experiment('error.js unit test', function () {
-  lab.experiment('errorResponder', function () {
-    lab.it('send 500 error', function(done) {
+describe('error.js unit test', function () {
+  describe('errorResponder', function () {
+    it('send 500 error', function(done) {
       var testErr = 'test error';
       var res = {
         writeHead: function (code) {
@@ -24,8 +25,8 @@ lab.experiment('error.js unit test', function () {
       error.errorResponder(testErr, res);
     });
   });
-  lab.experiment('setup', function () {
-    lab.it('should init rollbar', function(done) {
+  describe('setup', function () {
+    it('should init rollbar', function(done) {
       var rollbar = require('rollbar');
       sinon.stub(rollbar, 'init');
 
@@ -34,7 +35,7 @@ lab.experiment('error.js unit test', function () {
       rollbar.init.restore();
       done();
     });
-    lab.it('should not init rollbar if missing env', function(done) {
+    it('should not init rollbar if missing env', function(done) {
       var rollbar = require('rollbar');
       sinon.stub(rollbar, 'init');
       var oldEnv = process.env.ROLLBAR_KEY;
@@ -49,14 +50,14 @@ lab.experiment('error.js unit test', function () {
       done();
     });
   });
-  lab.experiment('log', function () {
-    lab.it('should send log to debug and return error', function(done) {
+  describe('log', function () {
+    it('should send log to debug and return error', function(done) {
       var testErr = 'some error';
       var test = error.log(testErr);
       expect(test).to.equal(testErr);
       done();
     });
-    lab.it('should report error', function(done) {
+    it('should report error', function(done) {
       var rollbar = require('rollbar');
       sinon.stub(rollbar, 'handleErrorWithPayloadData');
       var testErr = 'some error';
@@ -74,7 +75,7 @@ lab.experiment('error.js unit test', function () {
       expect(test).to.equal(testErr);
       done();
     });
-    lab.it('should report custom error', function(done) {
+    it('should report custom error', function(done) {
       var rollbar = require('rollbar');
       sinon.stub(rollbar, 'handleErrorWithPayloadData');
       var customData = 'custom error';
@@ -97,8 +98,8 @@ lab.experiment('error.js unit test', function () {
       done();
     });
   });
-  lab.experiment('create', function () {
-    lab.it('should return error with data', function(done) {
+  describe('create', function () {
+    it('should return error with data', function(done) {
       var testErr = 'some err';
       var someData = 'some data';
       var testCode = '423';

@@ -2,98 +2,102 @@
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
+var describe = lab.describe;
+var it = lab.test;
+var beforeEach = lab.beforeEach;
+var afterEach = lab.afterEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
 var HostLookup = require('../../lib/models/host-lookup.js');
-var ctx = {};
-lab.experiment('host-lookup.js unit test', function () {
-  lab.beforeEach(function(done) {
-    ctx.hostLookup = new HostLookup();
+
+describe('host-lookup.js unit test', function () {
+  var hostLookup;
+  beforeEach(function (done) {
+    hostLookup = new HostLookup();
     done();
   });
-  lab.experiment('lookup', function () {
-    lab.experiment('using cookie driver', function () {
-      lab.beforeEach(function(done) {
-        ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(true);
+  describe('lookup', function () {
+    describe('using cookie driver', function () {
+      var req = {test: 'test'};
+      beforeEach(function (done) {
+        sinon.stub(hostLookup.cookie, 'shouldUse').returns(true);
         done();
       });
-      lab.afterEach(function(done) {
-        expect(ctx.shouldUseStubCookie.called).to.be.true();
-        ctx.shouldUseStubCookie.restore();
+      afterEach(function (done) {
+        expect(hostLookup.cookie.shouldUse.calledWith(req)).to.be.true();
+        hostLookup.cookie.shouldUse.restore();
         done();
       });
-      lab.it('should use cookie driver', function(done) {
-        var req = {test: 'test'};
-        var getHostStub = sinon.stub(ctx.hostLookup.cookie, 'getHost').yields();
+      it('should use cookie driver', function (done) {
+        sinon.stub(hostLookup.cookie, 'getHost').yields();
 
-        ctx.hostLookup.lookup(req, {}, function(err) {
+        hostLookup.lookup(req, {}, function (err) {
           if (err) { return done(err); }
 
-          expect(getHostStub.calledWith(req)).to.be.true();
-          getHostStub.restore();
+          expect(hostLookup.cookie.getHost.calledWith(req)).to.be.true();
+          hostLookup.cookie.getHost.restore();
           done();
         });
       });
     });
-    lab.experiment('using api driver', function () {
-      lab.beforeEach(function(done) {
-        ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(false);
-        ctx.shouldUseStubApi = sinon.stub(ctx.hostLookup.api, 'shouldUse').returns(true);
+    describe('using api driver', function () {
+      var req = {test: 'test'};
+      beforeEach(function (done) {
+        sinon.stub(hostLookup.cookie, 'shouldUse').returns(false);
+        sinon.stub(hostLookup.api, 'shouldUse').returns(true);
         done();
       });
-      lab.afterEach(function(done) {
-        expect(ctx.shouldUseStubCookie.called).to.be.true();
-        expect(ctx.shouldUseStubApi.called).to.be.true();
-        ctx.shouldUseStubCookie.restore();
-        ctx.shouldUseStubApi.restore();
+      afterEach(function (done) {
+        expect(hostLookup.cookie.shouldUse.calledWith(req)).to.be.true();
+        expect(hostLookup.api.shouldUse.calledWith(req)).to.be.true();
+        hostLookup.cookie.shouldUse.restore();
+        hostLookup.api.shouldUse.restore();
         done();
       });
-      lab.it('should cb err if errored getting host', function(done) {
-        var req = {test: 'test'};
+      it('should cb err if errored getting host', function (done) {
         var testErr = 'some Err';
-        var getHostStub = sinon.stub(ctx.hostLookup.api, 'getHost').yields(testErr);
+        sinon.stub(hostLookup.api, 'getHost').yields(testErr);
 
-        ctx.hostLookup.lookup(req, {}, function(err) {
+        hostLookup.lookup(req, {}, function (err) {
           expect(err).to.equal(testErr);
-          getHostStub.restore();
+          hostLookup.api.getHost.restore();
           done();
         });
       });
-      lab.it('should use api to return host and save cookie', function(done) {
-        var req = {test: 'test'};
+      it('should use api to return host and save cookie', function (done) {
         var host = 'localhost:3232';
         var res = {send: 'some res'};
-        var saveHostStub = sinon.stub(ctx.hostLookup.cookie, 'saveHost').returns();
-        var getHostStub = sinon.stub(ctx.hostLookup.api, 'getHost').yields(null, host);
+        sinon.stub(hostLookup.cookie, 'saveHost').returns();
+        sinon.stub(hostLookup.api, 'getHost').yields(null, host);
 
-        ctx.hostLookup.lookup(req, res, function(err) {
+        hostLookup.lookup(req, res, function (err) {
           if (err) { return done(err); }
 
-          expect(getHostStub.calledWith(req)).to.be.true();
-          expect(saveHostStub.calledWith(res, host)).to.be.true();
-          saveHostStub.restore();
-          getHostStub.restore();
+          expect(hostLookup.cookie.saveHost.calledWith(res, host)).to.be.true();
+          expect(hostLookup.api.getHost.calledWith(req)).to.be.true();
+          hostLookup.api.getHost.restore();
+          hostLookup.cookie.saveHost.restore();
           done();
         });
       });
     });
-    lab.experiment('using no driver', function () {
-      lab.beforeEach(function(done) {
-        ctx.shouldUseStubCookie = sinon.stub(ctx.hostLookup.cookie, 'shouldUse').returns(false);
-        ctx.shouldUseStubApi = sinon.stub(ctx.hostLookup.api, 'shouldUse').returns(false);
+    describe('using no driver', function () {
+      var req = {test: 'test'};
+      beforeEach(function (done) {
+        sinon.stub(hostLookup.cookie, 'shouldUse').returns(false);
+        sinon.stub(hostLookup.api, 'shouldUse').returns(false);
         done();
       });
-      lab.afterEach(function(done) {
-        expect(ctx.shouldUseStubCookie.called).to.be.true();
-        expect(ctx.shouldUseStubApi.called).to.be.true();
-        ctx.shouldUseStubCookie.restore();
-        ctx.shouldUseStubApi.restore();
+      afterEach(function (done) {
+        expect(hostLookup.cookie.shouldUse.calledWith(req)).to.be.true();
+        expect(hostLookup.api.shouldUse.calledWith(req)).to.be.true();
+        hostLookup.cookie.shouldUse.restore();
+        hostLookup.api.shouldUse.restore();
         done();
       });
-      lab.it('should error if we cant use any drivers', function(done) {
-        var req = {test: 'test'};
-        ctx.hostLookup.lookup(req, {}, function(err) {
+      it('should error if we cant use any drivers', function (done) {
+        hostLookup.lookup(req, {}, function (err) {
           expect(err).to.exist();
           done();
         });
