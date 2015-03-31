@@ -2,19 +2,23 @@
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
+var describe = lab.describe;
+var it = lab.test;
+var beforeEach = lab.beforeEach;
+
 var expect = require('code').expect;
 var sinon = require('sinon');
 
 var ProxyServer = require('../../lib/models/proxy.js');
 
 var ctx = {};
-lab.experiment('proxy.js unit test', function () {
-  lab.beforeEach(function(done) {
+describe('proxy.js unit test', function () {
+  beforeEach(function(done) {
     ctx.proxyServer = new ProxyServer();
     done();
   });
-  lab.experiment('start', function () {
-    lab.it('should start http server', function(done) {
+  describe('start', function () {
+    it('should start http server', function(done) {
       sinon.stub(ctx.proxyServer.server, 'listen').yields();
       ctx.proxyServer.start(function(err) {
         if (err) { return done(err); }
@@ -26,8 +30,8 @@ lab.experiment('proxy.js unit test', function () {
       });
     });
   });
-  lab.experiment('stop', function () {
-    lab.it('should close http server', function(done) {
+  describe('stop', function () {
+    it('should close http server', function(done) {
       sinon.stub(ctx.proxyServer.server, 'close').yields();
       ctx.proxyServer.stop(function(err) {
         if (err) { return done(err); }
@@ -37,8 +41,8 @@ lab.experiment('proxy.js unit test', function () {
       });
     });
   });
-  lab.experiment('requestHandler', function () {
-    lab.it('should lookup and proxy request', function(done) {
+  describe('requestHandler', function () {
+    it('should lookup and proxy request', function(done) {
       var req = {check: 'something'};
       var res = {test: 'tester'};
       sinon.stub(ctx.proxyServer.hostLookup, 'lookup').yields();
@@ -56,7 +60,7 @@ lab.experiment('proxy.js unit test', function () {
       });
       ctx.proxyServer.requestHandler(req, res);
     });
-    lab.it('should call respond error if lookup errors', function(done) {
+    it('should call respond error if lookup errors', function(done) {
       var req = {check: 'something'};
       var res = {test: 'tester'};
       sinon.stub(ctx.proxyServer.hostLookup, 'lookup').yields('some error');
@@ -73,8 +77,8 @@ lab.experiment('proxy.js unit test', function () {
       ctx.proxyServer.requestHandler(req, res);
     });
   });
-  lab.experiment('wsRequestHandler', function () {
-    lab.it('should proxy ws', function(done) {
+  describe('wsRequestHandler', function () {
+    it('should proxy ws', function(done) {
      sinon.stub(ctx.proxyServer.proxy, 'ws', function() {
         ctx.proxyServer.proxy.ws.restore();
         done();

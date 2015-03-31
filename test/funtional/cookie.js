@@ -5,7 +5,7 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
-var describe = lab.experiment;
+var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
 var before = lab.before;

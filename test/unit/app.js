@@ -2,19 +2,22 @@
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
+var describe = lab.describe;
+var it = lab.test;
+var beforeEach = lab.beforeEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
 var App = require('../../lib/app.js');
 
 var ctx = {};
-lab.experiment('app.js unit test', function () {
-  lab.beforeEach(function(done) {
+describe('app.js unit test', function () {
+  beforeEach(function(done) {
     ctx.app = new App();
     done();
   });
-  lab.experiment('start', function () {
-    lab.it('should start all services', function(done) {
+  describe('start', function () {
+    it('should start all services', function(done) {
       var datadog = require('../../lib/models/datadog.js');
       var error = require('../../lib/error.js');
 
@@ -35,8 +38,8 @@ lab.experiment('app.js unit test', function () {
       });
     });
   });
-  lab.experiment('stop', function () {
-    lab.it('should stop all services', function(done) {
+  describe('stop', function () {
+    it('should stop all services', function(done) {
       var datadog = require('../../lib/models/datadog.js');
 
       sinon.stub(datadog, 'monitorStop');

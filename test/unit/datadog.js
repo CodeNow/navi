@@ -4,8 +4,9 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
-var it = lab.it;
-var describe = lab.experiment;
+var describe = lab.describe;
+var it = lab.test;
+
 var child = require('child_process');
 var datadog = require('../../lib/models/datadog.js');
 
