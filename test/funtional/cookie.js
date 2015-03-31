@@ -13,30 +13,40 @@ var afterEach = lab.afterEach;
 var after = lab.after;
 var ip = require('ip');
 var App = require('../../lib/app.js');
-var testServer = require('../fixture/test-server.js');
+var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Redis = require('redis');
 var redis = Redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IPADDRESS);
-var ApiClient = require('../../lib/models/api-client.js');
 var cookie = require('cookie');
+var Runnable = require('runnable');
 
 var testIp = ip.address();
-var ctx = {};
+
 describe('proxy to backend server', function () {
+  var testText = '1346tweyasdf3';
+  var testPort = 55555;
+  var testServer;
+  var app;
   before(function(done) {
-    ctx.testText = '1346tweyasdf3';
-    ctx.testPort = 55555;
-    ctx.testServer = testServer.create(ctx.testPort, testIp,ctx.testText, done);
+   testServer = TestServer.create(testPort, testIp, testText, done);
   });
-  beforeEach(function(done) {
-    ctx.app = new App();
-    ctx.app.start(done);
-  });
-  afterEach(function(done) {
-    ctx.app.stop(done);
+  before(function(done) {
+    sinon.stub(Runnable.prototype, 'githubLogin').yields();
+    done();
   });
   after(function(done) {
-    ctx.testServer.close(done);
+    Runnable.prototype.githubLogin.restore();
+    done();
+  });
+  beforeEach(function(done) {
+    app = new App();
+    app.start(done);
+  });
+  afterEach(function(done) {
+    app.stop(done);
+  });
+  after(function(done) {
+    testServer.close(done);
   });
   describe('api method', function () {
     it('should err if no host in redis', function(done) {
@@ -48,11 +58,11 @@ describe('proxy to backend server', function () {
       });
     });
     describe('with valid redis host', function () {
-      ctx.testName = 'testInstance';
+      var testName = 'testInstance';
       before(function(done) {
-        sinon.stub(ApiClient.prototype, 'getBackend')
-          .yields(null, testIp+':'+ctx.testPort);
-        redis.rpush('frontend:localhost', ctx.testName, done);
+        sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
+          .yields(null, testIp+':'+testPort);
+        redis.rpush('frontend:localhost', testName, done);
       });
       before(function(done) {
         redis.rpush('localhost', testIp, done);
@@ -61,16 +71,16 @@ describe('proxy to backend server', function () {
         redis.del('frontend:localhost', done);
       });
       after(function(done) {
-        ApiClient.prototype.getBackend.restore();
+        Runnable.prototype.fetchBackendForUrl.restore();
         done();
       });
       it('should route to test app and set cookie', function(done) {
         request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-          expect(body).to.equal(ctx.testText);
+          expect(body).to.equal(testText);
           var testCookie = res.headers['set-cookie'][0];
           testCookie = cookie.parse(testCookie);
           expect(testCookie[process.env.COOKIE_NAME]).to
-            .equal(testIp+':'+ctx.testPort);
+            .equal(testIp+':'+testPort);
           expect(testCookie['Max-Age']).to
             .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
           expect(testCookie.Domain).to
@@ -84,7 +94,7 @@ describe('proxy to backend server', function () {
     it('should use cookie to route', function(done) {
       var j = request.jar();
       var cookiej = request.cookie(process.env.COOKIE_NAME +
-        '=' + testIp + ':' + ctx.testPort);
+        '=' + testIp + ':' + testPort);
       var url ='http://localhost:'+process.env.HTTP_PORT;
       j.setCookie(cookiej, url);
 
@@ -92,7 +102,7 @@ describe('proxy to backend server', function () {
         url: url,
         jar: j
       }, function (err, res, body) {
-        expect(body).to.equal(ctx.testText);
+        expect(body).to.equal(testText);
         done();
       });
     });
