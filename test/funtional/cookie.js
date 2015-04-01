@@ -46,33 +46,33 @@ describe('proxy to backend server', function () {
   after(function(done) {
     testServer.close(done);
   });
+  // TODO: add all possible errors from API client
   describe('api method', function () {
-    describe('with valid redis host', function () {
-      before(function(done) {
-        sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
-          .yields(null, testUrl);
+    before(function(done) {
+      sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
+        .yields(null, testUrl);
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.fetchBackendForUrl.restore();
+      done();
+    });
+    it('should route to test app and set cookie', function(done) {
+      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
+        expect(body).to.equal(testText);
+        var testCookie = res.headers['set-cookie'][0];
+        testCookie = cookie.parse(testCookie);
+        expect(testCookie[process.env.COOKIE_NAME]).to
+          .equal(testUrl);
+        expect(testCookie['Max-Age']).to
+          .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
+        expect(testCookie.Domain).to
+          .equal(process.env.COOKIE_DOMAIN);
         done();
-      });
-      after(function(done) {
-        Runnable.prototype.fetchBackendForUrl.restore();
-        done();
-      });
-      it('should route to test app and set cookie', function(done) {
-        request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-          expect(body).to.equal(testText);
-          var testCookie = res.headers['set-cookie'][0];
-          testCookie = cookie.parse(testCookie);
-          expect(testCookie[process.env.COOKIE_NAME]).to
-            .equal(testUrl);
-          expect(testCookie['Max-Age']).to
-            .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
-          expect(testCookie.Domain).to
-            .equal(process.env.COOKIE_DOMAIN);
-          done();
-        });
       });
     });
   });
+  // TODO: add malformed cookies
   describe('cookie method', function () {
     it('should use cookie to route', function(done) {
       var j = request.jar();

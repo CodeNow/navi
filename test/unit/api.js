@@ -67,7 +67,8 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.apiClient.getBackend.calledWith(host, undefined)).to.be.true();
+          expect(api.apiClient.getBackend
+            .calledWith('http://'+host, undefined)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -80,7 +81,8 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.apiClient.getBackend.calledWith(host+':80', undefined)).to.be.true();
+          expect(api.apiClient.getBackend
+            .calledWith('http://'+host+':80', undefined)).to.be.true();
           done();
         });
       });
@@ -98,7 +100,8 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.apiClient.getBackend.calledWith(host, testRef)).to.be.true();
+          expect(api.apiClient.getBackend
+            .calledWith('http://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -112,7 +115,8 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.apiClient.getBackend.calledWith(host+':80', testRef)).to.be.true();
+          expect(api.apiClient.getBackend
+            .calledWith('http://'+host+':80', testRef)).to.be.true();
           done();
         });
       });
