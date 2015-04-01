@@ -26,14 +26,13 @@ describe('api-client.js unit test', function () {
     });
   });
   describe('getBackend', function () {
-    it('should login to github', function(done) {
+    it('should return backend', function(done) {
       sinon.stub(apiClient.user, 'fetchBackendForUrl').yields();
       var host = 'host';
-      var name = 'name';
       var ref = 'ref';
-      apiClient.getBackend(host, name, ref, function() {
+      apiClient.getBackend(host, ref, function() {
         expect(apiClient.user.fetchBackendForUrl
-          .calledWith(host, name, ref))
+          .calledWith(host, ref))
           .to.be.true();
         apiClient.user.fetchBackendForUrl.restore();
         done();

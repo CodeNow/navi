@@ -7,12 +7,13 @@ var describe = lab.describe;
 var it = lab.test;
 var expect = require('code').expect;
 var sinon = require('sinon');
+var Boom = require('boom');
 
 var error = require('../../lib/error.js');
 
 describe('error.js unit test', function () {
   describe('errorResponder', function () {
-    it('send 500 error', function(done) {
+    it('send 500 error if not boom', function(done) {
       var testErr = 'test error';
       var res = {
         writeHead: function (code) {
@@ -20,6 +21,21 @@ describe('error.js unit test', function () {
         },
         end: function (message) {
           expect(message).to.exist();
+          done();
+        }
+      };
+      error.errorResponder(testErr, res);
+    });
+    it('send boom error', function(done) {
+      var testMessage = 'some error';
+      var testErr = Boom.create(400, testMessage);
+      var res = {
+        writeHead: function (code) {
+          expect(code).to.equal(400);
+        },
+        end: function (message) {
+          message = JSON.parse(message);
+          expect(message.message).to.equal(testMessage);
           done();
         }
       };

@@ -33,7 +33,6 @@
     "eson": "^0.5.0",
     "http-proxy": "^1.9.0",
     "node-dogstatsd": "0.0.6",
-    "redis": "^0.12.1",
     "rollbar": "^0.4.5",
     "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v0.42.1",
     "set-cookie": "0.0.4"

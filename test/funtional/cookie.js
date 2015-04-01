@@ -15,16 +15,14 @@ var ip = require('ip');
 var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
-var Redis = require('redis');
-var redis = Redis.createClient(process.env.REDIS_PORT, process.env.REDIS_IPADDRESS);
 var cookie = require('cookie');
 var Runnable = require('runnable');
 
-var testIp = ip.address();
-
 describe('proxy to backend server', function () {
+  var testIp = ip.address();
   var testText = '1346tweyasdf3';
   var testPort = 55555;
+  var testUrl = 'http://'+testIp + ':' + testPort;
   var testServer;
   var app;
   before(function(done) {
@@ -49,26 +47,11 @@ describe('proxy to backend server', function () {
     testServer.close(done);
   });
   describe('api method', function () {
-    it('should err if no host in redis', function(done) {
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-        expect(res.statusCode).to.equal(400);
-        body = JSON.parse(body);
-        expect(body.message).to.equal('no application configured');
-        done();
-      });
-    });
     describe('with valid redis host', function () {
-      var testName = 'testInstance';
       before(function(done) {
         sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
-          .yields(null, testIp+':'+testPort);
-        redis.rpush('frontend:localhost', testName, done);
-      });
-      before(function(done) {
-        redis.rpush('localhost', testIp, done);
-      });
-      after(function(done) {
-        redis.del('frontend:localhost', done);
+          .yields(null, testUrl);
+        done();
       });
       after(function(done) {
         Runnable.prototype.fetchBackendForUrl.restore();
@@ -80,7 +63,7 @@ describe('proxy to backend server', function () {
           var testCookie = res.headers['set-cookie'][0];
           testCookie = cookie.parse(testCookie);
           expect(testCookie[process.env.COOKIE_NAME]).to
-            .equal(testIp+':'+testPort);
+            .equal(testUrl);
           expect(testCookie['Max-Age']).to
             .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
           expect(testCookie.Domain).to
@@ -94,7 +77,7 @@ describe('proxy to backend server', function () {
     it('should use cookie to route', function(done) {
       var j = request.jar();
       var cookiej = request.cookie(process.env.COOKIE_NAME +
-        '=' + testIp + ':' + testPort);
+        '=' + testUrl);
       var url ='http://localhost:'+process.env.HTTP_PORT;
       j.setCookie(cookiej, url);
 

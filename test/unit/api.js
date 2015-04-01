@@ -47,33 +47,16 @@ describe('api.js unit test', function () {
     });
   });
   describe('getHost', function () {
-    it('should cb error if err to getNameFromHost', function(done) {
-      var testErr = 'some err';
-      var testArgs = {
-        headers: {
-          host: 'localhost:1234'
-        }
-      };
-      sinon.stub(api.hostMapping, 'getNameFromHost').yields(testErr);
-      api.getHost(testArgs, function(err) {
-        expect(err).to.equal(testErr);
-        api.hostMapping.getNameFromHost.restore();
-        done();
-      });
+    var testBackend = 'testBackend';
+    beforeEach(function(done) {
+      sinon.stub(api.apiClient, 'getBackend').yields(null, testBackend);
+      done();
     });
-    describe('getNameFromHost passes', function () {
-      var testName = 'somename';
-      var testBackend = 'testBackend';
-      beforeEach(function(done) {
-        sinon.stub(api.hostMapping, 'getNameFromHost').yields(null, testName);
-        sinon.stub(api.apiClient, 'getBackend').yields(null, testBackend);
-        done();
-      });
-      afterEach(function(done) {
-        api.hostMapping.getNameFromHost.restore();
-        api.apiClient.getBackend.restore();
-        done();
-      });
+    afterEach(function(done) {
+      api.apiClient.getBackend.restore();
+      done();
+    });
+    describe('no referer', function() {
       it('should get backend', function(done) {
         var hostName = 'localhost';
         var host = hostName + ':1234';
@@ -84,8 +67,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.hostMapping.getNameFromHost.calledWith(hostName)).to.be.true();
-          expect(api.apiClient.getBackend.calledWith(host, testName)).to.be.true();
+          expect(api.apiClient.getBackend.calledWith(host, undefined)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -98,8 +80,39 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.hostMapping.getNameFromHost.calledWith(host)).to.be.true();
-          expect(api.apiClient.getBackend.calledWith(host+':80', testName)).to.be.true();
+          expect(api.apiClient.getBackend.calledWith(host+':80', undefined)).to.be.true();
+          done();
+        });
+      });
+    });
+    describe('with referer', function() {
+      var testRef = 'someRef';
+      it('should get backend', function(done) {
+        var hostName = 'localhost';
+        var host = hostName + ':1234';
+        var testArgs = {
+          headers: {
+            host: host,
+            referer: testRef
+          }
+        };
+        api.getHost(testArgs, function(err, backend) {
+          if (err) { return done(err); }
+          expect(api.apiClient.getBackend.calledWith(host, testRef)).to.be.true();
+          expect(backend).to.equal(testBackend);
+          done();
+        });
+      });
+      it('should add 80 to host', function(done) {
+        var host = 'localhost';
+        var testArgs = {
+          headers: {
+            host: host,
+            referer: testRef
+          }
+        };
+        api.getHost(testArgs, function() {
+          expect(api.apiClient.getBackend.calledWith(host+':80', testRef)).to.be.true();
           done();
         });
       });
