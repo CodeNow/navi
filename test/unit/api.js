@@ -106,6 +106,23 @@ describe('api.js unit test', function () {
           done();
         });
       });
+      it('should get https backend', function(done) {
+        var hostName = 'localhost';
+        var host = hostName + ':443';
+        var testArgs = {
+          headers: {
+            host: host,
+            referer: testRef
+          }
+        };
+        api.getHost(testArgs, function(err, backend) {
+          if (err) { return done(err); }
+          expect(api.apiClient.getBackend
+            .calledWith('https://'+host, testRef)).to.be.true();
+          expect(backend).to.equal(testBackend);
+          done();
+        });
+      });
       it('should add 80 to host', function(done) {
         var host = 'localhost';
         var testArgs = {
