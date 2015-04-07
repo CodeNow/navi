@@ -34,7 +34,7 @@
     "http-proxy": "^1.9.0",
     "node-dogstatsd": "0.0.6",
     "rollbar": "^0.4.5",
-    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v0.43.0",
+    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v0.44.2",
     "set-cookie": "0.0.4"
   },
   "devDependencies": {
