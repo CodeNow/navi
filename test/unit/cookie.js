@@ -6,6 +6,8 @@ var lab = exports.lab = Lab.script();
 var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
+var before = lab.before;
+var after = lab.after;
 var expect = require('code').expect;
 var cookie = require('cookie');
 
@@ -18,6 +20,14 @@ describe('cookie.js unit test', function () {
     done();
   });
   describe('shouldUse', function () {
+    before(function(done) {
+      process.env.ENABLE_COOKIE = 'true';
+      done();
+    });
+    after(function(done) {
+      delete process.env.ENABLE_COOKIE;
+      done();
+    });
     it('should use if cookie provided', function (done) {
       var cookieValue = 'cookieValue';
       var testArgs = {
@@ -87,6 +97,14 @@ describe('cookie.js unit test', function () {
     });
   });
   describe('saveHost', function () {
+    before(function(done) {
+      process.env.ENABLE_COOKIE = 'true';
+      done();
+    });
+    after(function(done) {
+      delete process.env.ENABLE_COOKIE;
+      done();
+    });
     it('should setCookie on res', function (done) {
       var testHost = 'somehost:80';
       tCookie.saveHost({

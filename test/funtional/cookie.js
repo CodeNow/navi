@@ -58,6 +58,7 @@ describe('proxy to backend server', function () {
       done();
     });
     it('should route to test app and set cookie', function(done) {
+      process.env.ENABLE_COOKIE = 'true';
       request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
         expect(body).to.equal(testText);
         var testCookie = res.headers['set-cookie'][0];
@@ -68,6 +69,15 @@ describe('proxy to backend server', function () {
           .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
         expect(testCookie.Domain).to
           .equal(process.env.COOKIE_DOMAIN);
+        delete process.env.ENABLE_COOKIE;
+        done();
+      });
+    });
+    it('should route to test app and not set cookie if missing env', function(done) {
+      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
+        expect(body).to.equal(testText);
+        var testCookie = res.headers['set-cookie'];
+        expect(testCookie).to.not.exist();
         done();
       });
     });
@@ -75,6 +85,7 @@ describe('proxy to backend server', function () {
   // TODO: add malformed cookies
   describe('cookie method', function () {
     it('should use cookie to route', function(done) {
+      process.env.ENABLE_COOKIE = 'true';
       var j = request.jar();
       var cookiej = request.cookie(process.env.COOKIE_NAME +
         '=' + testUrl);
@@ -86,6 +97,7 @@ describe('proxy to backend server', function () {
         jar: j
       }, function (err, res, body) {
         expect(body).to.equal(testText);
+        delete process.env.ENABLE_COOKIE;
         done();
       });
     });
