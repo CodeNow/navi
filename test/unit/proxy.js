@@ -18,30 +18,6 @@ describe('proxy.js unit test', function () {
     ctx.proxyServer = new ProxyServer();
     done();
   });
-  describe('start', function () {
-    it('should start http server', function(done) {
-      sinon.stub(ctx.proxyServer.server, 'listen').yields();
-      ctx.proxyServer.start(function(err) {
-        if (err) { return done(err); }
-          expect(ctx.proxyServer.server.listen
-            .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-
-        ctx.proxyServer.server.listen.restore();
-        done();
-      });
-    });
-  });
-  describe('stop', function () {
-    it('should close http server', function(done) {
-      sinon.stub(ctx.proxyServer.server, 'close').yields();
-      ctx.proxyServer.stop(function(err) {
-        if (err) { return done(err); }
-        expect(ctx.proxyServer.server.close.calledOnce).to.be.true();
-        ctx.proxyServer.server.close.restore();
-        done();
-      });
-    });
-  });
   describe('requestHandler', function () {
     it('should lookup and proxy request', function(done) {
       var req = {check: 'something'};
@@ -79,12 +55,18 @@ describe('proxy.js unit test', function () {
     });
   });
   describe('wsRequestHandler', function () {
-    it('should proxy ws', function(done) {
-     sinon.stub(ctx.proxyServer.proxy, 'ws', function() {
-        ctx.proxyServer.proxy.ws.restore();
-        done();
-      });
-      ctx.proxyServer.wsRequestHandler();
+    it('should return middleware', function(done) {
+      var test = ctx.proxyServer.wsRequestHandler();
+      expect(test).to.exist();
+      done();
+    });
+    it('should should proxy mw', function(done) {
+     sinon.stub(ctx.proxyServer.proxy, 'ws');
+      var test = ctx.proxyServer.wsRequestHandler();
+      test();
+      expect(ctx.proxyServer.proxy.ws.calledOnce).to.be.true();
+      ctx.proxyServer.proxy.ws.restore();
+      done();
     });
   });
 });

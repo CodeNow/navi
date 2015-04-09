@@ -15,7 +15,6 @@ var ip = require('ip');
 var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
-var cookie = require('cookie');
 var Runnable = require('runnable');
 
 describe('proxy to backend server', function () {
@@ -57,47 +56,9 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetchBackendForUrl.restore();
       done();
     });
-    it('should route to test app and set cookie', function(done) {
-      process.env.ENABLE_COOKIE = 'true';
+    it('should route to test app', function(done) {
       request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
         expect(body).to.equal(testText);
-        var testCookie = res.headers['set-cookie'][0];
-        testCookie = cookie.parse(testCookie);
-        expect(testCookie[process.env.COOKIE_NAME]).to
-          .equal(testUrl);
-        expect(testCookie['Max-Age']).to
-          .equal(process.env.COOKIE_MAX_AGE_SECONDS+'');
-        expect(testCookie.Domain).to
-          .equal(process.env.COOKIE_DOMAIN);
-        delete process.env.ENABLE_COOKIE;
-        done();
-      });
-    });
-    it('should route to test app and not set cookie if missing env', function(done) {
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-        expect(body).to.equal(testText);
-        var testCookie = res.headers['set-cookie'];
-        expect(testCookie).to.not.exist();
-        done();
-      });
-    });
-  });
-  // TODO: add malformed cookies
-  describe('cookie method', function () {
-    it('should use cookie to route', function(done) {
-      process.env.ENABLE_COOKIE = 'true';
-      var j = request.jar();
-      var cookiej = request.cookie(process.env.COOKIE_NAME +
-        '=' + testUrl);
-      var url ='http://localhost:'+process.env.HTTP_PORT;
-      j.setCookie(cookiej, url);
-
-      request({
-        url: url,
-        jar: j
-      }, function (err, res, body) {
-        expect(body).to.equal(testText);
-        delete process.env.ENABLE_COOKIE;
         done();
       });
     });
