@@ -22,7 +22,7 @@ describe('app.js unit test', function () {
       var datadog = require('../../lib/models/datadog.js');
       var error = require('../../lib/error.js');
 
-      sinon.stub(app.proxy, 'start').yields();
+      sinon.stub(app.server, 'start').yields();
       sinon.stub(apiClient, 'login').yields();
       sinon.stub(datadog, 'monitorStart');
       sinon.stub(error, 'setup');
@@ -30,12 +30,12 @@ describe('app.js unit test', function () {
       app.start(function(err) {
         expect(err).to.not.exist();
         expect(datadog.monitorStart.calledOnce).to.be.true();
-        expect(app.proxy.start.calledOnce).to.be.true();
+        expect(app.server.start.calledOnce).to.be.true();
         expect(apiClient.login.calledOnce).to.be.true();
         expect(error.setup.calledOnce).to.be.true();
 
         datadog.monitorStart.restore();
-        app.proxy.start.restore();
+        app.server.start.restore();
         apiClient.login.restore();
         error.setup.restore();
         done();
@@ -45,18 +45,18 @@ describe('app.js unit test', function () {
       var datadog = require('../../lib/models/datadog.js');
       var error = require('../../lib/error.js');
       var testErr = 'some type of err';
-      sinon.stub(app.proxy, 'start').yields();
+      sinon.stub(app.server, 'start').yields();
       sinon.stub(apiClient, 'login').yields(testErr);
       sinon.stub(datadog, 'monitorStart');
       sinon.stub(error, 'setup');
 
       app.start(function(err) {
         expect(err).to.equal(testErr);
-        expect(app.proxy.start.calledOnce).to.be.false();
+        expect(app.server.start.calledOnce).to.be.false();
         expect(apiClient.login.calledOnce).to.be.true();
 
         datadog.monitorStart.restore();
-        app.proxy.start.restore();
+        app.server.start.restore();
         apiClient.login.restore();
         error.setup.restore();
         done();
@@ -68,15 +68,15 @@ describe('app.js unit test', function () {
       var datadog = require('../../lib/models/datadog.js');
 
       sinon.stub(datadog, 'monitorStop');
-      sinon.stub(app.proxy, 'stop').yields();
+      sinon.stub(app.server, 'stop').yields();
 
       app.stop(function(err) {
         expect(err).to.not.exist();
         expect(datadog.monitorStop.calledOnce).to.be.true();
-        expect(app.proxy.stop.calledOnce).to.be.true();
+        expect(app.server.stop.calledOnce).to.be.true();
 
         datadog.monitorStop.restore();
-        app.proxy.stop.restore();
+        app.server.stop.restore();
         done();
       });
     });
