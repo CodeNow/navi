@@ -13,10 +13,8 @@ var afterEach = lab.afterEach;
 var after = lab.after;
 var ip = require('ip');
 
-var ProxyServer = require('../../lib/models/proxy.js');
 var App = require('../../lib/app.js');
-var redisM = require('redis');
-var redis = redisM.createClient(process.env.REDIS_PORT, process.env.REDIS_IPADDRESS);
+var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
@@ -28,6 +26,9 @@ describe('test sessions', function () {
   var testUrl = 'http://'+testIp + ':' + testPort;
   var testServer;
   var app;
+  before(function(done) {
+    redis.flushall(done);
+  });
   before(function(done) {
    testServer = TestServer.create(testPort, testIp, testText, done);
   });
@@ -44,9 +45,6 @@ describe('test sessions', function () {
   afterEach(function(done) {
     app.stop(done);
   });
-  afterEach(function(done) {
-    redis.flushall(done);
-  });
   after(function(done) {
     testServer.close(done);
   });
@@ -55,35 +53,34 @@ describe('test sessions', function () {
     Runnable.prototype.githubLogin.restore();
     done();
   });
-  describe('no previous session', function () {
-    it('should create a session', function(done) {
-      sinon.spy(ProxyServer.prototype, 'requestHandler');
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-        if (err) { return done(err); }
-        expect(ProxyServer.prototype.requestHandler.args[0][0].session)
-          .to.exist();
-        expect(body).to.equal(testText);
-        ProxyServer.prototype.requestHandler.restore();
-        done();
-      });
-    });
-  });
-  describe('with previous session', function () {
+  describe('with active session', function () {
+    var testUserId = '2834750923457';
+    var testToken  = '9438569827345';
+    var j = request.jar();
+
     beforeEach(function(done) {
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-        if (err) { return done(err); }
-        expect(body).to.equal(testText);
-        done();
-      });
+      redis.lpush(testToken, testUserId, done);
     });
-    it('should use previous session', function(done) {
-      sinon.spy(ProxyServer.prototype, 'requestHandler');
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
+    beforeEach(function(done) {
+      var tokenHeader = {};
+      tokenHeader[process.env.TOKEN_HEADER] = testToken;
+      request({
+        jar: j,
+        headers: tokenHeader,
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, done);
+    });
+    afterEach(function(done) {
+      redis.flushall(done);
+    });
+    it('should use session to route', function (done) {
+      request({
+        jar: j,
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res, body) {
         if (err) { return done(err); }
-        expect(ProxyServer.prototype.requestHandler.args[0][0].session)
-          .to.exist();
         expect(body).to.equal(testText);
-        ProxyServer.prototype.requestHandler.restore();
+        expect(res.statusCode).to.equal(200);
         done();
       });
     });

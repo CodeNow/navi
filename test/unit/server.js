@@ -10,11 +10,13 @@ var beforeEach = lab.beforeEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
+var redis = require('../../lib/models/redis.js');
 var Server = require('../../lib/models/server.js');
 
 var ctx = {};
 describe('server.js unit test', function () {
   beforeEach(function(done) {
+    redis.removeAllListeners();
     ctx.proxyServer = new Server();
     done();
   });

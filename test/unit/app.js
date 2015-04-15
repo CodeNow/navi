@@ -8,7 +8,7 @@ var beforeEach = lab.beforeEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
-var apiClient = require('../../lib/models/api-client.js');
+var Api = require('../../lib/models/api.js');
 var App = require('../../lib/app.js');
 
 describe('app.js unit test', function () {
@@ -23,7 +23,7 @@ describe('app.js unit test', function () {
       var error = require('../../lib/error.js');
 
       sinon.stub(app.server, 'start').yields();
-      sinon.stub(apiClient, 'login').yields();
+      sinon.stub(Api, 'login').yields();
       sinon.stub(datadog, 'monitorStart');
       sinon.stub(error, 'setup');
 
@@ -31,12 +31,12 @@ describe('app.js unit test', function () {
         expect(err).to.not.exist();
         expect(datadog.monitorStart.calledOnce).to.be.true();
         expect(app.server.start.calledOnce).to.be.true();
-        expect(apiClient.login.calledOnce).to.be.true();
+        expect(Api.login.calledOnce).to.be.true();
         expect(error.setup.calledOnce).to.be.true();
 
         datadog.monitorStart.restore();
         app.server.start.restore();
-        apiClient.login.restore();
+        Api.login.restore();
         error.setup.restore();
         done();
       });
@@ -46,18 +46,18 @@ describe('app.js unit test', function () {
       var error = require('../../lib/error.js');
       var testErr = 'some type of err';
       sinon.stub(app.server, 'start').yields();
-      sinon.stub(apiClient, 'login').yields(testErr);
+      sinon.stub(Api, 'login').yields(testErr);
       sinon.stub(datadog, 'monitorStart');
       sinon.stub(error, 'setup');
 
       app.start(function(err) {
         expect(err).to.equal(testErr);
         expect(app.server.start.calledOnce).to.be.false();
-        expect(apiClient.login.calledOnce).to.be.true();
+        expect(Api.login.calledOnce).to.be.true();
 
         datadog.monitorStart.restore();
         app.server.start.restore();
-        apiClient.login.restore();
+        Api.login.restore();
         error.setup.restore();
         done();
       });
