@@ -13,9 +13,15 @@ var afterEach = lab.afterEach;
 var after = lab.after;
 var ip = require('ip');
 var App = require('../../lib/app.js');
+var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
+console.log('TODO: make this');
+Runnable.prototype.redirectForAuth = function (res) {
+
+  res.redirect(301, 'http://google.com');
+};
 
 describe('proxy to backend server', function () {
   var testIp = ip.address();
@@ -24,42 +30,88 @@ describe('proxy to backend server', function () {
   var testUrl = 'http://'+testIp + ':' + testPort;
   var testServer;
   var app;
-  before(function(done) {
+  before(function (done) {
    testServer = TestServer.create(testPort, testIp, testText, done);
   });
-  before(function(done) {
+  before(function (done) {
     sinon.stub(Runnable.prototype, 'githubLogin').yields();
     done();
   });
-  after(function(done) {
+  before(function (done) {
+    redis.flushall(done);
+  });
+  after(function (done) {
     Runnable.prototype.githubLogin.restore();
     done();
   });
-  beforeEach(function(done) {
+  beforeEach(function (done) {
+    redis.removeAllListeners();
     app = new App();
     app.start(done);
   });
-  afterEach(function(done) {
+  afterEach(function (done) {
     app.stop(done);
   });
-  after(function(done) {
+  after(function (done) {
     testServer.close(done);
   });
   // TODO: add all possible errors from API client
-  describe('api method', function () {
-    before(function(done) {
-      sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
-        .yields(null, testUrl);
-      done();
-    });
-    after(function(done) {
-      Runnable.prototype.fetchBackendForUrl.restore();
-      done();
-    });
-    it('should route to test app', function(done) {
-      request('http://localhost:'+process.env.HTTP_PORT, function (err, res, body) {
-        expect(body).to.equal(testText);
+  describe('no session', function () {
+    it('should redirect to api', function (done) {
+      request({
+        followRedirect: false,
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        if (err) { return done(err); }
+        expect(res.statusCode).to.equal(301);
         done();
+      });
+    });
+  });
+  describe('with token in header', function () {
+    it('should redirect to api if token does not exist in db', function (done) {
+      var tokenHeader = {};
+      tokenHeader[process.env.TOKEN_HEADER] = 'doesnotexist';
+      request({
+        followRedirect: false,
+        headers: tokenHeader,
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        if (err) { return done(err); }
+        expect(res.statusCode).to.equal(301);
+        done();
+      });
+    });
+    describe('with valid user id', function () {
+      var testUserId = '2834750923457';
+      var testToken  = '9438569827345';
+      before(function (done) {
+        sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
+          .yields(null, testUrl);
+        done();
+      });
+      beforeEach(function(done) {
+        redis.lpush(testToken, testUserId, done);
+      });
+      afterEach(function(done) {
+        redis.flushall(done);
+      });
+      after(function (done) {
+        Runnable.prototype.fetchBackendForUrl.restore();
+        done();
+      });
+      it('should redirect to correct server', function (done) {
+        var tokenHeader = {};
+        tokenHeader[process.env.TOKEN_HEADER] = testToken;
+        request({
+          headers: tokenHeader,
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res, body) {
+          if (err) { return done(err); }
+          expect(body).to.equal(testText);
+          expect(res.statusCode).to.equal(200);
+          done();
+        });
       });
     });
   });

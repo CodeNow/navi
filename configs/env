@@ -7,3 +7,4 @@ DATADOG_PORT=8125
 NODE_ENV='development'
 COOKIE_SECRET='iamasecret'
 TOKEN_EXPIRES=1000
+TOKEN_HEADER='runnable-token'
