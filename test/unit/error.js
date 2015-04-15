@@ -24,7 +24,7 @@ describe('error.js unit test', function () {
           done();
         }
       };
-      error.errorResponder(testErr, res);
+      error.errorResponder(testErr, null, res);
     });
     it('send boom error', function(done) {
       var testMessage = 'some error';
@@ -39,7 +39,7 @@ describe('error.js unit test', function () {
           done();
         }
       };
-      error.errorResponder(testErr, res);
+      error.errorResponder(testErr, null, res);
     });
   });
   describe('setup', function () {
