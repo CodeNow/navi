@@ -8,3 +8,5 @@ NODE_ENV='development'
 COOKIE_SECRET='iamasecret'
 TOKEN_EXPIRES=1000
 TOKEN_HEADER='runnable-token'
+REDIS_IPADDRESS="127.0.0.1"
+REDIS_PORT="6379"
