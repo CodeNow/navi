@@ -34,14 +34,18 @@ describe('api.js unit test', function () {
       done();
     });
     it('should call api redirect', function(done) {
+      var testRedir = 'http://runnable.com:80';
+      var testReq = {
+        headers: {
+          host: 'runnable.com'
+        }
+      };
       var testRes = 'some res';
-      console.log('TODO: replace with real client call');
-      api.user.redirectForAuth = function() {};
       sinon.stub(api.user, 'redirectForAuth').returns();
       var testMw = api.redirect();
-      testMw(null, testRes);
+      testMw(testReq, testRes);
 
-      expect(api.user.redirectForAuth.calledWith(testRes)).to.be.true();
+      expect(api.user.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
       api.user.redirectForAuth.restore();
       done();
     });
@@ -50,11 +54,11 @@ describe('api.js unit test', function () {
     var testBackend = 'testBackend';
     var testId = 'someId';
     beforeEach(function(done) {
-      sinon.stub(api.user, 'fetchBackendForUrl').yields(null, testBackend);
+      sinon.stub(api.user, 'fetchBackendForUrlWithUser').yields(null, testBackend);
       done();
     });
     afterEach(function(done) {
-      api.user.fetchBackendForUrl.restore();
+      api.user.fetchBackendForUrlWithUser.restore();
       done();
     });
     describe('no referer', function() {
@@ -71,7 +75,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrl
+          expect(api.user.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host, undefined)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -88,7 +92,7 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.user.fetchBackendForUrl
+          expect(api.user.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host+':80', undefined)).to.be.true();
           done();
         });
@@ -110,7 +114,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrl
+          expect(api.user.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -130,7 +134,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrl
+          expect(api.user.fetchBackendForUrlWithUser
             .calledWith(testId, 'https://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -148,7 +152,7 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.user.fetchBackendForUrl
+          expect(api.user.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host+':80', testRef)).to.be.true();
           done();
         });
