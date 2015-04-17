@@ -18,30 +18,33 @@ var Session = require('../../lib/models/session.js');
 
 describe('session.js unit test', function () {
   var session;
+  var testToken = '2398475892374';
+  var testReq = {
+    query: {
+      runnableappAccessToken: testToken
+    }
+  };
   beforeEach(function(done) {
     redis.removeAllListeners();
     session = new Session();
     done();
   });
   describe('shouldUse', function () {
-    var testReq = { headers: {} };
-    var testToken = '2398475892374';
-    testReq.headers[process.env.TOKEN_HEADER] = testToken;
     it('should use if token provided', function (done) {
       var use = session.shouldUse(testReq);
       expect(use).to.be.true();
       done();
     });
-    it('should not use if no headers', function (done) {
+    it('should not use if no query', function (done) {
       var req = clone(testReq);
-      delete req.headers;
+      delete req.query;
       var use = session.shouldUse(req);
       expect(use).to.be.false();
       done();
     });
     it('should not use if no token', function (done) {
       var req = clone(testReq);
-      delete req.headers[process.env.TOKEN_HEADER];
+      delete req.query.runnableappAccessToken;
       var use = session.shouldUse(req);
       expect(use).to.be.false();
       done();
@@ -56,10 +59,6 @@ describe('session.js unit test', function () {
   });
   describe('getUserFromToken', function () {
     var testMw;
-    var testReq = { headers: {} };
-    var testToken = '2398475892374';
-    testReq.headers[process.env.TOKEN_HEADER] = testToken;
-
     before(function(done) {
       redis.flushall(done);
     });
