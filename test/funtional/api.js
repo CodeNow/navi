@@ -17,11 +17,6 @@ var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
-console.log('TODO: make this');
-Runnable.prototype.redirectForAuth = function (res) {
-
-  res.redirect(301, 'http://google.com');
-};
 
 describe('proxy to backend server', function () {
   var testIp = ip.address();
@@ -70,11 +65,11 @@ describe('proxy to backend server', function () {
   });
   describe('with token in header', function () {
     it('should redirect to api if token does not exist in db', function (done) {
-      var tokenHeader = {};
-      tokenHeader[process.env.TOKEN_HEADER] = 'doesnotexist';
       request({
         followRedirect: false,
-        headers: tokenHeader,
+        qs: {
+          runnableappAccessToken: 'doesnotexist'
+        },
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
         if (err) { return done(err); }
@@ -86,7 +81,7 @@ describe('proxy to backend server', function () {
       var testUserId = '2834750923457';
       var testToken  = '9438569827345';
       before(function (done) {
-        sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
+        sinon.stub(Runnable.prototype, 'fetchBackendForUrlWithUser')
           .yields(null, testUrl);
         done();
       });
@@ -97,14 +92,14 @@ describe('proxy to backend server', function () {
         redis.flushall(done);
       });
       after(function (done) {
-        Runnable.prototype.fetchBackendForUrl.restore();
+        Runnable.prototype.fetchBackendForUrlWithUser.restore();
         done();
       });
       it('should redirect to correct server', function (done) {
-        var tokenHeader = {};
-        tokenHeader[process.env.TOKEN_HEADER] = testToken;
         request({
-          headers: tokenHeader,
+          qs: {
+            runnableappAccessToken: testToken
+          },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res, body) {
           if (err) { return done(err); }

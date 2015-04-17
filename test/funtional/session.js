@@ -62,11 +62,11 @@ describe('test sessions', function () {
       redis.lpush(testToken, testUserId, done);
     });
     beforeEach(function(done) {
-      var tokenHeader = {};
-      tokenHeader[process.env.TOKEN_HEADER] = testToken;
       request({
         jar: j,
-        headers: tokenHeader,
+        qs: {
+          runnableappAccessToken: testToken
+        },
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, done);
     });
