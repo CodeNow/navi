@@ -58,25 +58,20 @@ describe('session.js unit test', function () {
     });
   });
   describe('getUserFromToken', function () {
-    var testMw;
     before(function(done) {
       redis.flushall(done);
-    });
-    beforeEach(function(done) {
-      testMw = session.getUserFromToken();
-      done();
     });
     it('should next with error if redis failed', function(done) {
       var testErr = 'some err';
       sinon.stub(redis, 'lpop').yields(testErr);
-      testMw(testReq, null, function(err) {
+      session.getUserFromToken(testReq, null, function(err) {
         expect(err).to.equal(testErr);
         redis.lpop.restore();
         done();
       });
     });
     it('should not set session if no redis key exist', function(done) {
-      testMw(testReq, null, function() {
+      session.getUserFromToken(testReq, null, function() {
         expect(testReq.session).to.not.exist();
         done();
       });
@@ -92,7 +87,7 @@ describe('session.js unit test', function () {
       it('should set session if redis key exist', function(done) {
         var req = JSON.parse(JSON.stringify(testReq));
         req.session = {};
-        testMw(req, null, function() {
+        session.getUserFromToken(req, null, function() {
           expect(req.session.userId).to.equal(testUserId);
           done();
         });
