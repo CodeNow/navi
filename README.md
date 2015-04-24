@@ -17,4 +17,4 @@ rules:
 - maintain 100% test coverage, yes, that includes all error cases.
 - follow OOP (yea you know me)
 
-![alt tag](docs/navi-flow.svg)
+![alt tag](docs/navi-flow.jpg)
