@@ -24,7 +24,7 @@ describe('error.js unit test', function () {
           done();
         }
       };
-      error.errorResponder(testErr, res);
+      error.errorResponder(testErr, null, res);
     });
     it('send boom error', function(done) {
       var testMessage = 'some error';
@@ -39,7 +39,7 @@ describe('error.js unit test', function () {
           done();
         }
       };
-      error.errorResponder(testErr, res);
+      error.errorResponder(testErr, null, res);
     });
   });
   describe('setup', function () {
@@ -119,7 +119,7 @@ describe('error.js unit test', function () {
     it('should return error with data', function(done) {
       var testErr = 'some err';
       var someData = 'some data';
-      var testCode = 423;
+      var testCode = 432;
       var test = error.create(testCode, testErr, someData);
       expect(test.isBoom).to.be.true();
       expect(test.output.statusCode).to.equal(testCode);

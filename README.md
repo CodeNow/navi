@@ -1,6 +1,6 @@
 # Navi
 
-Navi (ナビィ Nabi?) is a application from Runnable.io: The Staging Service.
+Navi (ナビィ Nabi?) is a application from Runnable.io: The Sandbox Service.
 A fairy, Navi serves as the Users's fairy companion throughout the site.
 She is given the task to aid a user by the Great Hipache.
 Although she is initially a little frustrated with this duty and does not believe the Users are capable of acts of heroism,
@@ -16,3 +16,5 @@ rules:
 - always use error.create for ALL errors, never ever `new Error()`
 - maintain 100% test coverage, yes, that includes all error cases.
 - follow OOP (yea you know me)
+
+![alt tag](docs/navi-flow.jpg)

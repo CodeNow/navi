@@ -12,48 +12,53 @@ var expect = require('code').expect;
 
 var sinon = require('sinon');
 
-var Api = require('../../lib/models/api.js');
+var api = require('../../lib/models/api.js');
 
 describe('api.js unit test', function () {
-  var api;
-  beforeEach(function(done) {
-    api = new Api();
-    done();
+  describe('login', function () {
+    it('should login to github', function(done) {
+      sinon.stub(api.user, 'githubLogin').yields();
+      api.login(function() {
+        expect(api.user.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        api.user.githubLogin.restore();
+        done();
+      });
+    });
   });
-  describe('shouldUse', function () {
-    it('should use if host provided', function (done) {
-      var testArgs = {
+  describe('redirect', function () {
+    it('should return middleware', function(done) {
+      var testMw = api.redirect();
+      expect(testMw).to.be.a.function();
+      done();
+    });
+    it('should call api redirect', function(done) {
+      var testRedir = 'http://runnable.com:80';
+      var testReq = {
         headers: {
-          host: 'localhost:1234'
+          host: 'runnable.com'
         }
       };
-      var use = api.shouldUse(testArgs);
-      expect(use).to.be.true();
-      done();
-    });
-    it('should be false if no headers', function (done) {
-      var testArgs = {};
-      var use = api.shouldUse(testArgs);
-      expect(use).to.be.false();
-      done();
-    });
-    it('should be false if host not provided', function (done) {
-      var testArgs = {
-        headers: {}
-      };
-      var use = api.shouldUse(testArgs);
-      expect(use).to.be.false();
+      var testRes = 'some res';
+      sinon.stub(api.user, 'redirectForAuth').returns();
+      var testMw = api.redirect();
+      testMw(testReq, testRes);
+
+      expect(api.user.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
+      api.user.redirectForAuth.restore();
       done();
     });
   });
   describe('getHost', function () {
     var testBackend = 'testBackend';
+    var testId = 'someId';
     beforeEach(function(done) {
-      sinon.stub(api.apiClient, 'getBackend').yields(null, testBackend);
+      sinon.stub(api.user, 'fetchBackendForUrlWithUser').yields(null, testBackend);
       done();
     });
     afterEach(function(done) {
-      api.apiClient.getBackend.restore();
+      api.user.fetchBackendForUrlWithUser.restore();
       done();
     });
     describe('no referer', function() {
@@ -63,12 +68,15 @@ describe('api.js unit test', function () {
         var testArgs = {
           headers: {
             host: host
+          },
+          session: {
+            userId: testId
           }
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.apiClient.getBackend
-            .calledWith('http://'+host, undefined)).to.be.true();
+          expect(api.user.fetchBackendForUrlWithUser
+            .calledWith(testId, 'http://'+host, undefined)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -78,11 +86,14 @@ describe('api.js unit test', function () {
         var testArgs = {
           headers: {
             host: host
+          },
+          session: {
+            userId: testId
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.apiClient.getBackend
-            .calledWith('http://'+host+':80', undefined)).to.be.true();
+          expect(api.user.fetchBackendForUrlWithUser
+            .calledWith(testId, 'http://'+host+':80', undefined)).to.be.true();
           done();
         });
       });
@@ -96,12 +107,15 @@ describe('api.js unit test', function () {
           headers: {
             host: host,
             referer: testRef
+          },
+          session: {
+            userId: testId
           }
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.apiClient.getBackend
-            .calledWith('http://'+host, testRef)).to.be.true();
+          expect(api.user.fetchBackendForUrlWithUser
+            .calledWith(testId, 'http://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -113,12 +127,15 @@ describe('api.js unit test', function () {
           headers: {
             host: host,
             referer: testRef
+          },
+          session: {
+            userId: testId
           }
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.apiClient.getBackend
-            .calledWith('https://'+host, testRef)).to.be.true();
+          expect(api.user.fetchBackendForUrlWithUser
+            .calledWith(testId, 'https://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
         });
@@ -129,11 +146,14 @@ describe('api.js unit test', function () {
           headers: {
             host: host,
             referer: testRef
+          },
+          session: {
+            userId: testId
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.apiClient.getBackend
-            .calledWith('http://'+host+':80', testRef)).to.be.true();
+          expect(api.user.fetchBackendForUrlWithUser
+            .calledWith(testId, 'http://'+host+':80', testRef)).to.be.true();
           done();
         });
       });
