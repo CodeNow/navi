@@ -32,28 +32,32 @@ describe('api.js unit test', function () {
     });
   });
   describe('redirectIfNoUserId', function () {
-    it('should call api redirectForAuth when userId set', function(done) {
+    var redirectIfNoUserId;
+    beforeEach(function(done) {
+      redirectIfNoUserId = api.redirectIfNoUserId();
+      done();
+    });
+    it('should call api redirectForAuth when userId not set', function(done) {
       var testRedir = 'http://runnable.com:80';
-      var testId = 'someId';
       var testReq = {
         headers: {
           host: 'runnable.com'
         },
-        session: {
-          userId: testId
-        }
+        session: {}
       };
       var testRes = 'some res';
       sinon.stub(api.client, 'redirectForAuth').returns();
 
-      api.redirectIfNoUserId(testReq, testRes);
+      redirectIfNoUserId(testReq, testRes);
       expect(api.client.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
       api.client.redirectForAuth.restore();
       done();
     });
-    it('should next if user no userId', function(done) {
-      api.redirectIfNoUserId({
-        session: {}
+    it('should next if session includes userId', function(done) {
+      redirectIfNoUserId({
+        session: {
+          userId: 'someId'
+        }
       }, null, done);
     });
   });
@@ -111,7 +115,6 @@ describe('api.js unit test', function () {
       });
     });
     it('should redirect to box selection if checkAndSetIfDirectUrl 404', function(done) {
-      var testErr = 'error';
       var testRedir = 'http://runnable.com:80';
       var testId = 'someId';
       var testReq = {
@@ -122,16 +125,17 @@ describe('api.js unit test', function () {
           userId: testId
         }
       };
+      var testRes = 'testres';
       sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(null, {
         statusCode: 404
       });
       sinon.stub(api.client, 'redirectToBoxSelection').returns();
 
       var testMw = api.checkForDirectUrl();
-      testMw(testReq, null);
+      testMw(testReq, testRes);
       expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
         .to.be.true();
-      expect(api.client.redirectToBoxSelection.calledWith(testReq))
+      expect(api.client.redirectToBoxSelection.calledWith(testRedir, testRes))
         .to.be.true();
       api.client.checkAndSetIfDirectUrl.restore();
       api.client.redirectToBoxSelection.restore();

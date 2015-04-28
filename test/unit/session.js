@@ -29,27 +29,6 @@ describe('session.js unit test', function () {
     session = new Session();
     done();
   });
-  describe('_shouldUse', function () {
-    it('should use if token provided', function (done) {
-      var use = session._shouldUse(testReq);
-      expect(use).to.be.true();
-      done();
-    });
-    it('should not use if no query', function (done) {
-      var req = clone(testReq);
-      delete req.query;
-      var use = session._shouldUse(req);
-      expect(use).to.be.false();
-      done();
-    });
-    it('should not use if no token', function (done) {
-      var req = clone(testReq);
-      delete req.query.runnableappAccessToken;
-      var use = session._shouldUse(req);
-      expect(use).to.be.false();
-      done();
-    });
-  });
   describe('handle', function () {
     it('should return session mw', function(done) {
       var sessionMw = session.handle();
@@ -61,10 +40,22 @@ describe('session.js unit test', function () {
     before(function(done) {
       redis.flushall(done);
     });
-    it('should next if not should use', function(done) {
-      session.getUserFromToken({}, null, function(err) {
-        expect(err).to.not.exist();
-        done();
+    describe('invalid args', function () {
+      it('should not use if no query', function (done) {
+        var req = clone(testReq);
+        delete req.query;
+        session.getUserFromToken(req, null, function (err) {
+          expect(err).to.not.exist();
+          done();
+        });
+      });
+      it('should not use if no token', function (done) {
+        var req = clone(testReq);
+        delete req.query.runnableappAccessToken;
+        session.getUserFromToken(req, null, function (err) {
+          expect(err).to.not.exist();
+          done();
+        });
       });
     });
     it('should next with error if redis failed', function(done) {

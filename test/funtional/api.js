@@ -52,15 +52,11 @@ describe('proxy to backend server', function () {
   });
   describe('not logged in', function () {
     it('should redirect to api', function (done) {
-      sinon.stub(Runnable.prototype, 'fetch').yields(null, {
-        statusCode: 401
-      });
       request({
         followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
         if (err) { return done(err); }
-        Runnable.prototype.fetch.restore();
         expect(res.statusCode).to.equal(301);
         done();
       });
