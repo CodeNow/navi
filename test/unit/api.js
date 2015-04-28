@@ -13,6 +13,10 @@ var expect = require('code').expect;
 var sinon = require('sinon');
 
 var api = require('../../lib/models/api.js');
+console.log('TODO: create checkAndSetIfDirectUrl');
+api.user.checkAndSetIfDirectUrl = function() {};
+console.log('TODO: create redirectToBoxSelection');
+api.user.redirectToBoxSelection = function(){};
 
 describe('api.js unit test', function () {
   describe('login', function () {
@@ -27,13 +31,8 @@ describe('api.js unit test', function () {
       });
     });
   });
-  describe('redirect', function () {
-    it('should return middleware', function(done) {
-      var testMw = api.redirect();
-      expect(testMw).to.be.a.function();
-      done();
-    });
-    it('should call api redirect', function(done) {
+  describe('ensureUserLoggedIn', function () {
+    it('should call api ensureUserLoggedIn when user not logged in', function(done) {
       var testRedir = 'http://runnable.com:80';
       var testReq = {
         headers: {
@@ -42,11 +41,118 @@ describe('api.js unit test', function () {
       };
       var testRes = 'some res';
       sinon.stub(api.user, 'redirectForAuth').returns();
-      var testMw = api.redirect();
+      sinon.stub(api.user, 'fetch').yields(null, {
+        statusCode: 401
+      });
+
+      var testMw = api.ensureUserLoggedIn();
       testMw(testReq, testRes);
 
       expect(api.user.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
+      api.user.fetch.restore();
       api.user.redirectForAuth.restore();
+      done();
+    });
+    it('should next error if user fetch had error', function(done) {
+      var testErr = 'iamagooderr';
+      sinon.stub(api.user, 'fetch').yields(testErr);
+
+      var testMw = api.ensureUserLoggedIn();
+      testMw(null, null, function(err) {
+        expect(err).to.equal(testErr);
+        api.user.fetch.restore();
+        done();
+      });
+    });
+    it('should next if user logged in', function(done) {
+      sinon.stub(api.user, 'fetch').yields(null, {
+        someUser: 'data'
+      });
+      var testMw = api.ensureUserLoggedIn();
+      testMw(null, null, function() {
+        api.user.fetch.restore();
+        done();
+      });
+    });
+  });
+  describe('checkForDirectUrl', function () {
+    it('should redirect to self after successful mapping', function(done) {
+      var testRedir = 'http://runnable.com:80';
+      var testId = 'someId';
+      var testReq = {
+        headers: {
+          host: 'runnable.com'
+        },
+        session: {
+          userId: testId
+        }
+      };
+      var testRes = {
+        redirect: function (code, url) {
+          expect(code).to.equal(301);
+          expect(url).to.equal(testRedir);
+          done();
+        }
+      };
+      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(null, {
+        statusCode: 200
+      });
+
+      var testMw = api.checkForDirectUrl();
+      testMw(testReq, testRes);
+
+      expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+        .to.be.true();
+      api.user.checkAndSetIfDirectUrl.restore();
+    });
+    it('should next err if checkAndSetIfDirectUrl had error', function(done) {
+      var testErr = 'error';
+      var testRedir = 'http://runnable.com:80';
+      var testId = 'someId';
+      var testReq = {
+        headers: {
+          host: 'runnable.com'
+        },
+        session: {
+          userId: testId
+        }
+      };
+      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(testErr);
+
+      var testMw = api.checkForDirectUrl();
+      testMw(testReq, null, function (err) {
+        expect(err).to.equal(testErr);
+        expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+          .to.be.true();
+        api.user.checkAndSetIfDirectUrl.restore();
+        done();
+      });
+    });
+    it('should redirect to box selection if checkAndSetIfDirectUrl 404', function(done) {
+      var testErr = 'error';
+      var testRedir = 'http://runnable.com:80';
+      var testId = 'someId';
+      var testReq = {
+        headers: {
+          host: 'runnable.com'
+        },
+        session: {
+          userId: testId
+        }
+      };
+      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(null, {
+        statusCode: 404
+      });
+      sinon.stub(api.user, 'redirectToBoxSelection').returns();
+
+      var testMw = api.checkForDirectUrl();
+      testMw(testReq, null);
+      expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+        .to.be.true();
+      expect(api.user.redirectToBoxSelection.calledWith(testReq))
+        .to.be.true();
+      api.user.checkAndSetIfDirectUrl.restore();
+      api.user.redirectToBoxSelection.restore();
       done();
     });
   });

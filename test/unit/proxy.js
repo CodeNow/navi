@@ -20,7 +20,7 @@ describe('proxy.js unit test', function () {
     proxyServer = new ProxyServer();
     done();
   });
-  describe('shouldUse', function () {
+  describe('_shouldUse', function () {
     var testArgs = {
       headers: {
         host: 'localhost:1234',
@@ -30,35 +30,35 @@ describe('proxy.js unit test', function () {
       }
     };
     it('should use if host and userId provided', function (done) {
-      var use = proxyServer.shouldUse(testArgs);
+      var use = proxyServer._shouldUse(testArgs);
       expect(use).to.be.true();
       done();
     });
     it('should be false for no host', function (done) {
       var args = clone(testArgs);
       delete args.headers.host;
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
     it('should be false for no headers', function (done) {
       var args = clone(testArgs);
       delete args.headers;
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
     it('should be false for no session', function (done) {
       var args = clone(testArgs);
       delete args.session;
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
     it('should be false for no userId', function (done) {
       var args = clone(testArgs);
       delete args.session.userId;
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
@@ -66,24 +66,37 @@ describe('proxy.js unit test', function () {
       var args = clone(testArgs);
       delete args.session.userId;
       delete args.headers.host;
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
     it('should be false for no headers or no session', function (done) {
       var args = {};
-      var use = proxyServer.shouldUse(args);
+      var use = proxyServer._shouldUse(args);
       expect(use).to.be.false();
       done();
     });
   });
   describe('requestHandler', function () {
-    var testReq = {check: 'something'};
+    var testReq = {
+      headers: {
+        host: 'localhost:1234',
+      },
+      session: {
+        userId: '24578932745842'
+      }
+    };
     var testRes = {test: 'tester'};
     var testMw;
     beforeEach(function(done) {
       testMw = proxyServer.requestHandler();
       done();
+    });
+    it('should next if we cant use', function(done) {
+      testMw({
+        headers: {},
+        session: {}
+      }, null, done);
     });
     it('should getHost and proxy request', function(done) {
       var testTarget = 'someTarget';
@@ -104,14 +117,13 @@ describe('proxy.js unit test', function () {
       var testErr = 'some error';
       sinon.stub(Api, 'getHost').yields(testErr);
 
-      function next (err) {
+      testMw(testReq, testRes, function (err) {
         expect(err).to.equal(testErr);
         expect(Api.getHost
           .withArgs(testReq).calledOnce).to.be.true();
         Api.getHost.restore();
         done();
-      }
-      testMw(testReq, testRes, next);
+      });
     });
     it('should next with no error if getHost returns no target', function(done) {
       sinon.stub(Api, 'getHost').yields();

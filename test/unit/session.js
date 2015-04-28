@@ -29,23 +29,23 @@ describe('session.js unit test', function () {
     session = new Session();
     done();
   });
-  describe('shouldUse', function () {
+  describe('_shouldUse', function () {
     it('should use if token provided', function (done) {
-      var use = session.shouldUse(testReq);
+      var use = session._shouldUse(testReq);
       expect(use).to.be.true();
       done();
     });
     it('should not use if no query', function (done) {
       var req = clone(testReq);
       delete req.query;
-      var use = session.shouldUse(req);
+      var use = session._shouldUse(req);
       expect(use).to.be.false();
       done();
     });
     it('should not use if no token', function (done) {
       var req = clone(testReq);
       delete req.query.runnableappAccessToken;
-      var use = session.shouldUse(req);
+      var use = session._shouldUse(req);
       expect(use).to.be.false();
       done();
     });
