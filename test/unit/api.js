@@ -14,65 +14,47 @@ var sinon = require('sinon');
 
 var api = require('../../lib/models/api.js');
 console.log('TODO: create checkAndSetIfDirectUrl');
-api.user.checkAndSetIfDirectUrl = function() {};
+api.client.checkAndSetIfDirectUrl = function() {};
 console.log('TODO: create redirectToBoxSelection');
-api.user.redirectToBoxSelection = function(){};
+api.client.redirectToBoxSelection = function(){};
 
 describe('api.js unit test', function () {
   describe('login', function () {
     it('should login to github', function(done) {
-      sinon.stub(api.user, 'githubLogin').yields();
+      sinon.stub(api.client, 'githubLogin').yields();
       api.login(function() {
-        expect(api.user.githubLogin
+        expect(api.client.githubLogin
           .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
           .to.be.true();
-        api.user.githubLogin.restore();
+        api.client.githubLogin.restore();
         done();
       });
     });
   });
-  describe('ensureUserLoggedIn', function () {
-    it('should call api ensureUserLoggedIn when user not logged in', function(done) {
+  describe('redirectIfNoUserId', function () {
+    it('should call api redirectForAuth when userId set', function(done) {
       var testRedir = 'http://runnable.com:80';
+      var testId = 'someId';
       var testReq = {
         headers: {
           host: 'runnable.com'
+        },
+        session: {
+          userId: testId
         }
       };
       var testRes = 'some res';
-      sinon.stub(api.user, 'redirectForAuth').returns();
-      sinon.stub(api.user, 'fetch').yields(null, {
-        statusCode: 401
-      });
+      sinon.stub(api.client, 'redirectForAuth').returns();
 
-      var testMw = api.ensureUserLoggedIn();
-      testMw(testReq, testRes);
-
-      expect(api.user.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
-      api.user.fetch.restore();
-      api.user.redirectForAuth.restore();
+      api.redirectIfNoUserId(testReq, testRes);
+      expect(api.client.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
+      api.client.redirectForAuth.restore();
       done();
     });
-    it('should next error if user fetch had error', function(done) {
-      var testErr = 'iamagooderr';
-      sinon.stub(api.user, 'fetch').yields(testErr);
-
-      var testMw = api.ensureUserLoggedIn();
-      testMw(null, null, function(err) {
-        expect(err).to.equal(testErr);
-        api.user.fetch.restore();
-        done();
-      });
-    });
-    it('should next if user logged in', function(done) {
-      sinon.stub(api.user, 'fetch').yields(null, {
-        someUser: 'data'
-      });
-      var testMw = api.ensureUserLoggedIn();
-      testMw(null, null, function() {
-        api.user.fetch.restore();
-        done();
-      });
+    it('should next if user no userId', function(done) {
+      api.redirectIfNoUserId({
+        session: {}
+      }, null, done);
     });
   });
   describe('checkForDirectUrl', function () {
@@ -94,16 +76,16 @@ describe('api.js unit test', function () {
           done();
         }
       };
-      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(null, {
+      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(null, {
         statusCode: 200
       });
 
       var testMw = api.checkForDirectUrl();
       testMw(testReq, testRes);
 
-      expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+      expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
         .to.be.true();
-      api.user.checkAndSetIfDirectUrl.restore();
+      api.client.checkAndSetIfDirectUrl.restore();
     });
     it('should next err if checkAndSetIfDirectUrl had error', function(done) {
       var testErr = 'error';
@@ -117,14 +99,14 @@ describe('api.js unit test', function () {
           userId: testId
         }
       };
-      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(testErr);
+      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(testErr);
 
       var testMw = api.checkForDirectUrl();
       testMw(testReq, null, function (err) {
         expect(err).to.equal(testErr);
-        expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+        expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
           .to.be.true();
-        api.user.checkAndSetIfDirectUrl.restore();
+        api.client.checkAndSetIfDirectUrl.restore();
         done();
       });
     });
@@ -140,19 +122,19 @@ describe('api.js unit test', function () {
           userId: testId
         }
       };
-      sinon.stub(api.user, 'checkAndSetIfDirectUrl').yields(null, {
+      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(null, {
         statusCode: 404
       });
-      sinon.stub(api.user, 'redirectToBoxSelection').returns();
+      sinon.stub(api.client, 'redirectToBoxSelection').returns();
 
       var testMw = api.checkForDirectUrl();
       testMw(testReq, null);
-      expect(api.user.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+      expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
         .to.be.true();
-      expect(api.user.redirectToBoxSelection.calledWith(testReq))
+      expect(api.client.redirectToBoxSelection.calledWith(testReq))
         .to.be.true();
-      api.user.checkAndSetIfDirectUrl.restore();
-      api.user.redirectToBoxSelection.restore();
+      api.client.checkAndSetIfDirectUrl.restore();
+      api.client.redirectToBoxSelection.restore();
       done();
     });
   });
@@ -160,11 +142,11 @@ describe('api.js unit test', function () {
     var testBackend = 'testBackend';
     var testId = 'someId';
     beforeEach(function(done) {
-      sinon.stub(api.user, 'fetchBackendForUrlWithUser').yields(null, testBackend);
+      sinon.stub(api.client, 'fetchBackendForUrlWithUser').yields(null, testBackend);
       done();
     });
     afterEach(function(done) {
-      api.user.fetchBackendForUrlWithUser.restore();
+      api.client.fetchBackendForUrlWithUser.restore();
       done();
     });
     describe('no referer', function() {
@@ -181,7 +163,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrlWithUser
+          expect(api.client.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host, undefined)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -198,7 +180,7 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.user.fetchBackendForUrlWithUser
+          expect(api.client.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host+':80', undefined)).to.be.true();
           done();
         });
@@ -220,7 +202,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrlWithUser
+          expect(api.client.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -240,7 +222,7 @@ describe('api.js unit test', function () {
         };
         api.getHost(testArgs, function(err, backend) {
           if (err) { return done(err); }
-          expect(api.user.fetchBackendForUrlWithUser
+          expect(api.client.fetchBackendForUrlWithUser
             .calledWith(testId, 'https://'+host, testRef)).to.be.true();
           expect(backend).to.equal(testBackend);
           done();
@@ -258,7 +240,7 @@ describe('api.js unit test', function () {
           }
         };
         api.getHost(testArgs, function() {
-          expect(api.user.fetchBackendForUrlWithUser
+          expect(api.client.fetchBackendForUrlWithUser
             .calledWith(testId, 'http://'+host+':80', testRef)).to.be.true();
           done();
         });

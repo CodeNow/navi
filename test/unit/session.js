@@ -61,6 +61,12 @@ describe('session.js unit test', function () {
     before(function(done) {
       redis.flushall(done);
     });
+    it('should next if not should use', function(done) {
+      session.getUserFromToken({}, null, function(err) {
+        expect(err).to.not.exist();
+        done();
+      });
+    });
     it('should next with error if redis failed', function(done) {
       var testErr = 'some err';
       sinon.stub(redis, 'lpop').yields(testErr);
