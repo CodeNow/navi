@@ -17,9 +17,6 @@ var redis = require('../../lib/models/redis.js');
 var request = require('request');
 var Runnable = require('runnable');
 
-console.log('TODO: create checkAndSetIfDirectUrl');
-Runnable.prototype.checkAndSetIfDirectUrl = function() {};
-
 describe('direct-url redirect', function () {
   var testUserId = '2834750923457';
   var testToken  = '9438569827345';
@@ -69,7 +66,7 @@ describe('direct-url redirect', function () {
         url: testTargetUrl
       }, function (err, res) {
         if (err) { return done(err); }
-        expect(Runnable.prototype.checkAndSetIfDirectUrl.calledWith(testUserId, testTargetUrl))
+        expect(Runnable.prototype.checkAndSetIfDirectUrl.calledWith(testTargetUrl))
           .to.be.true();
         expect(res.headers.location).to.equal(testTargetUrl);
         expect(res.statusCode).to.equal(301);

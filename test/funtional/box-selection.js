@@ -17,11 +17,6 @@ var redis = require('../../lib/models/redis.js');
 var request = require('request');
 var Runnable = require('runnable');
 
-console.log('TODO: create checkAndSetIfDirectUrl');
-Runnable.prototype.checkAndSetIfDirectUrl = function() {};
-console.log('TODO: create redirectToBoxSelection');
-Runnable.prototype.redirectToBoxSelection = function(){};
-
 describe('box-selection redirect', function () {
   var testUserId = '2834750923457';
   var testToken  = '9438569827345';
@@ -77,7 +72,7 @@ describe('box-selection redirect', function () {
         url: testTargetUrl
       }, function (err, res) {
         if (err) { return done(err); }
-        expect(Runnable.prototype.checkAndSetIfDirectUrl.calledWith(testUserId, testTargetUrl))
+        expect(Runnable.prototype.checkAndSetIfDirectUrl.calledWith(testTargetUrl))
           .to.be.true();
         expect(Runnable.prototype.redirectToBoxSelection.calledWith(testTargetUrl))
           .to.be.true();

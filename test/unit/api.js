@@ -13,10 +13,6 @@ var expect = require('code').expect;
 var sinon = require('sinon');
 
 var api = require('../../lib/models/api.js');
-console.log('TODO: create checkAndSetIfDirectUrl');
-api.client.checkAndSetIfDirectUrl = function() {};
-console.log('TODO: create redirectToBoxSelection');
-api.client.redirectToBoxSelection = function(){};
 
 describe('api.js unit test', function () {
   describe('login', function () {
@@ -87,7 +83,7 @@ describe('api.js unit test', function () {
       var testMw = api.checkForDirectUrl();
       testMw(testReq, testRes);
 
-      expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+      expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
         .to.be.true();
       api.client.checkAndSetIfDirectUrl.restore();
     });
@@ -108,7 +104,7 @@ describe('api.js unit test', function () {
       var testMw = api.checkForDirectUrl();
       testMw(testReq, null, function (err) {
         expect(err).to.equal(testErr);
-        expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+        expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
           .to.be.true();
         api.client.checkAndSetIfDirectUrl.restore();
         done();
@@ -133,7 +129,7 @@ describe('api.js unit test', function () {
 
       var testMw = api.checkForDirectUrl();
       testMw(testReq, testRes);
-      expect(api.client.checkAndSetIfDirectUrl.calledWith(testId, testRedir))
+      expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
         .to.be.true();
       expect(api.client.redirectToBoxSelection.calledWith(testRedir, testRes))
         .to.be.true();
