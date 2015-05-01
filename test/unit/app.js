@@ -19,21 +19,16 @@ describe('app.js unit test', function () {
   describe('start', function () {
     it('should start all services', function(done) {
       var datadog = require('../../lib/models/datadog.js');
-      var error = require('../../lib/error.js');
 
       sinon.stub(app.server, 'start').yields();
       sinon.stub(datadog, 'monitorStart');
-      sinon.stub(error, 'setup');
 
       app.start(function(err) {
         expect(err).to.not.exist();
         expect(datadog.monitorStart.calledOnce).to.be.true();
         expect(app.server.start.calledOnce).to.be.true();
-        expect(error.setup.calledOnce).to.be.true();
-
         datadog.monitorStart.restore();
         app.server.start.restore();
-        error.setup.restore();
         done();
       });
     });
