@@ -33,6 +33,7 @@
     "dotenv": "^1.0.0",
     "eson": "^0.5.0",
     "express": "^4.12.3",
+    "express-domain-middleware": "^0.1.0",
     "express-session": "^1.11.1",
     "http-proxy": "^1.9.0",
     "middleware-flow": "^0.6.1",
