@@ -14,6 +14,18 @@ var api = require('../../lib/models/api.js');
 
 describe('api.js unit test', function () {
   describe('createClient', function () {
+    it('should not add cookie if it does not exist', function (done) {
+      var testReq = {
+        session: {}
+      };
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.not.exist();
+        done();
+      });
+    });
     it('should add runnable client with cookie', function (done) {
       var testCookie = 'sid:longcookie;';
       var testReq = {
