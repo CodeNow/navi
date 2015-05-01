@@ -125,7 +125,7 @@ describe('proxy to backend server', function () {
       });
       describe('no user mapping', function() {
         before(function(done) {
-          sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields();
+          sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields('error');
           done();
         });
         after(function(done) {
