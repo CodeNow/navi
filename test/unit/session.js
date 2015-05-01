@@ -17,26 +17,26 @@ var redis = require('../../lib/models/redis.js');
 var Session = require('../../lib/models/session.js');
 
 describe('session.js unit test', function () {
-  var session;
   var testToken = '2398475892374';
   var testReq = {
     query: {
       runnableappAccessToken: testToken
     }
   };
-  beforeEach(function(done) {
-    redis.removeAllListeners();
-    session = new Session();
-    done();
-  });
   describe('handle', function () {
+    var session;
+    beforeEach(function(done) {
+      redis.removeAllListeners();
+      session = new Session();
+      done();
+    });
     it('should return session mw', function(done) {
       var sessionMw = session.handle();
       expect(sessionMw).to.exist();
       done();
     });
   });
-  describe('getUserFromToken', function () {
+  describe('getCookieFromToken', function () {
     before(function(done) {
       redis.flushall(done);
     });
@@ -44,7 +44,7 @@ describe('session.js unit test', function () {
       it('should not use if no query', function (done) {
         var req = clone(testReq);
         delete req.query;
-        session.getUserFromToken(req, null, function (err) {
+        Session.getCookieFromToken(req, null, function (err) {
           expect(err).to.not.exist();
           done();
         });
@@ -52,7 +52,7 @@ describe('session.js unit test', function () {
       it('should not use if no token', function (done) {
         var req = clone(testReq);
         delete req.query.runnableappAccessToken;
-        session.getUserFromToken(req, null, function (err) {
+        Session.getCookieFromToken(req, null, function (err) {
           expect(err).to.not.exist();
           done();
         });
@@ -61,14 +61,14 @@ describe('session.js unit test', function () {
     it('should next with error if redis failed', function(done) {
       var testErr = 'some err';
       sinon.stub(redis, 'lpop').yields(testErr);
-      session.getUserFromToken(testReq, null, function(err) {
+      Session.getCookieFromToken(testReq, null, function(err) {
         expect(err).to.equal(testErr);
         redis.lpop.restore();
         done();
       });
     });
     it('should not set session if no redis key exist', function(done) {
-      session.getUserFromToken(testReq, null, function() {
+      Session.getCookieFromToken(testReq, null, function() {
         expect(testReq.session).to.not.exist();
         done();
       });
@@ -81,11 +81,11 @@ describe('session.js unit test', function () {
       afterEach(function(done) {
         redis.flushall(done);
       });
-      it('should set session if redis key exist', function(done) {
+      it('should set apiCookie if redis key exist', function(done) {
         var req = JSON.parse(JSON.stringify(testReq));
         req.session = {};
-        session.getUserFromToken(req, null, function() {
-          expect(req.session.userId).to.equal(testUserId);
+        Session.getCookieFromToken(req, null, function() {
+          expect(req.session.apiCookie).to.equal(testUserId);
           done();
         });
       });

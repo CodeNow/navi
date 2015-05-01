@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/CodeNow/navi",
   "dependencies": {
-    "101": "^0.14.0",
+    "101": "^0.14.1",
     "auto-debug": "^1.0.1",
     "boom": "^2.6.1",
     "connect-redis": "^2.2.0",

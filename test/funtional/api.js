@@ -29,15 +29,7 @@ describe('proxy to backend server', function () {
    testServer = TestServer.create(testPort, testIp, testText, done);
   });
   before(function (done) {
-    sinon.stub(Runnable.prototype, 'githubLogin').yields();
-    done();
-  });
-  before(function (done) {
     redis.flushall(done);
-  });
-  after(function (done) {
-    Runnable.prototype.githubLogin.restore();
-    done();
   });
   beforeEach(function (done) {
     redis.removeAllListeners();
@@ -51,6 +43,21 @@ describe('proxy to backend server', function () {
     testServer.close(done);
   });
   describe('not logged in', function () {
+    before(function(done) {
+      sinon.stub(Runnable.prototype, 'fetch').yields({
+        output: {
+          statusCode: 401
+        },
+        data: {
+          error: 'Unauthorized'
+        }
+       });
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.fetch.restore();
+      done();
+    });
     it('should redirect to api', function (done) {
       request({
         followRedirect: false,
@@ -61,8 +68,6 @@ describe('proxy to backend server', function () {
         done();
       });
     });
-  });
-  describe('with token in header', function () {
     it('should redirect to api if token does not exist in db', function (done) {
       request({
         followRedirect: false,
@@ -76,35 +81,118 @@ describe('proxy to backend server', function () {
         done();
       });
     });
-    describe('with valid user id', function () {
-      var testUserId = '2834750923457';
+  });
+  describe('logged in', function () {
+    before(function(done) {
+      sinon.stub(Runnable.prototype, 'fetch').yields();
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.fetch.restore();
+      done();
+    });
+    describe('with token in header', function () {
+      var testCookie = 'session-id=2938457;';
       var testToken  = '9438569827345';
       before(function (done) {
-        sinon.stub(Runnable.prototype, 'fetchBackendForUrlWithUser')
-          .yields(null, testUrl);
         done();
       });
       beforeEach(function(done) {
-        redis.lpush(testToken, testUserId, done);
+        redis.lpush(testToken, testCookie, done);
       });
       afterEach(function(done) {
         redis.flushall(done);
       });
       after(function (done) {
-        Runnable.prototype.fetchBackendForUrlWithUser.restore();
         done();
       });
-      it('should redirect to correct server', function (done) {
-        request({
-          qs: {
-            runnableappAccessToken: testToken
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res, body) {
-          if (err) { return done(err); }
-          expect(body).to.equal(testText);
-          expect(res.statusCode).to.equal(200);
+      describe('valid user mapping', function() {
+        it('should redirect to correct server', function (done) {
+          sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields(null, testUrl);
+          request({
+            qs: {
+              runnableappAccessToken: testToken
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res, body) {
+            if (err) { return done(err); }
+            expect(body).to.equal(testText);
+            expect(res.statusCode).to.equal(200);
+            Runnable.prototype.getBackendFromUserMapping.restore();
+            done();
+          });
+        });
+      });
+      describe('no user mapping', function() {
+        before(function(done) {
+          sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields();
           done();
+        });
+        after(function(done) {
+          Runnable.prototype.getBackendFromUserMapping.restore();
+          done();
+        });
+        describe('valid dep mapping', function() {
+          it('should redirect to correct server', function (done) {
+            sinon.stub(Runnable.prototype, 'fetchBackendForUrl').yields(null, testUrl);
+            request({
+              qs: {
+                runnableappAccessToken: testToken
+              },
+              url: 'http://localhost:'+process.env.HTTP_PORT
+            }, function (err, res, body) {
+              if (err) { return done(err); }
+              expect(body).to.equal(testText);
+              expect(res.statusCode).to.equal(200);
+              Runnable.prototype.fetchBackendForUrl.restore();
+              done();
+            });
+          });
+          describe('no dep mapping', function() {
+            before(function(done) {
+              sinon.stub(Runnable.prototype, 'fetchBackendForUrl').yields();
+              done();
+            });
+            after(function(done) {
+              Runnable.prototype.fetchBackendForUrl.restore();
+              done();
+            });
+            it('should redir to box selection if not direct url', function (done) {
+              sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
+                statusCode: 404
+              });
+              request({
+                followRedirect: false,
+                qs: {
+                  runnableappAccessToken: testToken
+                },
+                url: 'http://localhost:'+process.env.HTTP_PORT
+              }, function (err, res) {
+                if (err) { return done(err); }
+                expect(res.statusCode).to.equal(301);
+                Runnable.prototype.checkAndSetIfDirectUrl.restore();
+                done();
+              });
+            });
+            it('should redir to self if box direct-url', function (done) {
+              sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
+                statusCode: 200
+              });
+              request({
+                followRedirect: false,
+                qs: {
+                  runnableappAccessToken: testToken
+                },
+                url: 'http://localhost:'+process.env.HTTP_PORT
+              }, function (err, res) {
+                if (err) { return done(err); }
+                expect(res.headers.location).to.equal('http://localhost:'+process.env.HTTP_PORT);
+                expect(res.statusCode).to.equal(301);
+                Runnable.prototype.checkAndSetIfDirectUrl.restore();
+                done();
+              });
+            });
+          });
         });
       });
     });

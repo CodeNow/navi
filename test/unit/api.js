@@ -6,8 +6,6 @@ var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
 var afterEach = lab.afterEach;
-var beforeEach = beforeEach;
-var afterEach  = afterEach;
 var expect = require('code').expect;
 
 var sinon = require('sinon');
@@ -15,234 +13,266 @@ var sinon = require('sinon');
 var api = require('../../lib/models/api.js');
 
 describe('api.js unit test', function () {
-  describe('login', function () {
-    it('should login to github', function(done) {
-      sinon.stub(api.client, 'githubLogin').yields();
-      api.login(function() {
-        expect(api.client.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        api.client.githubLogin.restore();
+  describe('createClient', function () {
+    it('should add runnable client with cookie', function (done) {
+      var testCookie = 'sid:longcookie;';
+      var testReq = {
+        session: {
+          apiCookie: testCookie
+        }
+      };
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.equal(testCookie);
         done();
       });
     });
   });
-  describe('redirectIfNoUserId', function () {
-    var redirectIfNoUserId;
-    beforeEach(function(done) {
-      redirectIfNoUserId = api.redirectIfNoUserId();
-      done();
-    });
-    it('should call api redirectForAuth when userId not set', function(done) {
-      var testRedir = 'http://runnable.com:80';
-      var testReq = {
-        headers: {
-          host: 'runnable.com'
-        },
-        session: {}
+  describe('with logged in user', function() {
+    var hostName = 'localhost';
+    var port = ':1234';
+    var host = hostName + port;
+    var testReq = {
+      headers: {
+        host: host
+      }
+    };
+    beforeEach(function (done) {
+      testReq.session = {
+        apiCookie: 'cookie'
       };
-      var testRes = 'some res';
-      sinon.stub(api.client, 'redirectForAuth').returns();
-
-      redirectIfNoUserId(testReq, testRes);
-      expect(api.client.redirectForAuth.calledWith(testRedir, testRes)).to.be.true();
-      api.client.redirectForAuth.restore();
-      done();
+      api.createClient(testReq, {}, done);
     });
-    it('should next if session includes userId', function(done) {
-      redirectIfNoUserId({
-        session: {
-          userId: 'someId'
-        }
-      }, null, done);
-    });
-  });
-  describe('checkForDirectUrl', function () {
-    it('should redirect to self after successful mapping', function(done) {
-      var testRedir = 'http://runnable.com:80';
-      var testId = 'someId';
-      var testReq = {
-        headers: {
-          host: 'runnable.com'
-        },
-        session: {
-          userId: testId
-        }
-      };
-      var testRes = {
-        redirect: function (code, url) {
-          expect(code).to.equal(301);
-          expect(url).to.equal(testRedir);
-          done();
-        }
-      };
-      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(null, {
-        statusCode: 200
+    describe('redirectIfNotLoggedIn', function () {
+      beforeEach(function (done) {
+        sinon.stub(testReq.apiClient, 'fetch');
+        done();
       });
-
-      var testMw = api.checkForDirectUrl();
-      testMw(testReq, testRes);
-
-      expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
-        .to.be.true();
-      api.client.checkAndSetIfDirectUrl.restore();
+      afterEach(function (done) {
+        testReq.apiClient.fetch.restore();
+        done();
+      });
+      it('should next if 500 error', function (done) {
+        var testErr = {
+          output: {
+            statusCode: 500
+          },
+          data: 'dude this just happed'
+        };
+        testReq.apiClient.fetch.yields(testErr);
+        api.redirectIfNotLoggedIn(testReq, {}, function (err) {
+          expect(err).to.equal(testErr);
+          done();
+        });
+      });
+      it('should redir if no logged in', function (done) {
+        var testErr = {
+          output: {
+            statusCode: 401
+          },
+          data: {
+            error: 'Unauthorized'
+          }
+        };
+        var testRes = 'that res';
+        testReq.apiClient.fetch.yields(testErr);
+        sinon.stub(testReq.apiClient, 'redirectForAuth').returns();
+        api.redirectIfNotLoggedIn(testReq, testRes, function () {
+          done(new Error('should not get called'));
+        });
+        expect(testReq.apiClient.redirectForAuth
+          .calledWith('http://'+host, testRes)).to.be.true();
+        testReq.apiClient.redirectForAuth.restore();
+        done();
+      });
+      it('should next if logged in', function (done) {
+        testReq.apiClient.fetch.yields();
+        api.redirectIfNotLoggedIn(testReq, {}, done);
+      });
     });
-    it('should next err if checkAndSetIfDirectUrl had error', function(done) {
-      var testErr = 'error';
-      var testRedir = 'http://runnable.com:80';
-      var testId = 'someId';
-      var testReq = {
-        headers: {
-          host: 'runnable.com'
-        },
-        session: {
-          userId: testId
-        }
-      };
-      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(testErr);
+    describe('checkForDirectUrl', function () {
+      it('should redirect to self after successful mapping', function (done) {
+        var testRes = {
+          redirect: function (code, url) {
+            expect(code).to.equal(301);
+            expect(url).to.equal('http://'+host);
+            done();
+          }
+        };
+        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+          statusCode: 200
+        });
 
-      var testMw = api.checkForDirectUrl();
-      testMw(testReq, null, function (err) {
-        expect(err).to.equal(testErr);
-        expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
+        api.checkForDirectUrl(testReq, testRes);
+
+        expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
           .to.be.true();
-        api.client.checkAndSetIfDirectUrl.restore();
+        testReq.apiClient.checkAndSetIfDirectUrl.restore();
+      });
+      it('should next err if checkAndSetIfDirectUrl had error', function (done) {
+        var testErr = 'error';
+        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
+
+        api.checkForDirectUrl(testReq, null, function (err) {
+          expect(err).to.equal(testErr);
+          expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+            .to.be.true();
+          testReq.apiClient.checkAndSetIfDirectUrl.restore();
+          done();
+        });
+      });
+      it('should redirect to box selection if checkAndSetIfDirectUrl 404', function (done) {
+        var testRes = 'testres';
+        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+          statusCode: 404
+        });
+        sinon.stub(testReq.apiClient, 'redirectToBoxSelection').returns();
+
+        api.checkForDirectUrl(testReq, testRes);
+        expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+          .to.be.true();
+        expect(testReq.apiClient.redirectToBoxSelection.calledWith('http://'+host, testRes))
+          .to.be.true();
+        testReq.apiClient.checkAndSetIfDirectUrl.restore();
+        testReq.apiClient.redirectToBoxSelection.restore();
         done();
       });
     });
-    it('should redirect to box selection if checkAndSetIfDirectUrl 404', function(done) {
-      var testRedir = 'http://runnable.com:80';
-      var testId = 'someId';
-      var testReq = {
-        headers: {
-          host: 'runnable.com'
-        },
-        session: {
-          userId: testId
-        }
-      };
-      var testRes = 'testres';
-      sinon.stub(api.client, 'checkAndSetIfDirectUrl').yields(null, {
-        statusCode: 404
+    describe('getBackendFromUserMapping', function () {
+      beforeEach(function (done) {
+        sinon.stub(testReq.apiClient, 'getBackendFromUserMapping');
+        done();
       });
-      sinon.stub(api.client, 'redirectToBoxSelection').returns();
-
-      var testMw = api.checkForDirectUrl();
-      testMw(testReq, testRes);
-      expect(api.client.checkAndSetIfDirectUrl.calledWith(testRedir))
-        .to.be.true();
-      expect(api.client.redirectToBoxSelection.calledWith(testRedir, testRes))
-        .to.be.true();
-      api.client.checkAndSetIfDirectUrl.restore();
-      api.client.redirectToBoxSelection.restore();
-      done();
-    });
-  });
-  describe('getHost', function () {
-    var testBackend = 'testBackend';
-    var testId = 'someId';
-    beforeEach(function(done) {
-      sinon.stub(api.client, 'fetchBackendForUrlWithUser').yields(null, testBackend);
-      done();
-    });
-    afterEach(function(done) {
-      api.client.fetchBackendForUrlWithUser.restore();
-      done();
-    });
-    describe('no referer', function() {
-      it('should get backend', function(done) {
-        var hostName = 'localhost';
-        var host = hostName + ':1234';
-        var testArgs = {
-          headers: {
-            host: host
-          },
-          session: {
-            userId: testId
-          }
-        };
-        api.getHost(testArgs, function(err, backend) {
-          if (err) { return done(err); }
-          expect(api.client.fetchBackendForUrlWithUser
-            .calledWith(testId, 'http://'+host, undefined)).to.be.true();
-          expect(backend).to.equal(testBackend);
+      afterEach(function (done) {
+        testReq.apiClient.getBackendFromUserMapping.restore();
+        done();
+      });
+      it('should error if getBackendFromUserMapping error', function(done) {
+        var testErr = 'robots attacked';
+        testReq.apiClient.getBackendFromUserMapping.yields(testErr);
+        api.getBackendFromUserMapping(testReq, {}, function (err) {
+          expect(err).to.equal(testErr);
+        });
+        done();
+      });
+      describe('with valid backend', function() {
+        var testHost = 'can.com';
+        beforeEach(function(done) {
+          testReq.apiClient.getBackendFromUserMapping.yields(null, testHost);
           done();
         });
-      });
-      it('should add 80 to host', function(done) {
-        var host = 'localhost';
-        var testArgs = {
-          headers: {
-            host: host
-          },
-          session: {
-            userId: testId
-          }
-        };
-        api.getHost(testArgs, function() {
-          expect(api.client.fetchBackendForUrlWithUser
-            .calledWith(testId, 'http://'+host+':80', undefined)).to.be.true();
-          done();
+        it('should get backend', function (done) {
+          api.getBackendFromUserMapping(testReq, {}, function (err) {
+            if (err) { return done(err); }
+            expect(testReq.apiClient.getBackendFromUserMapping
+              .calledWith('http://'+host)).to.be.true();
+            expect(testReq.targetHost).to.equal(testHost);
+            done();
+          });
         });
       });
     });
-    describe('with referer', function() {
-      var testRef = 'someRef';
-      it('should get backend', function(done) {
-        var hostName = 'localhost';
-        var host = hostName + ':1234';
-        var testArgs = {
-          headers: {
-            host: host,
-            referer: testRef
-          },
-          session: {
-            userId: testId
-          }
-        };
-        api.getHost(testArgs, function(err, backend) {
-          if (err) { return done(err); }
-          expect(api.client.fetchBackendForUrlWithUser
-            .calledWith(testId, 'http://'+host, testRef)).to.be.true();
-          expect(backend).to.equal(testBackend);
+    describe('getBackendFromDeps', function () {
+      beforeEach(function (done) {
+        sinon.stub(testReq.apiClient, 'fetchBackendForUrl');
+        done();
+      });
+      afterEach(function (done) {
+        testReq.apiClient.fetchBackendForUrl.restore();
+        done();
+      });
+      it('should error if fetchBackendForUrl error', function(done) {
+        var testErr = 'robots attacked';
+        testReq.apiClient.fetchBackendForUrl.yields(testErr);
+        api.getBackendFromDeps(testReq, {}, function (err) {
+          expect(err).to.equal(testErr);
+        });
+        done();
+      });
+      describe('with valid backend', function() {
+        var testHost = 'can.com';
+        beforeEach(function(done) {
+          testReq.apiClient.fetchBackendForUrl.yields(null, testHost);
           done();
         });
-      });
-      it('should get https backend', function(done) {
-        var hostName = 'localhost';
-        var host = hostName + ':443';
-        var testArgs = {
-          headers: {
-            host: host,
-            referer: testRef
-          },
-          session: {
-            userId: testId
-          }
-        };
-        api.getHost(testArgs, function(err, backend) {
-          if (err) { return done(err); }
-          expect(api.client.fetchBackendForUrlWithUser
-            .calledWith(testId, 'https://'+host, testRef)).to.be.true();
-          expect(backend).to.equal(testBackend);
-          done();
+        describe('no referer', function () {
+          it('should get backend', function (done) {
+            api.getBackendFromDeps(testReq, {}, function (err) {
+              if (err) { return done(err); }
+              expect(testReq.apiClient.fetchBackendForUrl
+                .calledWith('http://'+host, undefined)).to.be.true();
+              expect(testReq.targetHost).to.equal(testHost);
+              done();
+            });
+          });
+          it('should add 80 to host', function (done) {
+            var host = 'localhost';
+            var testArgs = {
+              headers: {
+                host: host
+              },
+              apiClient: testReq.apiClient
+            };
+            api.getBackendFromDeps(testArgs, {}, function () {
+              expect(testArgs.apiClient.fetchBackendForUrl
+                .calledWith('http://'+host+':80', undefined)).to.be.true();
+              done();
+            });
+          });
         });
-      });
-      it('should add 80 to host', function(done) {
-        var host = 'localhost';
-        var testArgs = {
-          headers: {
-            host: host,
-            referer: testRef
-          },
-          session: {
-            userId: testId
-          }
-        };
-        api.getHost(testArgs, function() {
-          expect(api.client.fetchBackendForUrlWithUser
-            .calledWith(testId, 'http://'+host+':80', testRef)).to.be.true();
-          done();
+        describe('with referer', function () {
+          var testRef = 'someRef';
+          it('should get backend', function (done) {
+            var testArgs = {
+              headers: {
+                host: host,
+                referer: testRef
+              },
+              apiClient: testReq.apiClient
+            };
+            api.getBackendFromDeps(testArgs, {}, function (err) {
+              if (err) { return done(err); }
+              expect(testArgs.apiClient.fetchBackendForUrl
+                .calledWith('http://'+host, testRef)).to.be.true();
+              expect(testReq.targetHost).to.equal(testHost);
+              done();
+            });
+          });
+          it('should get https backend', function (done) {
+            var host = 'localhost:443';
+            var testArgs = {
+              headers: {
+                host: host,
+                referer: testRef
+              },
+              apiClient: testReq.apiClient
+            };
+            api.getBackendFromDeps(testArgs, {}, function (err) {
+              if (err) { return done(err); }
+              expect(testArgs.apiClient.fetchBackendForUrl
+                .calledWith('https://'+host, testRef)).to.be.true();
+              expect(testReq.targetHost).to.equal(testHost);
+              done();
+            });
+          });
+          it('should add 80 to host', function (done) {
+            var host = 'localhost';
+            var testArgs = {
+              headers: {
+                host: host,
+                referer: testRef
+              },
+              apiClient: testReq.apiClient
+            };
+            api.getBackendFromDeps(testArgs, {}, function () {
+              expect(testArgs.apiClient.fetchBackendForUrl
+                .calledWith('http://'+host+':80', testRef)).to.be.true();
+              expect(testReq.targetHost).to.equal(testHost);
+              done();
+            });
+          });
         });
       });
     });
