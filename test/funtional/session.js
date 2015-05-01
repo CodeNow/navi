@@ -33,9 +33,9 @@ describe('test sessions', function () {
    testServer = TestServer.create(testPort, testIp, testText, done);
   });
   before(function(done) {
-    sinon.stub(Runnable.prototype, 'fetchBackendForUrl')
+    sinon.stub(Runnable.prototype, 'getBackendFromUserMapping')
       .yields(null, testUrl);
-    sinon.stub(Runnable.prototype, 'githubLogin').yields();
+    sinon.stub(Runnable.prototype, 'fetch').yields();
     done();
   });
   beforeEach(function(done) {
@@ -49,8 +49,8 @@ describe('test sessions', function () {
     testServer.close(done);
   });
   after(function(done) {
-    Runnable.prototype.fetchBackendForUrl.restore();
-    Runnable.prototype.githubLogin.restore();
+    Runnable.prototype.getBackendFromUserMapping.restore();
+    Runnable.prototype.fetch.restore();
     done();
   });
   describe('with active session', function () {
