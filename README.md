@@ -12,9 +12,15 @@ First she checks if the user has offered her a cookie, and if so, send them on t
 if the user does not have a cookie, she looks at where the user came from, then asks her friend API, where to send this user
 When API tells her where to send the user Navi tells the user to give her a cookie next time and sends the user in the right direction.
 
-rules:
-- always use error.create for ALL errors, never ever `new Error()`
-- maintain 100% test coverage, yes, that includes all error cases.
-- follow OOP (yea you know me)
+## Logic Flowchart
 
 ![alt tag](docs/navi-flow.jpg)
+
+
+## Contributing
+
+- Always use error.create for ALL errors, never ever `new Error()`. Using a
+  factory method allows us to perform additional tasks upon error creation,
+  e.g. monitoring the event in datadog, etc.
+- Maintain 100% test coverage, including all error cases.
+- Follow OOP (yea you know me)
