@@ -104,55 +104,7 @@ describe('api.js unit test', function () {
         api.redirectIfNotLoggedIn(testReq, {}, done);
       });
     });
-    describe('checkForDirectUrl', function () {
-      it('should redirect to self after successful mapping', function (done) {
-        var testRes = {
-          redirect: function (code, url) {
-            expect(code).to.equal(301);
-            expect(url).to.equal('http://'+host);
-            done();
-          }
-        };
-        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
-          statusCode: 200
-        });
-
-        api.checkForDirectUrl(testReq, testRes);
-
-        expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-          .to.be.true();
-        testReq.apiClient.checkAndSetIfDirectUrl.restore();
-      });
-      it('should next err if checkAndSetIfDirectUrl had error', function (done) {
-        var testErr = 'error';
-        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
-
-        api.checkForDirectUrl(testReq, null, function (err) {
-          expect(err).to.equal(testErr);
-          expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-            .to.be.true();
-          testReq.apiClient.checkAndSetIfDirectUrl.restore();
-          done();
-        });
-      });
-      it('should redirect to box selection if checkAndSetIfDirectUrl 404', function (done) {
-        var testRes = 'testres';
-        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
-          statusCode: 404
-        });
-        sinon.stub(testReq.apiClient, 'redirectToBoxSelection').returns();
-
-        api.checkForDirectUrl(testReq, testRes);
-        expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-          .to.be.true();
-        expect(testReq.apiClient.redirectToBoxSelection.calledWith('http://'+host, testRes))
-          .to.be.true();
-        testReq.apiClient.checkAndSetIfDirectUrl.restore();
-        testReq.apiClient.redirectToBoxSelection.restore();
-        done();
-      });
-    });
-    describe('getBackendFromUserMapping', function () {
+    describe('getTargetHost', function () {
       beforeEach(function (done) {
         sinon.stub(testReq.apiClient, 'getBackendFromUserMapping');
         done();
@@ -161,22 +113,11 @@ describe('api.js unit test', function () {
         testReq.apiClient.getBackendFromUserMapping.restore();
         done();
       });
-      it('should error if getBackendFromUserMapping error', function(done) {
-        var testErr = 'robots attacked';
-        testReq.apiClient.getBackendFromUserMapping.yields(testErr);
-        api.getBackendFromUserMapping(testReq, {}, function (err) {
-          expect(err).to.equal(testErr);
-        });
-        done();
-      });
-      describe('with valid backend', function() {
+      describe('getBackendFromUserMapping returns host', function () {
         var testHost = 'can.com';
-        beforeEach(function(done) {
-          testReq.apiClient.getBackendFromUserMapping.yields(null, testHost);
-          done();
-        });
         it('should get backend', function (done) {
-          api.getBackendFromUserMapping(testReq, {}, function (err) {
+          testReq.apiClient.getBackendFromUserMapping.yields(null, testHost);
+          api.getTargetHost(testReq, {}, function (err) {
             if (err) { return done(err); }
             expect(testReq.apiClient.getBackendFromUserMapping
               .calledWith('http://'+host)).to.be.true();
@@ -185,103 +126,134 @@ describe('api.js unit test', function () {
           });
         });
       });
-    });
-    describe('getBackendFromDeps', function () {
-      beforeEach(function (done) {
-        sinon.stub(testReq.apiClient, 'fetchBackendForUrl');
-        done();
-      });
-      afterEach(function (done) {
-        testReq.apiClient.fetchBackendForUrl.restore();
-        done();
-      });
-      it('should error if fetchBackendForUrl error', function(done) {
-        var testErr = 'robots attacked';
-        testReq.apiClient.fetchBackendForUrl.yields(testErr);
-        api.getBackendFromDeps(testReq, {}, function (err) {
-          expect(err).to.equal(testErr);
-        });
-        done();
-      });
-      describe('with valid backend', function() {
-        var testHost = 'can.com';
+      describe('getBackendFromUserMapping returns error', function() {
         beforeEach(function(done) {
-          testReq.apiClient.fetchBackendForUrl.yields(null, testHost);
+          testReq.apiClient.getBackendFromUserMapping.yields('some err');
+          sinon.stub(testReq.apiClient, 'fetchBackendForUrl');
           done();
         });
-        describe('no referer', function () {
-          it('should get backend', function (done) {
-            api.getBackendFromDeps(testReq, {}, function (err) {
-              if (err) { return done(err); }
-              expect(testReq.apiClient.fetchBackendForUrl
-                .calledWith('http://'+host, undefined)).to.be.true();
-              expect(testReq.targetHost).to.equal(testHost);
-              done();
+        afterEach(function (done) {
+          testReq.apiClient.fetchBackendForUrl.restore();
+          done();
+        });
+        describe('getBackendFromDeps returns host', function () {
+          var testHost = 'can.com';
+          beforeEach(function(done) {
+            testReq.apiClient.fetchBackendForUrl.yields(null, testHost);
+            done();
+          });
+          describe('no referer', function () {
+            it('should get backend', function (done) {
+              api.getTargetHost(testReq, {}, function (err) {
+                if (err) { return done(err); }
+                expect(testReq.apiClient.fetchBackendForUrl
+                  .calledWith('http://'+host, undefined)).to.be.true();
+                expect(testReq.targetHost).to.equal(testHost);
+                done();
+              });
+            });
+            it('should add 80 to host', function (done) {
+              var host = 'localhost';
+              var testArgs = {
+                headers: {
+                  host: host
+                },
+                apiClient: testReq.apiClient
+              };
+              api.getTargetHost(testArgs, {}, function () {
+                expect(testArgs.apiClient.fetchBackendForUrl
+                  .calledWith('http://'+host+':80', undefined)).to.be.true();
+                done();
+              });
             });
           });
-          it('should add 80 to host', function (done) {
-            var host = 'localhost';
-            var testArgs = {
-              headers: {
-                host: host
-              },
-              apiClient: testReq.apiClient
-            };
-            api.getBackendFromDeps(testArgs, {}, function () {
-              expect(testArgs.apiClient.fetchBackendForUrl
-                .calledWith('http://'+host+':80', undefined)).to.be.true();
-              done();
+          describe('with referer', function () {
+            var testRef = 'someRef';
+            it('should get backend', function (done) {
+              var testArgs = {
+                headers: {
+                  host: host,
+                  referer: testRef
+                },
+                apiClient: testReq.apiClient
+              };
+              api.getTargetHost(testArgs, {}, function (err) {
+                if (err) { return done(err); }
+                expect(testArgs.apiClient.fetchBackendForUrl
+                  .calledWith('http://'+host, testRef)).to.be.true();
+                expect(testArgs.targetHost).to.equal(testHost);
+                done();
+              });
+            });
+            it('should get https backend', function (done) {
+              var host = 'localhost:443';
+              var testArgs = {
+                headers: {
+                  host: host,
+                  referer: testRef
+                },
+                apiClient: testReq.apiClient
+              };
+              api.getTargetHost(testArgs, {}, function (err) {
+                if (err) { return done(err); }
+                expect(testArgs.apiClient.fetchBackendForUrl
+                  .calledWith('https://'+host, testRef)).to.be.true();
+                expect(testArgs.targetHost).to.equal(testHost);
+                done();
+              });
             });
           });
         });
-        describe('with referer', function () {
-          var testRef = 'someRef';
-          it('should get backend', function (done) {
-            var testArgs = {
-              headers: {
-                host: host,
-                referer: testRef
-              },
-              apiClient: testReq.apiClient
-            };
-            api.getBackendFromDeps(testArgs, {}, function (err) {
-              if (err) { return done(err); }
-              expect(testArgs.apiClient.fetchBackendForUrl
-                .calledWith('http://'+host, testRef)).to.be.true();
-              expect(testReq.targetHost).to.equal(testHost);
-              done();
-            });
+        describe('getBackendFromDeps returns error', function () {
+          beforeEach(function(done) {
+            testReq.apiClient.fetchBackendForUrl.yields('robots attack');
+            done();
           });
-          it('should get https backend', function (done) {
-            var host = 'localhost:443';
-            var testArgs = {
-              headers: {
-                host: host,
-                referer: testRef
-              },
-              apiClient: testReq.apiClient
-            };
-            api.getBackendFromDeps(testArgs, {}, function (err) {
-              if (err) { return done(err); }
-              expect(testArgs.apiClient.fetchBackendForUrl
-                .calledWith('https://'+host, testRef)).to.be.true();
-              expect(testReq.targetHost).to.equal(testHost);
-              done();
+          describe('checkAndSetIfDirectUrl', function () {
+            it('should redirect to self after successful mapping', function (done) {
+              var testRes = {
+                redirect: function (code, url) {
+                  expect(code).to.equal(301);
+                  expect(url).to.equal('http://'+host);
+                  done();
+                }
+              };
+              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+                statusCode: 200
+              });
+
+              api.getTargetHost(testReq, testRes);
+
+              expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+                .to.be.true();
+              testReq.apiClient.checkAndSetIfDirectUrl.restore();
             });
-          });
-          it('should add 80 to host', function (done) {
-            var host = 'localhost';
-            var testArgs = {
-              headers: {
-                host: host,
-                referer: testRef
-              },
-              apiClient: testReq.apiClient
-            };
-            api.getBackendFromDeps(testArgs, {}, function () {
-              expect(testArgs.apiClient.fetchBackendForUrl
-                .calledWith('http://'+host+':80', testRef)).to.be.true();
-              expect(testReq.targetHost).to.equal(testHost);
+            it('should next err if checkAndSetIfDirectUrl had error', function (done) {
+              var testErr = 'error';
+              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
+
+              api.getTargetHost(testReq, null, function (err) {
+                expect(err).to.equal(testErr);
+                expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+                  .to.be.true();
+                testReq.apiClient.checkAndSetIfDirectUrl.restore();
+                done();
+              });
+            });
+            it('should redirect to box selection if checkAndSetIfDirectUrl 404', function (done) {
+              var testRes = 'testres';
+              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+                statusCode: 404
+              });
+              sinon.stub(testReq.apiClient, 'redirectToBoxSelection').returns();
+
+              api.getTargetHost(testReq, testRes);
+              expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+                .to.be.true();
+              expect(testReq.apiClient.redirectToBoxSelection.calledWith('http://'+host, testRes))
+                .to.be.true();
+              testReq.apiClient.checkAndSetIfDirectUrl.restore();
+              testReq.apiClient.redirectToBoxSelection.restore();
               done();
             });
           });
