@@ -43,17 +43,28 @@ describe('proxy.js unit test', function () {
       testMw(testReq, testRes);
     });
   });
-  describe('wsRequestHandler', function () {
-    it('should return middleware', function(done) {
-      var test = proxyServer.wsRequestHandler();
-      expect(test).to.exist();
-      done();
+  describe('proxyWsIfTargetHostExist', function () {
+    it('should destroy socket if no host and port', function(done) {
+      proxyServer.proxyWsIfTargetHostExist({}, {
+        destroy: done
+      });
     });
-    it('should should proxy mw', function(done) {
-     sinon.stub(proxyServer.proxy, 'ws');
-      var test = proxyServer.wsRequestHandler();
-      test();
-      expect(proxyServer.proxy.ws.calledOnce).to.be.true();
+    it('should proxy if host', function(done) {
+      sinon.stub(proxyServer.proxy, 'ws');
+      var testHostname = 'coolhost';
+      var testPort = '1244';
+      var testReq = {
+        targetHost: 'ws://' + testHostname + ':' + testPort
+      };
+      var testSocket = 'somesock';
+      var testHead = 'someoneshead';
+      proxyServer.proxyWsIfTargetHostExist(testReq, testSocket, testHead);
+      expect(proxyServer.proxy.ws.calledWith(testReq, testSocket, testHead, {
+        target: {
+          host: testHostname,
+          port: testPort
+        }
+      })).to.be.true();
       proxyServer.proxy.ws.restore();
       done();
     });

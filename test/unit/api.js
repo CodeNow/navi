@@ -204,60 +204,82 @@ describe('api.js unit test', function () {
             });
           });
         });
-        describe('getBackendFromDeps returns error', function () {
-          beforeEach(function(done) {
-            testReq.apiClient.fetchBackendForUrl.yields('robots attack');
-            done();
-          });
-          describe('checkAndSetIfDirectUrl', function () {
-            it('should redirect to self after successful mapping', function (done) {
-              var testRes = {
-                redirect: function (code, url) {
-                  expect(code).to.equal(301);
-                  expect(url).to.equal('http://'+host);
-                  done();
-                }
-              };
-              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
-                statusCode: 200
-              });
-
-              api.getTargetHost(testReq, testRes);
-
-              expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-                .to.be.true();
-              testReq.apiClient.checkAndSetIfDirectUrl.restore();
-            });
-            it('should next err if checkAndSetIfDirectUrl had error', function (done) {
-              var testErr = 'error';
-              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
-
-              api.getTargetHost(testReq, null, function (err) {
-                expect(err).to.equal(testErr);
-                expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-                  .to.be.true();
-                testReq.apiClient.checkAndSetIfDirectUrl.restore();
-                done();
-              });
-            });
-            it('should redirect to box selection if checkAndSetIfDirectUrl 404', function (done) {
-              var testRes = 'testres';
-              sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
-                statusCode: 404
-              });
-              sinon.stub(testReq.apiClient, 'redirectToBoxSelection').returns();
-
-              api.getTargetHost(testReq, testRes);
-              expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
-                .to.be.true();
-              expect(testReq.apiClient.redirectToBoxSelection.calledWith('http://'+host, testRes))
-                .to.be.true();
-              testReq.apiClient.checkAndSetIfDirectUrl.restore();
-              testReq.apiClient.redirectToBoxSelection.restore();
-              done();
-            });
-          });
+      });
+    });
+    describe('checkAndSetIfDirectUrl', function () {
+      it('should just next if target already found', function (done) {
+        var req = {
+          targetHost: 'coolhostbro',
+          apiClient: testReq.apiClient
+        };
+        api.handleDirectUrl(req, {}, function (err) {
+          expect(err).to.not.exist();
+          done();
         });
+      });
+      it('should redirect to self after successful mapping', function (done) {
+        var req = {
+          headers: {
+            host: host
+          },
+          apiClient: testReq.apiClient
+        };
+        var testRes = {
+          redirect: function (code, url) {
+            expect(code).to.equal(301);
+            expect(url).to.equal('http://'+host);
+            done();
+          }
+        };
+        sinon.stub(testReq.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+          statusCode: 200
+        });
+
+        api.handleDirectUrl(req, testRes);
+
+        expect(testReq.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+          .to.be.true();
+        testReq.apiClient.checkAndSetIfDirectUrl.restore();
+      });
+      it('should next err if checkAndSetIfDirectUrl had error', function (done) {
+        var testErr = 'error';
+        var req = {
+          headers: {
+            host: host
+          },
+          apiClient: testReq.apiClient
+        };
+        sinon.stub(req.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
+
+        api.handleDirectUrl(req, null, function (err) {
+          expect(err).to.equal(testErr);
+          expect(req.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+            .to.be.true();
+          req.apiClient.checkAndSetIfDirectUrl.restore();
+          done();
+        });
+      });
+      it('should redirect to box selection if checkAndSetIfDirectUrl 404', function (done) {
+        var testRes = 'testres';
+        var req = {
+          headers: {
+            host: host
+          },
+          apiClient: testReq.apiClient
+        };
+        sinon.stub(req.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
+          statusCode: 404
+        });
+        sinon.stub(req.apiClient, 'redirectToBoxSelection').returns();
+
+        api.handleDirectUrl(req, testRes);
+        expect(req.apiClient.checkAndSetIfDirectUrl.calledWith('http://'+host))
+          .to.be.true();
+        expect(req.apiClient.redirectToBoxSelection.calledWith('http://'+host, testRes))
+          .to.be.true();
+        req.apiClient.checkAndSetIfDirectUrl.restore();
+        req.apiClient.redirectToBoxSelection.restore();
+        done();
       });
     });
   });

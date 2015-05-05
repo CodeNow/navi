@@ -44,4 +44,15 @@ describe('server.js unit test', function () {
       });
     });
   });
+  describe('stop', function () {
+    it('should close http server', function(done) {
+      sinon.stub(ctx.proxyServer.server, 'close').yields();
+      ctx.proxyServer.stop(function(err) {
+        if (err) { return done(err); }
+        expect(ctx.proxyServer.server.close.calledOnce).to.be.true();
+        ctx.proxyServer.server.close.restore();
+        done();
+      });
+    });
+  });
 });
