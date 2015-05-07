@@ -13,6 +13,55 @@ var sinon = require('sinon');
 var api = require('../../lib/models/api.js');
 
 describe('api.js unit test', function () {
+  describe('_getUrlFromRequest', function() {
+    var base = 'repo-staging-codenow.runnableapp.com';
+    var result = 'http://repo-staging-codenow.runnableapp.com:80';
+    it('should add 80', function(done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: base
+        }
+      });
+      expect(test).to.equal(result);
+      done();
+    });
+    it('should add https', function(done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: base+':443'
+        }
+      });
+      expect(test).to.equal('https://'+ base +':443');
+      done();
+    });
+    it('should add 80 to subdomain', function(done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: 'dat.sub.domain.' + base
+        }
+      });
+      expect(test).to.equal(result);
+      done();
+    });
+    it('should add https to subdomain', function(done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: 'dat.sub.domain.' + base + ':443'
+        }
+      });
+      expect(test).to.equal('https://'+ base +':443');
+      done();
+    });
+    it('should be valid for correct hostname', function(done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: base + ':100'
+        }
+      });
+      expect(test).to.equal('http://'+ base +':100');
+      done();
+    });
+  });
   describe('createClient', function () {
     it('should not add cookie if it does not exist', function (done) {
       var testReq = {
