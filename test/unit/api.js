@@ -1,4 +1,5 @@
 'use strict';
+require('loadenv.js');
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
@@ -9,6 +10,7 @@ var afterEach = lab.afterEach;
 var expect = require('code').expect;
 
 var sinon = require('sinon');
+var Runnable = require('runnable');
 
 var api = require('../../lib/models/api.js');
 
@@ -65,7 +67,8 @@ describe('api.js unit test', function () {
   describe('createClient', function () {
     it('should not add cookie if it does not exist', function (done) {
       var testReq = {
-        session: {}
+        session: {},
+        method: 'post'
       };
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
@@ -75,12 +78,31 @@ describe('api.js unit test', function () {
         done();
       });
     });
+    it('should login with super user if options request', function (done) {
+      var testReq = {
+        session: {},
+        method: 'OPTIONS'
+      };
+      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.not.exist();
+        expect(testReq.apiClient.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        Runnable.prototype.githubLogin.restore();
+        done();
+      });
+    });
     it('should add runnable client with cookie', function (done) {
       var testCookie = 'sid:longcookie;';
       var testReq = {
         session: {
           apiCookie: testCookie
-        }
+        },
+        method: 'post'
       };
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
@@ -98,7 +120,8 @@ describe('api.js unit test', function () {
     var testReq = {
       headers: {
         host: host
-      }
+      },
+      method: 'post'
     };
     beforeEach(function (done) {
       testReq.session = {
@@ -207,7 +230,8 @@ describe('api.js unit test', function () {
                 headers: {
                   host: host
                 },
-                apiClient: testReq.apiClient
+                apiClient: testReq.apiClient,
+                method: 'post'
               };
               api.getTargetHost(testArgs, {}, function () {
                 expect(testArgs.apiClient.fetchBackendForUrl
@@ -224,7 +248,8 @@ describe('api.js unit test', function () {
                   host: host,
                   referer: testRef
                 },
-                apiClient: testReq.apiClient
+                apiClient: testReq.apiClient,
+                method: 'post'
               };
               api.getTargetHost(testArgs, {}, function (err) {
                 if (err) { return done(err); }
@@ -241,7 +266,8 @@ describe('api.js unit test', function () {
                   host: host,
                   referer: testRef
                 },
-                apiClient: testReq.apiClient
+                apiClient: testReq.apiClient,
+                method: 'post'
               };
               api.getTargetHost(testArgs, {}, function (err) {
                 if (err) { return done(err); }
@@ -259,7 +285,8 @@ describe('api.js unit test', function () {
       it('should just next if target already found', function (done) {
         var req = {
           targetHost: 'coolhostbro',
-          apiClient: testReq.apiClient
+          apiClient: testReq.apiClient,
+          method: 'post'
         };
         api.handleDirectUrl(req, {}, function (err) {
           expect(err).to.not.exist();
@@ -271,7 +298,8 @@ describe('api.js unit test', function () {
           headers: {
             host: host
           },
-          apiClient: testReq.apiClient
+          apiClient: testReq.apiClient,
+          method: 'post'
         };
         var testRes = {
           redirect: function (code, url) {
@@ -296,7 +324,8 @@ describe('api.js unit test', function () {
           headers: {
             host: host
           },
-          apiClient: testReq.apiClient
+          apiClient: testReq.apiClient,
+          method: 'post'
         };
         sinon.stub(req.apiClient, 'checkAndSetIfDirectUrl').yields(testErr);
 
@@ -314,7 +343,8 @@ describe('api.js unit test', function () {
           headers: {
             host: host
           },
-          apiClient: testReq.apiClient
+          apiClient: testReq.apiClient,
+          method: 'post'
         };
         sinon.stub(req.apiClient, 'checkAndSetIfDirectUrl').yields(null, {
           statusCode: 404

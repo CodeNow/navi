@@ -133,8 +133,15 @@ describe('proxy to backend server', function () {
           done();
         });
         describe('valid dep mapping', function() {
-          it('should redirect to correct server', function (done) {
+          before(function(done) {
             sinon.stub(Runnable.prototype, 'fetchBackendForUrl').yields(null, testUrl);
+            done();
+          });
+          after(function(done) {
+            Runnable.prototype.fetchBackendForUrl.restore();
+            done();
+          });
+          it('should redirect to correct server', function (done) {
             request({
               qs: {
                 runnableappAccessToken: testToken
@@ -144,53 +151,68 @@ describe('proxy to backend server', function () {
               if (err) { return done(err); }
               expect(body).to.equal(testText);
               expect(res.statusCode).to.equal(200);
-              Runnable.prototype.fetchBackendForUrl.restore();
               done();
             });
           });
-          describe('no dep mapping', function() {
-            before(function(done) {
-              sinon.stub(Runnable.prototype, 'fetchBackendForUrl').yields();
+          it('should redirect to correct if options', function (done) {
+            sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
+            request({
+              method: 'OPTIONS',
+              qs: {
+                runnableappAccessToken: testToken
+              },
+              url: 'http://localhost:'+process.env.HTTP_PORT
+            }, function (err, res, body) {
+              if (err) { return done(err); }
+              Runnable.prototype.githubLogin.restore();
+              expect(body).to.equal(testText);
+              expect(res.statusCode).to.equal(200);
               done();
             });
-            after(function(done) {
-              Runnable.prototype.fetchBackendForUrl.restore();
+          });
+        });
+        describe('no dep mapping', function() {
+          before(function(done) {
+            sinon.stub(Runnable.prototype, 'fetchBackendForUrl').yields();
+            done();
+          });
+          after(function(done) {
+            Runnable.prototype.fetchBackendForUrl.restore();
+            done();
+          });
+          it('should redir to box selection if not direct url', function (done) {
+            sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
+              statusCode: 404
+            });
+            request({
+              followRedirect: false,
+              qs: {
+                runnableappAccessToken: testToken
+              },
+              url: 'http://localhost:'+process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) { return done(err); }
+              expect(res.statusCode).to.equal(301);
+              Runnable.prototype.checkAndSetIfDirectUrl.restore();
               done();
             });
-            it('should redir to box selection if not direct url', function (done) {
-              sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
-                statusCode: 404
-              });
-              request({
-                followRedirect: false,
-                qs: {
-                  runnableappAccessToken: testToken
-                },
-                url: 'http://localhost:'+process.env.HTTP_PORT
-              }, function (err, res) {
-                if (err) { return done(err); }
-                expect(res.statusCode).to.equal(301);
-                Runnable.prototype.checkAndSetIfDirectUrl.restore();
-                done();
-              });
+          });
+          it('should redir to self if box direct-url', function (done) {
+            sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
+              statusCode: 200
             });
-            it('should redir to self if box direct-url', function (done) {
-              sinon.stub(Runnable.prototype, 'checkAndSetIfDirectUrl').yields(null, {
-                statusCode: 200
-              });
-              request({
-                followRedirect: false,
-                qs: {
-                  runnableappAccessToken: testToken
-                },
-                url: 'http://localhost:'+process.env.HTTP_PORT
-              }, function (err, res) {
-                if (err) { return done(err); }
-                expect(res.headers.location).to.equal('http://localhost:'+process.env.HTTP_PORT);
-                expect(res.statusCode).to.equal(301);
-                Runnable.prototype.checkAndSetIfDirectUrl.restore();
-                done();
-              });
+            request({
+              followRedirect: false,
+              qs: {
+                runnableappAccessToken: testToken
+              },
+              url: 'http://localhost:'+process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) { return done(err); }
+              expect(res.headers.location).to.equal('http://localhost:'+process.env.HTTP_PORT);
+              expect(res.statusCode).to.equal(301);
+              Runnable.prototype.checkAndSetIfDirectUrl.restore();
+              done();
             });
           });
         });
