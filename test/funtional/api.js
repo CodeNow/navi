@@ -5,6 +5,7 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
+var last = require('101/last');
 var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
@@ -84,7 +85,18 @@ describe('proxy to backend server', function () {
   });
   describe('logged in', function () {
     before(function(done) {
-      sinon.stub(Runnable.prototype, 'fetch').yields();
+      sinon.stub(Runnable.prototype, 'fetch', function () {
+        var cb = last(arguments);
+        this.reset({
+          accounts: {
+            github: {
+              id: 101,
+              username: 'tjmehta'
+            }
+          }
+        });
+        cb(null, this.attrs);
+      });
       done();
     });
     after(function(done) {
@@ -107,8 +119,16 @@ describe('proxy to backend server', function () {
         done();
       });
       describe('valid user mapping', function() {
-        it('should redirect to correct server', function (done) {
+        before(function(done) {
           sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields(null, testUrl);
+          done();
+        });
+        after(function(done) {
+          Runnable.prototype.getBackendFromUserMapping.restore();
+          done();
+        });
+
+        it('should redirect to correct server', function (done) {
           request({
             qs: {
               runnableappAccessToken: testToken
@@ -118,7 +138,6 @@ describe('proxy to backend server', function () {
             if (err) { return done(err); }
             expect(body).to.equal(testText);
             expect(res.statusCode).to.equal(200);
-            Runnable.prototype.getBackendFromUserMapping.restore();
             done();
           });
         });
