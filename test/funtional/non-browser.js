@@ -29,7 +29,9 @@ describe('test non browser request', function () {
   var testServer;
   var app;
   // used to mock getContainerUrl function
-
+  var InstanceMock = {
+    getContainerUrl: function () {}
+  };
   before(function(done) {
     redis.flushall(done);
   });
@@ -43,8 +45,8 @@ describe('test non browser request', function () {
       keypath.set(this, 'attrs.accounts.github.username', 'bear');
       cb();
     });
-    sinon.stub(Runnable.prototype, 'getContainerUrl');
-    sinon.stub(Runnable.prototype, 'newInstance').returnsThis();
+    sinon.stub(InstanceMock, 'getContainerUrl');
+    sinon.stub(Runnable.prototype, 'newInstance').returns(InstanceMock);
     done();
   });
   beforeEach(function(done) {
@@ -59,6 +61,7 @@ describe('test non browser request', function () {
     Runnable.prototype.fetchInstances.restore();
     Runnable.prototype.githubLogin.restore();
     Runnable.prototype.newInstance.restore();
+    InstanceMock.getContainerUrl.restore();
     done();
   });
   after(function(done) {
@@ -67,7 +70,7 @@ describe('test non browser request', function () {
   describe('with valid backend', function () {
     beforeEach(function(done) {
       NaviEntry.prototype.getInstanceName.yields();
-      Runnable.prototype.getContainerUrl.yields(null, testUrl);
+      InstanceMock.getContainerUrl.yields(null, testUrl);
       Runnable.prototype.fetchInstances
         .returns({ models: [1] })
         .yieldsAsync();
