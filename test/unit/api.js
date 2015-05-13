@@ -242,13 +242,13 @@ describe('api.js unit test', function () {
         });
         beforeEach(createNaviEntry);
 
-        describe('for a direct url', function() {
+        describe('for a direct url', function () {
           beforeEach(createDirectReq);
 
           it('should redirect to a master url', expectRedirectToMasterUrl);
         });
 
-        describe('for an elastic url', function() {
+        describe('for an elastic url', function () {
           beforeEach(createElasticReq);
           afterEach(function (done) {
             api._handleElasticUrl.restore();
@@ -317,7 +317,7 @@ describe('api.js unit test', function () {
             it('should error if getInstanceName errors', expectErr);
           });
 
-          describe('fetchInstances 404', function() {
+          describe('fetchInstances 404', function () {
             beforeEach(function (done) {
               ctx.apiClient.fetchInstances
                 .returns({ models: [] })
@@ -380,7 +380,7 @@ describe('api.js unit test', function () {
         done();
       });
 
-      describe('req does not have a referer', function() {
+      describe('req does not have a referer', function () {
         beforeEach(function (done) {
           ctx.refererUrl = null;
           done();
@@ -424,7 +424,22 @@ describe('api.js unit test', function () {
               expect(url).to.equal(ctx.refererUrl);
               return { exists: sinon.stub().yieldsAsync(null, true) };
             });
-
+            var refInstanceId = '000066660000666600006666';
+            ctx.refInstance = createMockInstance({
+              _id: refInstanceId,
+              name: 'instanceName',
+              owner: {
+                id: 101,
+                username: ctx.apiClient.attrs.accounts.github.username
+              }
+            }, 'branch', ctx.refererUrl);
+            ctx.apiClient.fetchRoutes.yieldsAsync(null, [{
+              srcHostname: url.parse(ctx.refererUrl).hostname,
+              destInstanceId: refInstanceId
+            }]);
+            ctx.apiClient.newInstance
+              .withArgs(ctx.refInstance.attrs._id)
+              .returns(ctx.refInstance);
             done();
           });
           afterEach(function (done) {
@@ -446,30 +461,28 @@ describe('api.js unit test', function () {
             it('should callback error', expectErr);
           });
 
+          describe('referer associations errors', function () {
+            beforeEach(function (done) {
+              ctx.err = new Error('boom');
+              ctx.refInstance.fetchDependencies.yieldsAsync(ctx.err);
+              done();
+            });
+
+            it('should callback the error', expectErr);
+          });
+
           describe('referer has no associations', function () {
             beforeEach(function (done) {
-              var refInstanceId = '000066660000666600006666';
-              ctx.refInstance = createMockInstance({
-                _id: refInstanceId,
-                name: 'instanceName',
-                owner: {
-                  id: 101,
-                  username: ctx.apiClient.attrs.accounts.github.username
-                }
-              }, 'branch', ctx.refererUrl);
-              ctx.apiClient.newInstance
-                .withArgs(ctx.refInstance.attrs._id)
-                .returns(ctx.refInstance);
               ctx.refInstance.fetchDependencies.yieldsAsync(null, []);
               done();
             });
 
-            describe('referer has no mapping', function() {
+            describe('referer has no mapping', function () {
 
               descMapping();
             });
 
-            describe('referer has mapping', function() {
+            describe('referer has mapping', function () {
               beforeEach(function (done) {
                 ctx.userMappings = [{
                   srcHostname: url.parse(ctx.refererUrl).hostname,
@@ -482,24 +495,8 @@ describe('api.js unit test', function () {
             });
           });
 
-          describe('referer has associations', function() {
+          describe('referer has associations', function () {
             beforeEach(function (done) {
-              var refInstanceId = '000066660000666600006666';
-              ctx.refInstance = createMockInstance({
-                _id: refInstanceId,
-                name: 'instanceName',
-                owner: {
-                  id: 101,
-                  username: ctx.apiClient.attrs.accounts.github.username
-                }
-              }, 'branch', ctx.refererUrl);
-              ctx.apiClient.fetchRoutes.yieldsAsync(null, [{
-                srcHostname: url.parse(ctx.refererUrl).hostname,
-                destInstanceId: refInstanceId
-              }]);
-              ctx.apiClient.newInstance
-                .withArgs(ctx.refInstance.attrs._id)
-                .returns(ctx.refInstance);
               ctx.assocContainerUrl = 'http://3.3.3.3:3000';
               var assocInstanceId = '000033330000333300003333';
               ctx.assocInstance = createMockInstance({
@@ -526,6 +523,18 @@ describe('api.js unit test', function () {
                   done();
                 });
             });
+
+            describe('fetchInstance errors', function () {
+              beforeEach(function (done) {
+                ctx.err = new Error('boom');
+                ctx.apiClient.fetchInstance
+                  .withArgs(ctx.assocInstance.attrs._id)
+                  .yieldsAsync(ctx.err);
+                done();
+              });
+
+              it('should callback the error', expectErr);
+            });
           });
         });
       });
@@ -533,13 +542,23 @@ describe('api.js unit test', function () {
 
       function descMapping () {
 
-        describe('reqUrl has no mapping', function() {
+        describe('reqUrl has no mapping', function () {
           beforeEach(function (done) {
             ctx.apiClient.fetchRoutes.yieldsAsync(null, ctx.userMappings || []);
             done();
           });
 
           it('should yield masterInstance containerUrl as target url', expectMasterTarget);
+        });
+
+        describe('reqUrl has mapping error', function () {
+          beforeEach(function (done) {
+            ctx.err = new Error('boom');
+            ctx.apiClient.fetchRoutes.yieldsAsync(ctx.err);
+            done();
+          });
+
+          it('should callback the error', expectErr);
         });
 
         describe('reqUrl has mapping', function () {
