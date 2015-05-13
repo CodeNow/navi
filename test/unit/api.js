@@ -13,7 +13,6 @@ var NaviEntry = require('navi-entry');
 var keypather = require('keypather')();
 var sinon = require('sinon');
 var Runnable = require('runnable');
-var last = require('101/last');
 var createMockInstance = require('../fixture/create-mock-instance');
 var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
@@ -159,7 +158,7 @@ describe('api.js unit test', function () {
           },
           data: 'dude this just happed'
         };
-        testReq.apiClient.fetch.yields(testErr);
+        testReq.apiClient.fetch.yieldsAsync(testErr);
         api.redirectIfNotLoggedIn(testReq, {}, function (err) {
           expect(err).to.equal(testErr);
           done();
@@ -176,15 +175,15 @@ describe('api.js unit test', function () {
           }
         };
         var testRes = 'that res';
-        testReq.apiClient.fetch.yields(testErr);
-        sinon.stub(testReq.apiClient, 'redirectForAuth').returns();
+        testReq.apiClient.fetch.yieldsAsync(testErr);
+        sinon.stub(testReq.apiClient, 'redirectForAuth', function (url, res) {
+          expect(url).to.equal('http://'+host);
+          expect(res).to.equal(testRes);
+          done();
+        });
         api.redirectIfNotLoggedIn(testReq, testRes, function () {
           done(new Error('should not get called'));
         });
-        expect(testReq.apiClient.redirectForAuth
-          .calledWith('http://'+host, testRes)).to.be.true();
-        testReq.apiClient.redirectForAuth.restore();
-        done();
       });
 
       it('should next if logged in', function (done) {
@@ -251,27 +250,41 @@ describe('api.js unit test', function () {
 
         describe('for an elastic url', function() {
           beforeEach(createElasticReq);
-          beforeEach(function (done) {
-            ctx.targetHost = 'http://google.com';
-            sinon.stub(api, '_handleElasticUrl').yieldsAsync(null, ctx.targetHost);
-            done();
-          });
           afterEach(function (done) {
             api._handleElasticUrl.restore();
             done();
           });
 
-          it('should call _handleElasticUrl', function (done) {
-            api.getTargetHost(ctx.mockReq, {}, function () {
-              expect(api._handleElasticUrl.calledOnce).to.be.true();
-              expect(api._handleElasticUrl.firstCall.args[0]).to.equal(ctx.apiClient);
-              expect(api._handleElasticUrl.firstCall.args[1])
-                .to.equal('http://'+ctx.mockReq.headers.host);
-              expect(api._handleElasticUrl.firstCall.args[2]).to.equal(undefined); // referer
-              expect(api._handleElasticUrl.firstCall.args[3]).to.equal(ctx.mockInstance);
-              expect(ctx.mockReq.targetHost).to.equal(ctx.targetHost);
+          describe('success', function () {
+            beforeEach(function (done) {
+              ctx.targetHost = 'http://google.com';
+              sinon.stub(api, '_handleElasticUrl').yieldsAsync(null, ctx.targetHost);
               done();
             });
+
+            it('should call _handleElasticUrl', function (done) {
+              api.getTargetHost(ctx.mockReq, {}, function () {
+                expect(api._handleElasticUrl.calledOnce).to.be.true();
+                expect(api._handleElasticUrl.firstCall.args[0]).to.equal(ctx.apiClient);
+                expect(api._handleElasticUrl.firstCall.args[1])
+                  .to.equal('http://'+ctx.mockReq.headers.host);
+                expect(api._handleElasticUrl.firstCall.args[2]).to.equal(undefined); // referer
+                expect(api._handleElasticUrl.firstCall.args[3]).to.equal(ctx.mockInstance);
+                expect(ctx.mockReq.targetHost).to.equal(ctx.targetHost);
+                done();
+              });
+            });
+          });
+
+          describe('error', function () {
+            beforeEach(function (done) {
+              ctx.err = new Error('err');
+              ctx.targetHost = 'http://google.com';
+              sinon.stub(api, '_handleElasticUrl').yieldsAsync(ctx.err);
+              done();
+            });
+
+            it('should call _handleElasticUrl', expectErr);
           });
         });
 
@@ -292,29 +305,58 @@ describe('api.js unit test', function () {
               done();
             });
 
-            it('should error if getInstanceName errors', function (done) {
-              api.getTargetHost(ctx.mockReq, {}, function (err) {
-                expect(err).to.equal(ctx.err);
-                done();
-              });
-            });
+            it('should error if getInstanceName errors', expectErr);
           });
 
           describe('fetchInstances error', function () {
             beforeEach(function (done) {
-              ctx.apiClient.fetchInstances.yields(ctx.err);
+              ctx.apiClient.fetchInstances.yieldsAsync(ctx.err);
+              done();
+            });
+
+            it('should error if getInstanceName errors', expectErr);
+          });
+
+          describe('fetchInstances 404', function() {
+            beforeEach(function (done) {
+              ctx.apiClient.fetchInstances
+                .returns({ models: [] })
+                .yieldsAsync();
               done();
             });
 
             it('should error if getInstanceName errors', function (done) {
               api.getTargetHost(ctx.mockReq, {}, function (err) {
-                expect(err).to.equal(ctx.err);
+                expect(err).to.exist();
+                expect(err.message).to.match(/instance no longer exists/);
                 done();
               });
             });
           });
+
+          describe('_handleDirectUrl err', function () {
+            beforeEach(function (done) {
+              sinon.stub(api, '_handleDirectUrl').yieldsAsync(ctx.err);
+              done();
+            });
+            afterEach(function (done) {
+              api._handleDirectUrl.restore();
+              done();
+            });
+
+            it('should error if _handleDirectUrl errors', expectErr);
+          });
+
         });
       });
+
+
+      function expectErr (done) {
+        api.getTargetHost(ctx.mockReq, {}, function (err) {
+          expect(err).to.equal(ctx.err);
+          done();
+        });
+      }
     });
 
     describe('_handleElasticUrl', function () {
@@ -371,9 +413,6 @@ describe('api.js unit test', function () {
             ctx.refererUrl = 'http://localhost:3000';
             done();
           });
-          afterEach(function (done) {
-            done();
-          });
 
           descMapping();
         });
@@ -393,8 +432,21 @@ describe('api.js unit test', function () {
             done();
           });
 
+          describe('refererEntry exists errors', function () {
+            beforeEach(function (done) {
+              ctx.err = new Error('boom');
+              NaviEntry.createFromUrl.restore();
+              sinon.stub(NaviEntry, 'createFromUrl', function (url) {
+                expect(url).to.equal(ctx.refererUrl);
+                return { exists: sinon.stub().yieldsAsync(ctx.err) };
+              });
+              done();
+            });
+
+            it('should callback error', expectErr);
+          });
+
           describe('referer has no associations', function () {
-            /// TODO: this is not hitting right code path should hit api line 196
             beforeEach(function (done) {
               var refInstanceId = '000066660000666600006666';
               ctx.refInstance = createMockInstance({
@@ -405,20 +457,29 @@ describe('api.js unit test', function () {
                   username: ctx.apiClient.attrs.accounts.github.username
                 }
               }, 'branch', ctx.refererUrl);
-              ctx.apiClient.fetchRoutes.yieldsAsync(null, [{
-                srcHostname: url.parse(ctx.refererUrl).hostname,
-                destInstanceId: refInstanceId
-              }]);
               ctx.apiClient.newInstance
                 .withArgs(ctx.refInstance.attrs._id)
                 .returns(ctx.refInstance);
-
-              ctx.refInstance.fetchDependencies.yields(null, []);
-
+              ctx.refInstance.fetchDependencies.yieldsAsync(null, []);
               done();
             });
 
-            descMapping();
+            describe('referer has no mapping', function() {
+
+              descMapping();
+            });
+
+            describe('referer has mapping', function() {
+              beforeEach(function (done) {
+                ctx.userMappings = [{
+                  srcHostname: url.parse(ctx.refererUrl).hostname,
+                  destInstanceId: ctx.refInstance.attrs._id
+                }];
+                done();
+              });
+
+              descMapping();
+            });
           });
 
           describe('referer has associations', function() {
@@ -449,7 +510,7 @@ describe('api.js unit test', function () {
                   username: ctx.apiClient.attrs.accounts.github.username
                 }
               }, 'branch', ctx.assocContainerUrl);
-              ctx.refInstance.fetchDependencies.yields(null, [{ _id: assocInstanceId }]);
+              ctx.refInstance.fetchDependencies.yieldsAsync(null, [{ _id: assocInstanceId }]);
               ctx.apiClient.fetchInstance
                 .withArgs(assocInstanceId)
                 .returns(ctx.assocInstance).yieldsAsync();
@@ -474,7 +535,7 @@ describe('api.js unit test', function () {
 
         describe('reqUrl has no mapping', function() {
           beforeEach(function (done) {
-            ctx.apiClient.fetchRoutes.yieldsAsync(null, []);
+            ctx.apiClient.fetchRoutes.yieldsAsync(null, ctx.userMappings || []);
             done();
           });
 
@@ -493,32 +554,22 @@ describe('api.js unit test', function () {
                 username: ctx.apiClient.attrs.accounts.github.username
               }
             }, 'branch', ctx.destContainerUrl);
-            ctx.apiClient.fetchRoutes.yieldsAsync(null, [{
+            ctx.userMappings = ctx.userMappings || [];
+            ctx.userMappings.push({
               srcHostname: url.parse(ctx.elasticUrl).hostname,
               destInstanceId: destInstanceId
-            }]);
+            });
+            ctx.apiClient.fetchRoutes.yieldsAsync(null, ctx.userMappings);
             ctx.apiClient.fetchInstance
               .withArgs(ctx.destInstance.attrs._id)
               .returns(ctx.destInstance).yieldsAsync();
             done();
           });
 
-          it('should yield the mapping instance containerUrl', function (done) {
-            api._handleElasticUrl(
-              ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-              function (err, targetUrl) {
-                if (err) { return done(err); }
-                expect(targetUrl).to.equal(ctx.destContainerUrl);
-                done();
-              });
-          });
+          it('should yield the mapping instance containerUrl', expectMappingTarget);
         });
       }
       function expectMasterTarget (done) {
-        ctx.apiClient.newInstance = function (instance) {
-          expect(instance._id).to.equal(ctx.mockInstance.attrs._id);
-          return ctx.mockInstance;
-        };
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
           function (err, targetUrl) {
@@ -528,15 +579,19 @@ describe('api.js unit test', function () {
           });
       }
       function expectMappingTarget (done) {
-        ctx.apiClient.newInstance = function (instance) {
-          expect(instance._id).to.equal(ctx.mockInstance.attrs._id);
-          return ctx.mockInstance;
-        };
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
           function (err, targetUrl) {
             if (err) { return done(err); }
-            expect(targetUrl).to.equal(ctx.containerUrl);
+            expect(targetUrl).to.equal(ctx.destContainerUrl);
+            done();
+          });
+      }
+      function expectErr (done) {
+        api._handleElasticUrl(
+          ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
+          function (err) {
+            expect(err).to.equal(ctx.err);
             done();
           });
       }
