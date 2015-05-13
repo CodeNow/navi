@@ -18,6 +18,12 @@ var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
+var keypather = require('keypather')();
+require('longjohn');
+var ownerInfo = {
+  id: 101,
+  username: 'tjmehta'
+};
 
 describe('proxy to backend server', function () {
   var testIp = ip.address();
@@ -89,10 +95,7 @@ describe('proxy to backend server', function () {
         var cb = last(arguments);
         this.reset({
           accounts: {
-            github: {
-              id: 101,
-              username: 'tjmehta'
-            }
+            github: ownerInfo
           }
         });
         cb(null, this.attrs);
@@ -119,14 +122,6 @@ describe('proxy to backend server', function () {
         done();
       });
       describe('valid user mapping', function() {
-        before(function(done) {
-          sinon.stub(Runnable.prototype, 'getBackendFromUserMapping').yields(null, testUrl);
-          done();
-        });
-        after(function(done) {
-          Runnable.prototype.getBackendFromUserMapping.restore();
-          done();
-        });
 
         it('should redirect to correct server', function (done) {
           request({
