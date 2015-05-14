@@ -227,6 +227,7 @@ describe('api.js unit test', function () {
       describe('for a non-masterPod instance', function () {
         beforeEach(function (done) {
           ctx.mockInstance.attrs.masterPod = false;
+          ctx.mockInstance.attrs.name = ctx.mockInstance.getBranchName() +'-'+ ctx.mockInstance.attrs.name
           done();
         });
         beforeEach(createNaviEntry);
@@ -622,7 +623,7 @@ describe('api.js unit test', function () {
     ctx.exposedPort = '800';
     ctx.naviEntryOpts = {
       exposedPort: ctx.exposedPort,
-      instance: ctx.mockInstance.toJSON(),
+      instanceName: ctx.mockInstance.attrs.name,
       branch: ctx.mockInstance.getBranchName(),
       masterPod: ctx.mockInstance.attrs.masterPod,
       ownerUsername: ctx.mockInstance.attrs.owner.username,
