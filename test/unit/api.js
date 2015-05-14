@@ -107,6 +107,28 @@ describe('api.js unit test', function () {
         done();
       });
     });
+    it('should login with super user if browser request', function (done) {
+      var testReq = {
+        session: {},
+        method: 'post',
+        headers: {
+          'user-agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
+          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36'
+        }
+      };
+      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.not.exist();
+        expect(testReq.apiClient.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        Runnable.prototype.githubLogin.restore();
+        done();
+      });
+    });
     it('should add runnable client with cookie', function (done) {
       var testCookie = 'sid:longcookie;';
       var testReq = {
@@ -241,15 +263,26 @@ describe('api.js unit test', function () {
           ctx.mockInstance.attrs.masterPod = true;
           done();
         });
-        beforeEach(createNaviEntry);
 
         describe('for a direct url', function () {
+          beforeEach(function (done) {
+            ctx.direct = true;
+            ctx.elastic = false;
+            done();
+          });
+          beforeEach(createNaviEntry);
           beforeEach(createDirectReq);
 
           it('should redirect to a master url', expectRedirectToMasterUrl);
         });
 
         describe('for an elastic url', function () {
+          beforeEach(function (done) {
+            ctx.direct = false;
+            ctx.elastic = true;
+            done();
+          });
+          beforeEach(createNaviEntry);
           beforeEach(createElasticReq);
           afterEach(function (done) {
             api._handleElasticUrl.restore();
@@ -290,23 +323,24 @@ describe('api.js unit test', function () {
         });
 
         describe('errors', function () {
+          beforeEach(createNaviEntry);
           beforeEach(createDirectReq);
           beforeEach(function (done) {
             ctx.err = new Error('boom');
             done();
           });
 
-          describe('getInstanceName error', function () {
+          describe('getInfo error', function () {
             beforeEach(function (done) {
-              sinon.stub(NaviEntry.prototype, 'getInstanceName').yieldsAsync(ctx.err);
+              sinon.stub(NaviEntry.prototype, 'getInfo').yieldsAsync(ctx.err);
               done();
             });
             afterEach(function (done) {
-              NaviEntry.prototype.getInstanceName.restore();
+              NaviEntry.prototype.getInfo.restore();
               done();
             });
 
-            it('should error if getInstanceName errors', expectErr);
+            it('should error if getInfo errors', expectErr);
           });
 
           describe('fetchInstances error', function () {
@@ -315,7 +349,7 @@ describe('api.js unit test', function () {
               done();
             });
 
-            it('should error if getInstanceName errors', expectErr);
+            it('should error if getInfo errors', expectErr);
           });
 
           describe('fetchInstances 404', function () {
@@ -326,7 +360,7 @@ describe('api.js unit test', function () {
               done();
             });
 
-            it('should error if getInstanceName errors', function (done) {
+            it('should error if getInfo errors', function (done) {
               api.getTargetHost(ctx.mockReq, {}, function (err) {
                 expect(err).to.exist();
                 expect(err.message).to.match(/instance no longer exists/);
@@ -627,6 +661,8 @@ describe('api.js unit test', function () {
       branch: ctx.mockInstance.getBranchName(),
       masterPod: ctx.mockInstance.attrs.masterPod,
       ownerUsername: ctx.mockInstance.attrs.owner.username,
+      elastic: ctx.elastic,
+      direct: ctx.direct,
       userContentDomain: 'runnableapp.com'
     };
     var naviEntry = ctx.naviEntry = new NaviEntry(ctx.naviEntryOpts);
