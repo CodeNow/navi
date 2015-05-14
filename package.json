@@ -39,11 +39,11 @@
     "http-proxy": "^1.9.0",
     "keypather": "^1.10.1",
     "middleware-flow": "^0.6.1",
-    "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v1.1.0",
+    "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v1.2.0",
     "node-dogstatsd": "0.0.6",
     "redis": "^0.12.1",
     "rollbar": "^0.4.5",
-    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v1.2.0",
+    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v1.3.3",
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {

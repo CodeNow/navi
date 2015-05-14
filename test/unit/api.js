@@ -219,7 +219,7 @@ describe('api.js unit test', function () {
         var apiClient = ctx.apiClient = createMockApiClient();
         ctx.username = 'tjmehta';
         keypather.set(apiClient, 'attrs.accounts.github', {
-          id: 101,
+          github: 101,
           username: ctx.username
         });
         done();
@@ -232,7 +232,7 @@ describe('api.js unit test', function () {
           _id: '000011110000111100001111',
           name: 'instanceName',
           owner: {
-            id: 101,
+            github: 101,
             username: ctx.apiClient.attrs.accounts.github.username
           }
         }, branch, ctx.containerUrl);
@@ -249,7 +249,8 @@ describe('api.js unit test', function () {
       describe('for a non-masterPod instance', function () {
         beforeEach(function (done) {
           ctx.mockInstance.attrs.masterPod = false;
-          ctx.mockInstance.attrs.name = ctx.mockInstance.getBranchName() +'-'+ ctx.mockInstance.attrs.name
+          ctx.mockInstance.attrs.name =
+            ctx.mockInstance.getBranchName() + '-' + ctx.mockInstance.attrs.name;
           done();
         });
         beforeEach(createNaviEntry);
@@ -399,7 +400,7 @@ describe('api.js unit test', function () {
         var apiClient = ctx.apiClient = createMockApiClient();
         ctx.username = 'tjmehta';
         keypather.set(apiClient, 'attrs.accounts.github', {
-          id: 101,
+          github: 101,
           username: ctx.username
         });
         ctx.containerUrl = 'http://2.2.2.2:3000';
@@ -407,7 +408,7 @@ describe('api.js unit test', function () {
           _id: '000022220000222200002222',
           name: 'instanceName',
           owner: {
-            id: 101,
+            github: 101,
             username: ctx.apiClient.attrs.accounts.github.username
           }
         }, 'branch', ctx.containerUrl);
@@ -464,7 +465,7 @@ describe('api.js unit test', function () {
               _id: refInstanceId,
               name: 'instanceName',
               owner: {
-                id: 101,
+                github: 101,
                 username: ctx.apiClient.attrs.accounts.github.username
               }
             }, 'branch', ctx.refererUrl);
@@ -538,7 +539,7 @@ describe('api.js unit test', function () {
                 _id: assocInstanceId,
                 name: 'instanceName',
                 owner: {
-                  id: 101,
+                  github: 101,
                   username: ctx.apiClient.attrs.accounts.github.username
                 }
               }, 'branch', ctx.assocContainerUrl);
@@ -604,7 +605,7 @@ describe('api.js unit test', function () {
               _id: destInstanceId,
               name: 'instanceName',
               owner: {
-                id: 101,
+                github: 101,
                 username: ctx.apiClient.attrs.accounts.github.username
               }
             }, 'branch', ctx.destContainerUrl);
@@ -661,6 +662,7 @@ describe('api.js unit test', function () {
       branch: ctx.mockInstance.getBranchName(),
       masterPod: ctx.mockInstance.attrs.masterPod,
       ownerUsername: ctx.mockInstance.attrs.owner.username,
+      ownerGithub: ctx.mockInstance.attrs.owner.github,
       elastic: ctx.elastic,
       direct: ctx.direct,
       userContentDomain: 'runnableapp.com'

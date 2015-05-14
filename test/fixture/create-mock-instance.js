@@ -17,7 +17,7 @@ function createMockInstance (attrs, branch, containerUrl) {
     toJSON: function () {
       return this.attrs;
     },
-    getContainerUrl: sinon.stub().returns(containerUrl),
+    getContainerUrl: sinon.stub().yieldsAsync(null, containerUrl),
     getBranchName: sinon.stub().returns(branch),
     fetchDependencies: sinon.stub()
   };
