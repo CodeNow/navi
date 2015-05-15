@@ -18,6 +18,9 @@ var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
 
+var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
+  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
+
 describe('proxy to backend server', function () {
   var testIp = ip.address();
   var testText = '1346tweyasdf3';
@@ -59,6 +62,9 @@ describe('proxy to backend server', function () {
     });
     it('should redirect to api', function (done) {
       request({
+        headers: {
+          'user-agent' : chromeUserAgent
+        },
         followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
@@ -69,6 +75,9 @@ describe('proxy to backend server', function () {
     });
     it('should redirect to api if token does not exist in db', function (done) {
       request({
+        headers: {
+          'user-agent' : chromeUserAgent
+        },
         followRedirect: false,
         qs: {
           runnableappAccessToken: 'doesnotexist'
