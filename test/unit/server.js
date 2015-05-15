@@ -56,6 +56,14 @@ describe('server.js unit test', function () {
       proxyServer.session.handle.restore();
       done();
     });
+    describe('domain', function() {
+      it('should destroy socket if something thrown', function(done) {
+        proxyServer.session.handle.throws('fireball');
+        _handleUserWsRequest({}, {
+          destroy: done
+        }, {});
+      });
+    });
     describe('no cookie', function () {
       beforeEach(function(done) {
         proxyServer.session.handle.returns(function (req, res , cb) {
