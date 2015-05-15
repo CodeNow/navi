@@ -19,6 +19,9 @@ var url = require('url');
 
 var api = require('../../lib/models/api.js');
 
+var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
+  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
+
 describe('api.js unit test', function () {
   var ctx;
   beforeEach(function (done) {
@@ -32,6 +35,7 @@ describe('api.js unit test', function () {
     it('should add 80', function (done) {
       var test = api._getUrlFromRequest({
         headers: {
+          'user-agent' : chromeUserAgent,
           host: base
         }
       });
@@ -41,6 +45,7 @@ describe('api.js unit test', function () {
     it('should add https', function (done) {
       var test = api._getUrlFromRequest({
         headers: {
+          'user-agent' : chromeUserAgent,
           host: base+':443'
         }
       });
@@ -50,6 +55,7 @@ describe('api.js unit test', function () {
     it('should add 80 to subdomain', function (done) {
       var test = api._getUrlFromRequest({
         headers: {
+          'user-agent' : chromeUserAgent,
           host: 'dat.sub.domain.' + base
         }
       });
@@ -59,6 +65,7 @@ describe('api.js unit test', function () {
     it('should add https to subdomain', function (done) {
       var test = api._getUrlFromRequest({
         headers: {
+          'user-agent' : chromeUserAgent,
           host: 'dat.sub.domain.' + base + ':443'
         }
       });
@@ -68,6 +75,7 @@ describe('api.js unit test', function () {
     it('should be valid for correct hostname', function (done) {
       var test = api._getUrlFromRequest({
         headers: {
+          'user-agent' : chromeUserAgent,
           host: base + ':100'
         }
       });
@@ -79,9 +87,13 @@ describe('api.js unit test', function () {
     it('should not add cookie if it does not exist', function (done) {
       var testReq = {
         session: {},
-        method: 'post'
+        method: 'post',
+        headers: {
+          'user-agent' : chromeUserAgent
+        }
       };
       api.createClient(testReq, {}, function () {
+
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
           .to.equal('navi');
         expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
@@ -92,7 +104,10 @@ describe('api.js unit test', function () {
     it('should login with super user if options request', function (done) {
       var testReq = {
         session: {},
-        method: 'OPTIONS'
+        method: 'OPTIONS',
+        headers: {
+          'user-agent' : chromeUserAgent
+        }
       };
       sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
       api.createClient(testReq, {}, function () {
@@ -107,13 +122,51 @@ describe('api.js unit test', function () {
         done();
       });
     });
-    it('should login with super user if browser request', function (done) {
+    it('should NOT login with super user if browser request', function (done) {
       var testReq = {
         session: {},
         method: 'post',
         headers: {
-          'user-agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
-          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36'
+          'user-agent' : chromeUserAgent
+        }
+      };
+      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.not.exist();
+        expect(testReq.apiClient.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.false();
+        Runnable.prototype.githubLogin.restore();
+        done();
+      });
+    });
+    it('should login with super user if no headers', function (done) {
+      var testReq = {
+        session: {},
+        method: 'post'
+      };
+      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
+      api.createClient(testReq, {}, function () {
+        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
+          .to.equal('navi');
+        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
+          .to.not.exist();
+        expect(testReq.apiClient.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        Runnable.prototype.githubLogin.restore();
+        done();
+      });
+    });
+    it('should login with super user if NOT browser request', function (done) {
+      var testReq = {
+        session: {},
+        method: 'post',
+        headers: {
+          'user-agent' : 'other guy'
         }
       };
       sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
@@ -135,7 +188,10 @@ describe('api.js unit test', function () {
         session: {
           apiCookie: testCookie
         },
-        method: 'post'
+        method: 'post',
+        headers: {
+          'user-agent' : chromeUserAgent
+        }
       };
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
@@ -152,6 +208,7 @@ describe('api.js unit test', function () {
     var host = hostName + port;
     var testReq = {
       headers: {
+        'user-agent' : chromeUserAgent,
         host: host
       },
       method: 'post'
@@ -674,6 +731,7 @@ describe('api.js unit test', function () {
     ctx.mockReq = {
       session: {},
       headers: {
+        'user-agent' : chromeUserAgent,
         host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort
       },
       method: 'post',
@@ -685,6 +743,7 @@ describe('api.js unit test', function () {
     ctx.mockReq = {
       session: {},
       headers: {
+        'user-agent' : chromeUserAgent,
         host: ctx.naviEntry.getElasticHostname() + ':' + ctx.exposedPort
       },
       method: 'post',
