@@ -62,7 +62,6 @@ describe('server.js unit test', function () {
         _handleUserWsRequest({}, {
           destroy: done
         }, {});
-        done();
       });
     });
     describe('no cookie', function () {
