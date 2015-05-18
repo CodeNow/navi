@@ -28,7 +28,6 @@
     "101": "^0.14.1",
     "async": "^0.9.0",
     "auto-debug": "^1.0.1",
-    "bind-right": "^0.6.0",
     "boom": "^2.6.1",
     "connect-redis": "^2.2.0",
     "dotenv": "^1.0.0",
@@ -45,7 +44,6 @@
     "redis": "^0.12.1",
     "rollbar": "^0.4.5",
     "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v1.3.3",
-    "sort-by": "^1.1.0",
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {
