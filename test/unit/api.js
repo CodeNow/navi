@@ -764,8 +764,6 @@ describe('api.js unit test', function () {
     api.getTargetHost(ctx.mockReq, mockRes);
     function redirect (url) {
       var elasticHostname = ctx.naviEntry.getElasticHostname(ctx.branch);
-      console.log(url);
-      console.log(elasticHostname);
       expect(url.toLowerCase())
         .to.equal([
           'http://', elasticHostname, ':'+ctx.exposedPort+'/'
