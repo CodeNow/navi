@@ -287,6 +287,7 @@ describe('api.js unit test', function () {
         ctx.containerUrl = 'http://1.1.1.1:3000';
         ctx.mockInstance = createMockInstance({
           _id: '000011110000111100001111',
+          shortHash: '111111',
           name: 'instanceName',
           owner: {
             github: 101,
@@ -463,6 +464,7 @@ describe('api.js unit test', function () {
         ctx.containerUrl = 'http://2.2.2.2:3000';
         ctx.mockInstance = createMockInstance({
           _id: '000022220000222200002222',
+          shortHash: '222222',
           name: 'instanceName',
           owner: {
             github: 101,
@@ -520,6 +522,7 @@ describe('api.js unit test', function () {
             var refInstanceId = '000066660000666600006666';
             ctx.refInstance = createMockInstance({
               _id: refInstanceId,
+              shortHash: '666666',
               name: 'instanceName',
               owner: {
                 github: 101,
@@ -594,6 +597,7 @@ describe('api.js unit test', function () {
               var assocInstanceId = '000033330000333300003333';
               ctx.assocInstance = createMockInstance({
                 _id: assocInstanceId,
+                shortHash: '333333',
                 name: 'instanceName',
                 owner: {
                   github: 101,
@@ -660,6 +664,7 @@ describe('api.js unit test', function () {
             var destInstanceId = '000055550000555500005555';
             ctx.destInstance = createMockInstance({
               _id: destInstanceId,
+              shortHash: '555555',
               name: 'instanceName',
               owner: {
                 github: 101,
@@ -715,6 +720,7 @@ describe('api.js unit test', function () {
     ctx.exposedPort = '800';
     ctx.naviEntryOpts = {
       exposedPort: ctx.exposedPort,
+      shortHash: ctx.mockInstance.attrs.shortHash,
       instanceName: ctx.mockInstance.attrs.name,
       branch: ctx.mockInstance.getBranchName(),
       masterPod: ctx.mockInstance.attrs.masterPod,
