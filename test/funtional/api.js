@@ -5,6 +5,7 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var sinon = require('sinon');
+var ErrorCat = require('error-cat');
 var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
@@ -86,6 +87,31 @@ describe('proxy to backend server', function () {
       }, function (err, res) {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(301);
+        done();
+      });
+    });
+  });
+  describe('error from navi', function () {
+    var err;
+    before(function(done) {
+      err = ErrorCat.create(500, 'boom');
+      sinon.stub(Runnable.prototype, 'fetch').yields(err);
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.fetch.restore();
+      done();
+    });
+    it('should recieve the error', function (done) {
+      request({
+        headers: {
+          'user-agent' : chromeUserAgent
+        },
+        followRedirect: false,
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        if (err) { return done(err); }
+        expect(res.statusCode).to.equal(500);
         done();
       });
     });
