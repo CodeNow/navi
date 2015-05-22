@@ -587,7 +587,7 @@ describe('api.js unit test', function () {
                 done();
               });
 
-              descMapping();
+              descMapping(true);
             });
           });
 
@@ -637,7 +637,7 @@ describe('api.js unit test', function () {
       });
 
 
-      function descMapping () {
+      function descMapping (dontUseUserMapping) {
 
         describe('reqUrl has no mapping', function () {
           beforeEach(function (done) {
@@ -682,8 +682,12 @@ describe('api.js unit test', function () {
               .returns(ctx.destInstance).yieldsAsync();
             done();
           });
-
-          it('should yield the mapping instance containerUrl', expectMappingTarget);
+          if (dontUseUserMapping) {
+            it('should yield masterInstance containerUrl as target url', expectMasterTarget);
+          }
+          else {
+            it('should yield the mapping instance containerUrl', expectMappingTarget);
+          }
         });
       }
       function expectMasterTarget (done) {
