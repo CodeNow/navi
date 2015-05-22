@@ -604,7 +604,7 @@ describe('api.js unit test', function () {
                   username: ctx.apiClient.attrs.accounts.github.username
                 }
               }, 'branch', ctx.assocContainerUrl);
-              ctx.refInstance.fetchDependencies.yieldsAsync(null, [{ _id: assocInstanceId }]);
+              ctx.refInstance.fetchDependencies.yieldsAsync(null, [{ id: assocInstanceId }]);
               ctx.apiClient.fetchInstance
                 .withArgs(assocInstanceId)
                 .returns(ctx.assocInstance).yieldsAsync();
