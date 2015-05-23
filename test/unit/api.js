@@ -582,7 +582,6 @@ describe('api.js unit test', function () {
             });
 
             describe('referer has no mapping', function () {
-
               descMapping();
             });
 
