@@ -69,4 +69,23 @@ describe('proxy.js unit test', function () {
       done();
     });
   });
+  describe('redirIfRedirectUrlExist', function () {
+    var testHost = 'localhost:1234';
+    var testReq = {
+      redirectUrl: testHost
+    };
+    it('should next if no target', function(done) {
+      ProxyServer.redirIfRedirectUrlExist({}, null, done);
+    });
+    it('should proxy if target exist', function(done) {
+      var testRes = {
+        redirect: function (code, url) {
+          expect(code).to.equal(307);
+          expect(url).to.equal(testHost);
+          done();
+        }
+      };
+      ProxyServer.redirIfRedirectUrlExist(testReq, testRes);
+    });
+  });
 });

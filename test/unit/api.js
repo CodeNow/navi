@@ -16,6 +16,7 @@ var Runnable = require('runnable');
 var createMockInstance = require('../fixture/create-mock-instance');
 var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
+var clone = require('101/clone');
 
 var api = require('../../lib/models/api.js');
 
@@ -220,7 +221,7 @@ describe('api.js unit test', function () {
       api.createClient(testReq, {}, done);
     });
 
-    describe('redirectIfNotLoggedIn', function () {
+    describe('checkIfLoggedIn', function () {
       beforeEach(function (done) {
         sinon.stub(testReq.apiClient, 'fetch');
         done();
@@ -237,8 +238,9 @@ describe('api.js unit test', function () {
           },
           data: 'dude this just happed'
         };
-        testReq.apiClient.fetch.yieldsAsync(testErr);
-        api.redirectIfNotLoggedIn(testReq, {}, function (err) {
+        var req = clone(testReq);
+        req.apiClient.fetch.yieldsAsync(testErr);
+        api.checkIfLoggedIn(req, {}, function (err) {
           expect(err).to.equal(testErr);
           done();
         });
@@ -254,20 +256,26 @@ describe('api.js unit test', function () {
           }
         };
         var testRes = 'that res';
-        testReq.apiClient.fetch.yieldsAsync(testErr);
-        sinon.stub(testReq.apiClient, 'redirectForAuth', function (url, res) {
-          expect(url).to.equal('http://'+host);
-          expect(res).to.equal(testRes);
+        var testRedir = 'into.your.heart';
+        var req = clone(testReq);
+        req.apiClient.fetch.yieldsAsync(testErr);
+        sinon.stub(req.apiClient, 'getGithubAuthUrl')
+          .withArgs('http://'+host)
+          .returns(testRedir);
+        api.checkIfLoggedIn(req, testRes, function () {
+          expect(req.redirectUrl).to.equal(testRedir);
+          req.apiClient.getGithubAuthUrl.restore();
           done();
-        });
-        api.redirectIfNotLoggedIn(testReq, testRes, function () {
-          done(new Error('should not get called'));
         });
       });
 
       it('should next if logged in', function (done) {
-        testReq.apiClient.fetch.yieldsAsync();
-        api.redirectIfNotLoggedIn(testReq, {}, done);
+        var req = clone(testReq);
+        req.apiClient.fetch.yieldsAsync();
+        api.checkIfLoggedIn(req, {}, function () {
+          expect(req.redirectUrl).to.be.undefined();
+          done();
+        });
       });
     });
 

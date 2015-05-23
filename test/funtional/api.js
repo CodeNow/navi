@@ -70,7 +70,7 @@ describe('proxy to backend server', function () {
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(301);
+        expect(res.statusCode).to.equal(307);
         done();
       });
     });
@@ -86,7 +86,7 @@ describe('proxy to backend server', function () {
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(301);
+        expect(res.statusCode).to.equal(307);
         done();
       });
     });
