@@ -520,6 +520,24 @@ describe('api.js unit test', function () {
           descMapping();
         });
 
+        describe('referer is self', function () {
+          beforeEach(function (done) {
+            ctx.refererUrl = ctx.elasticUrl;
+            done();
+          });
+
+          descMapping();
+
+          describe('referer is self diff casing', function () {
+            beforeEach(function (done) {
+              ctx.refererUrl = ctx.elasticUrl.toUpperCase();
+              done();
+            });
+
+            descMapping();
+          });
+        });
+
         describe('referer is a user content domain', function () {
           beforeEach(function (done) {
             ctx.refererUrl = 'http://web-staging-codenow.runnable.app.com';
