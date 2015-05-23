@@ -529,12 +529,26 @@ describe('api.js unit test', function () {
           descMapping();
 
           describe('referer is self diff casing', function () {
-            beforeEach(function (done) {
-              ctx.refererUrl = ctx.elasticUrl.toUpperCase();
-              done();
+
+            describe('upper reqUrl', function() {
+              beforeEach(function (done) {
+                ctx.refererUrl = ctx.elasticUrl.toLowerCase();
+                ctx.elasticUrl = ctx.elasticUrl.toUpperCase();
+                done();
+              });
+
+              descMapping();
             });
 
-            descMapping();
+            describe('upper refUrl', function() {
+              beforeEach(function (done) {
+                ctx.refererUrl = ctx.elasticUrl.toUpperCase();
+                ctx.elasticUrl = ctx.elasticUrl.toLowerCase();
+                done();
+              });
+
+              descMapping();
+            });
           });
         });
 
