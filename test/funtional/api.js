@@ -45,6 +45,7 @@ describe('proxy to backend server', function () {
   after(function (done) {
     testServer.close(done);
   });
+
   describe('not logged in', function () {
     before(function(done) {
       sinon.stub(Runnable.prototype, 'fetch').yields({
@@ -61,6 +62,7 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetch.restore();
       done();
     });
+
     it('should redirect to api', function (done) {
       request({
         headers: {
@@ -74,6 +76,7 @@ describe('proxy to backend server', function () {
         done();
       });
     });
+
     it('should redirect to api if token does not exist in db', function (done) {
       request({
         headers: {
@@ -91,28 +94,54 @@ describe('proxy to backend server', function () {
       });
     });
   });
+
   describe('error from navi', function () {
-    var err;
-    before(function(done) {
-      err = ErrorCat.create(500, 'boom');
-      sinon.stub(Runnable.prototype, 'fetch').yields(err);
-      done();
-    });
-    after(function(done) {
+    afterEach(function(done) {
       Runnable.prototype.fetch.restore();
       done();
     });
-    it('should recieve the error', function (done) {
-      request({
-        headers: {
-          'user-agent' : chromeUserAgent
-        },
-        followRedirect: false,
-        url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res) {
-        if (err) { return done(err); }
-        expect(res.statusCode).to.equal(500);
+
+    describe('500 error', function() {
+      beforeEach(function(done) {
+        var err = ErrorCat.create(500, 'boom');
+        sinon.stub(Runnable.prototype, 'fetch').yields(err);
         done();
+      });
+
+      it('should recieve the error', function (done) {
+        request({
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
+          done();
+        });
+      });
+    });
+
+    describe('400 error', function() {
+      beforeEach(function(done) {
+        var err = ErrorCat.create(400, 'boom');
+        sinon.stub(Runnable.prototype, 'fetch').yields(err);
+        done();
+      });
+
+      it('should recieve the error', function (done) {
+        request({
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(400);
+          done();
+        });
       });
     });
   });
