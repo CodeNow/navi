@@ -105,7 +105,6 @@ describe('proxy to backend server', function () {
         }, done);
       });
       it('should redirect to api with force if second time', function (done) {
-        console.log('XXXXXXXXXXXXXXXXXXXXXXXXX')
         request({
           jar: j,
           headers: {
