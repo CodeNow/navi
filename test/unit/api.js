@@ -269,6 +269,32 @@ describe('api.js unit test', function () {
         });
       });
 
+      it('should redir with force if not logged in twice', function (done) {
+        var testErr = {
+          output: {
+            statusCode: 401
+          },
+          data: {
+            error: 'Unauthorized'
+          }
+        };
+        var testRes = 'that res';
+        var testRedir = 'into.your.heart';
+        var req = clone(testReq);
+        req.apiClient.fetch.yieldsAsync(testErr);
+        req.session = {
+          authTried: true
+        };
+        sinon.stub(req.apiClient, 'getGithubAuthUrl')
+          .withArgs('http://'+host, true)
+          .returns(testRedir);
+        api.checkIfLoggedIn(req, testRes, function () {
+          expect(req.redirectUrl).to.equal(testRedir);
+          req.apiClient.getGithubAuthUrl.restore();
+          done();
+        });
+      });
+
       it('should next if logged in', function (done) {
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync();

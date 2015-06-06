@@ -18,6 +18,8 @@ var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
 var request = require('request');
 var Runnable = require('runnable');
+var querystring = require('querystring');
+var url = require('url');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -88,6 +90,37 @@ describe('proxy to backend server', function () {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(307);
         done();
+      });
+    });
+    describe('with auth attempted before', function() {
+      var j = request.jar();
+      beforeEach(function(done) {
+        request({
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, done);
+      });
+      it('should redirect to api with force if second time', function (done) {
+        console.log('XXXXXXXXXXXXXXXXXXXXXXXXX')
+        request({
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          var testUrl = url.parse(res.headers.location);
+          var qs = querystring.parse(testUrl.query);
+          expect(qs.forceLogin).to.exist();
+          done();
+        });
       });
     });
   });
