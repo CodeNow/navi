@@ -44,7 +44,7 @@
     "node-dogstatsd": "0.0.6",
     "redis": "^0.12.1",
     "rollbar": "^0.4.5",
-    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v3.4.4",
+    "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#SAN-1901,SAN-1902,SAN-1905,SAN-1903,SAN-1904.errorpages",
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {
