@@ -64,20 +64,6 @@ describe('server.js unit test', function () {
         }, {});
       });
     });
-    describe('no cookie', function () {
-      beforeEach(function(done) {
-        proxyServer.session.handle.returns(function (req, res , cb) {
-          req.session = {};
-          cb();
-        });
-        done();
-      });
-      it('should destroy socket if not api cookie', function (done) {
-        _handleUserWsRequest({}, {
-          destroy: done
-        }, {});
-      });
-    });
     describe('with cookie', function () {
       beforeEach(function(done) {
         sinon.stub(api, 'createClient').yields();
