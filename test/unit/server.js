@@ -64,62 +64,86 @@ describe('server.js unit test', function () {
         }, {});
       });
     });
-    describe('with cookie', function () {
+    describe('valid client', function () {
       beforeEach(function(done) {
         sinon.stub(api, 'createClient').yields();
-        sinon.stub(api, 'getTargetHost');
         proxyServer.session.handle.returns(function (req, res , cb) {
-          req.session = {
-            apiCookie: 'white:macadamia:nut'
-          };
           cb();
         });
         done();
       });
       afterEach(function (done) {
         api.createClient.restore();
-        api.getTargetHost.restore();
         done();
       });
-      describe('found no target', function() {
+      describe('not logged in', function() {
         beforeEach(function(done) {
-          api.getTargetHost.yields();
+          sinon.stub(api, 'checkIfLoggedIn', function (req, res, next) {
+            req.redirectUrl = 'something';
+            next();
+          });
           done();
         });
-        it('should destroy socket no target', function (done) {
+        afterEach(function (done) {
+          api.checkIfLoggedIn.restore();
+          done();
+        });
+        it('should destroy socket', function(done) {
           _handleUserWsRequest({}, {
             destroy: done
           }, {});
         });
       });
-      describe('founding target created err', function() {
+      describe('logged in', function() {
         beforeEach(function(done) {
-          api.getTargetHost.yields('sky if falling down');
+          sinon.stub(api, 'getTargetHost');
+          sinon.stub(api, 'checkIfLoggedIn').yields();
           done();
         });
-        it('should destroy socket no target', function (done) {
-          _handleUserWsRequest({}, {
-            destroy: done
-          }, {});
-        });
-      });
-      describe('founding target returns', function() {
-        beforeEach(function(done) {
-          api.getTargetHost.yields();
+        afterEach(function (done) {
+          api.getTargetHost.restore();
+          api.checkIfLoggedIn.restore();
           done();
         });
-        it('should call proxy', function (done) {
-          var testReq = {};
-          var testSocket = 'smelly';
-          var testHead = 'small';
-          sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist').returns();
+        describe('found no target', function() {
+          beforeEach(function(done) {
+            api.getTargetHost.yields();
+            done();
+          });
+          it('should destroy socket no target', function (done) {
+            _handleUserWsRequest({}, {
+              destroy: done
+            }, {});
+          });
+        });
+        describe('founding target created err', function() {
+          beforeEach(function(done) {
+            api.getTargetHost.yields('sky if falling down');
+            done();
+          });
+          it('should destroy socket no target', function (done) {
+            _handleUserWsRequest({}, {
+              destroy: done
+            }, {});
+          });
+        });
+        describe('founding target returns', function() {
+          beforeEach(function(done) {
+            api.getTargetHost.yields();
+            done();
+          });
+          it('should call proxy', function (done) {
+            var testReq = {};
+            var testSocket = 'smelly';
+            var testHead = 'small';
+            sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist').returns();
 
-          _handleUserWsRequest(testReq, testSocket, testHead);
-
-          expect(proxyServer.proxy.proxyWsIfTargetHostExist
-            .calledWith(testReq, testSocket, testHead))
-            .to.be.true();
-          done();
+            _handleUserWsRequest(testReq, testSocket, testHead);
+            expect(proxyServer.proxy.proxyWsIfTargetHostExist
+              .withArgs(testReq, testSocket, testHead).calledOnce)
+              .to.be.true();
+            done();
+          });
         });
       });
     });
