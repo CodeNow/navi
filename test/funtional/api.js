@@ -20,6 +20,7 @@ var request = require('request');
 var Runnable = require('runnable');
 var querystring = require('querystring');
 var url = require('url');
+var errorPage = require('models/error-page.js');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -63,7 +64,7 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetch.restore();
       done();
     });
-    it('should redirect to api', function (done) {
+    it('should redirect to error login page', function (done) {
       request({
         headers: {
           'user-agent' : chromeUserAgent
@@ -73,10 +74,11 @@ describe('proxy to backend server', function () {
       }, function (err, res) {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(307);
+
         done();
       });
     });
-    it('should redirect to api if token does not exist in db', function (done) {
+    it('should redirect to error page if token does not exist in db', function (done) {
       request({
         headers: {
           'user-agent' : chromeUserAgent
@@ -104,7 +106,7 @@ describe('proxy to backend server', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, done);
       });
-      it('should redirect to api with force if second time', function (done) {
+      it('should redirect to error login page with force if second time', function (done) {
         request({
           jar: j,
           headers: {
@@ -115,8 +117,15 @@ describe('proxy to backend server', function () {
         }, function (err, res) {
           if (err) { return done(err); }
           expect(res.statusCode).to.equal(307);
+          var fullTestUrl = errorPage.generateErrorUrl('signin', {
+            redirectUrl: 'test'
+          });
           var testUrl = url.parse(res.headers.location);
-          var qs = querystring.parse(testUrl.query);
+          var expectUrl = url.parse(fullTestUrl);
+          expect(testUrl.host).to.equal(expectUrl.host);
+          var query = querystring.parse(testUrl.query);
+          var testRedirUrl = url.parse(query.redirectUrl);
+          var qs = querystring.parse(testRedirUrl.query);
           expect(qs.forceLogin).to.exist();
           done();
         });
