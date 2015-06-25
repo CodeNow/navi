@@ -392,7 +392,8 @@ describe('api.js unit test', function () {
           describe('success', function () {
             beforeEach(function (done) {
               ctx.targetHost = 'http://google.com';
-              sinon.stub(api, '_handleElasticUrl').yieldsAsync(null, ctx.targetHost);
+              sinon.stub(api, '_handleElasticUrl')
+                .yieldsAsync(null, ctx.targetHost, ctx.mockInstance);
               done();
             });
 
@@ -405,6 +406,7 @@ describe('api.js unit test', function () {
                 expect(api._handleElasticUrl.firstCall.args[2]).to.equal(undefined); // referer
                 expect(api._handleElasticUrl.firstCall.args[3]).to.equal(ctx.mockInstance);
                 expect(ctx.mockReq.targetHost).to.equal(ctx.targetHost);
+                expect(ctx.mockReq.targetInstance).to.deep.equal(ctx.mockInstance);
                 done();
               });
             });
@@ -686,9 +688,10 @@ describe('api.js unit test', function () {
             it('should yield the associated instance containerUrl', function (done) {
               api._handleElasticUrl(
                 ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-                function (err, targetUrl) {
+                function (err, targetUrl, targetInstance) {
                   if (err) { return done(err); }
                   expect(targetUrl).to.equal(ctx.assocContainerUrl);
+                  expect(targetInstance).to.deep.equal(ctx.assocInstance);
                   done();
                 });
             });
@@ -833,18 +836,20 @@ describe('api.js unit test', function () {
       function expectMasterTarget (done) {
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-          function (err, targetUrl) {
+          function (err, targetUrl, targetInstance) {
             if (err) { return done(err); }
             expect(targetUrl).to.equal(ctx.containerUrl);
+            expect(targetInstance).to.equal(ctx.mockInstance);
             done();
           });
       }
       function expectMappingTarget (done) {
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-          function (err, targetUrl) {
+          function (err, targetUrl, targetInstance) {
             if (err) { return done(err); }
             expect(targetUrl).to.equal(ctx.destContainerUrl);
+            expect(targetInstance).to.equal(ctx.destInstance);
             done();
           });
       }

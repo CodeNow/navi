@@ -61,6 +61,15 @@ describe('error-page.js unit test', function () {
         }, testUrl);
         done();
       });
+      it('should return unresponsive url', function(done) {
+        var testUrl = errorPage.generateErrorUrl('unresponsive', ctx.mockInstance);
+        expectUrl('unresponsive', {
+          ports: testPorts,
+          containerUrl: testHostname,
+          branchName: testRepoAndBranchName
+        }, testUrl);
+        done();
+      });
     });
     describe('dead', function() {
       it('should return dead url', function(done) {

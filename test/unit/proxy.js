@@ -10,6 +10,7 @@ var beforeEach = lab.beforeEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
+var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
 
 describe('proxy.js unit test', function () {
@@ -17,6 +18,28 @@ describe('proxy.js unit test', function () {
   beforeEach(function(done) {
     proxyServer = new ProxyServer();
     done();
+  });
+  describe('proxy error handler', function() {
+    it('should proxy to error page if target unresponsive', function(done) {
+      var testReq = {
+        targetInstance: 'some_inst'
+      };
+      var testRes = 'that-res';
+      var testHost = 'somehost';
+      sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        expect(errorPage.generateErrorUrl
+          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        proxyServer.proxy.web.restore();
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+    });
+
   });
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'localhost:1234';
