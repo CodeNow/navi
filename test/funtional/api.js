@@ -123,6 +123,34 @@ describe('proxy to backend server', function () {
       });
     });
   });
+  describe.only('auth error', function() {
+    var resErr;
+    before(function(done) {
+      resErr = ErrorCat.create(400, 'boom');
+      sinon.stub(Runnable.prototype, 'githubLogin').yields(resErr);
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.githubLogin.restore();
+      done();
+    });
+    it('should respond with the error', function (done) {
+      request({
+        method: 'OPTIONS',
+        headers: {
+          'user-agent' : chromeUserAgent
+        },
+        followRedirect: false,
+        url: 'http://localhost:'+process.env.HTTP_PORT,
+        json: true
+      }, function (err, res) {
+        if (err) { return done(err); }
+        expect(res.statusCode).to.equal(resErr.output.statusCode);
+        expect(res.body).to.deep.equal(resErr.output.payload);
+        done();
+      });
+    });
+  });
   describe('error from navi', function () {
     var err;
     before(function(done) {
