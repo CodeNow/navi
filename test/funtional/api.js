@@ -123,19 +123,21 @@ describe('proxy to backend server', function () {
       });
     });
   });
-  describe.only('auth error', function() {
+  describe('auth error', function() {
     var resErr;
     before(function(done) {
       resErr = ErrorCat.create(400, 'boom');
       sinon.stub(Runnable.prototype, 'githubLogin').yields(resErr);
+      sinon.spy(ErrorCat, 'report');
       done();
     });
     after(function(done) {
       Runnable.prototype.githubLogin.restore();
+      ErrorCat.report.restore();
       done();
     });
     it('should respond with the error', function (done) {
-      request({
+      var reqOpts = {
         method: 'OPTIONS',
         headers: {
           'user-agent' : chromeUserAgent
@@ -143,10 +145,16 @@ describe('proxy to backend server', function () {
         followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT,
         json: true
-      }, function (err, res) {
+      };
+      request(reqOpts, function (err, res) {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(resErr.output.statusCode);
         expect(res.body).to.deep.equal(resErr.output.payload);
+        sinon.assert.calledOnce(ErrorCat.report);
+        sinon.assert.calledWith(ErrorCat.report, resErr);
+        expect(ErrorCat.report.firstCall.args[1]).exist();
+        expect(ErrorCat.report.firstCall.args[1].method)
+          .to.equal(reqOpts.method);
         done();
       });
     });
