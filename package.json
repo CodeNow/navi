@@ -32,7 +32,7 @@
     "connect-redis": "^2.2.0",
     "cors": "^2.6.0",
     "dotenv": "^1.0.0",
-    "error-cat": "^1.1.1",
+    "error-cat": "git+ssh://git@github.com/Runnable/error-cat.git#v1.3.4",
     "eson": "^0.5.0",
     "express": "^4.12.3",
     "express-domain-middleware": "^0.1.0",
