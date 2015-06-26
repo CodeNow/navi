@@ -17,6 +17,7 @@ var createMockInstance = require('../fixture/create-mock-instance');
 var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
 var clone = require('101/clone');
+var ErrorCat = require('error-cat');
 
 var api = require('../../lib/models/api.js');
 
@@ -475,6 +476,15 @@ describe('api.js unit test', function () {
             it('should error if _handleDirectUrl errors', expectErr);
           });
 
+          describe('hello runnable error', function() {
+            beforeEach(function (done) {
+              ctx.err = ErrorCat.create(400, 'hello runnable cant set its routes');
+              ctx.apiClient.createRoute.yieldsAsync(ctx.err);
+              done();
+            });
+
+            it('should ignore the error in _handleDirectUrl', expectRedirectToMasterUrl);
+          });
         });
       });
 
@@ -830,7 +840,7 @@ describe('api.js unit test', function () {
     var mockRes = {
       redirect: redirect
     };
-    api.getTargetHost(ctx.mockReq, mockRes);
+    api.getTargetHost(ctx.mockReq, mockRes, done);
     function redirect (url) {
       var elasticHostname = ctx.naviEntry.getElasticHostname(ctx.branch);
       expect(url.toLowerCase())
