@@ -479,12 +479,11 @@ describe('api.js unit test', function () {
           describe('hello runnable error', function() {
             beforeEach(function (done) {
               ctx.err = ErrorCat.create(400, 'hello runnable cant set its routes');
-              console.log(ctx.err);
               ctx.apiClient.createRoute.yieldsAsync(ctx.err);
               done();
             });
 
-            it('should ignore the _handleDirectUrl error', expectRedirectToMasterUrl);
+            it('should ignore the error in _handleDirectUrl', expectRedirectToMasterUrl);
           });
         });
       });
