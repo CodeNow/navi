@@ -38,11 +38,13 @@ describe('proxy to backend server', function () {
     redis.flushall(done);
   });
   beforeEach(function (done) {
+    sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
     redis.removeAllListeners();
     app = new App();
     app.start(done);
   });
   afterEach(function (done) {
+    Runnable.prototype.githubLogin.restore();
     app.stop(done);
   });
   after(function (done) {
