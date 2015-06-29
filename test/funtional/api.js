@@ -136,18 +136,11 @@ describe('proxy to backend server', function () {
   });
   describe('auth error', function() {
     var resErr;
-    before(function(done) {
-      resErr = ErrorCat.create(400, 'boom');
-      sinon.stub(Runnable.prototype, 'githubLogin').yields(resErr);
-      sinon.spy(ErrorCat, 'report');
+    beforeEach(function(done) {
+      Runnable.prototype.githubLogin.yieldsAsync(resErr);
       done();
     });
-    after(function(done) {
-      Runnable.prototype.githubLogin.restore();
-      ErrorCat.report.restore();
-      done();
-    });
-    it('should respond with the error', function (done) {
+    it('should respond with the signin page', function (done) {
       var reqOpts = {
         method: 'OPTIONS',
         headers: {
@@ -159,13 +152,13 @@ describe('proxy to backend server', function () {
       };
       request(reqOpts, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(resErr.output.statusCode);
-        expect(res.body).to.deep.equal(resErr.output.payload);
-        sinon.assert.calledOnce(ErrorCat.report);
-        sinon.assert.calledWith(ErrorCat.report, resErr);
-        expect(ErrorCat.report.firstCall.args[1]).exist();
-        expect(ErrorCat.report.firstCall.args[1].method)
-          .to.equal(reqOpts.method);
+        expect(res.statusCode).to.equal(307);
+        var fullTestUrl = errorPage.generateErrorUrl('signin', {
+          redirectUrl: 'test'
+        });
+        var testUrl = url.parse(res.headers.location);
+        var expectUrl = url.parse(fullTestUrl);
+        expect(testUrl.host).to.equal(expectUrl.host);
         done();
       });
     });
