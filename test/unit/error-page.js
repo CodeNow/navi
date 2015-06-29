@@ -48,7 +48,7 @@ describe('error-page.js unit test', function () {
       var testUrl = url.parse(resultUrl);
       var testQuery = querystring.parse(testUrl.query);
       expect(testQuery).to.deep.equal(expected);
-      expect(testUrl.protocol + '//' + testUrl.host).to.equal(process.env.ERROR_HOST);
+      expect(testUrl.protocol + '//' + testUrl.host).to.equal(process.env.ERROR_URL);
       expect(testUrl.pathname).to.equal('/error/' + type);
     }
     describe('port', function() {
