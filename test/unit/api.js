@@ -30,7 +30,37 @@ describe('api.js unit test', function () {
     ctx = {};
     done();
   });
-
+  describe('loginSuperUser', function() {
+    beforeEach(function(done) {
+      sinon.stub(Runnable.prototype, 'githubLogin');
+      done();
+    });
+    afterEach(function (done) {
+      Runnable.prototype.githubLogin.restore();
+      done();
+    });
+    it('should login as hello runnable', function(done) {
+      Runnable.prototype.githubLogin.yieldsAsync();
+      api.loginSuperUser(function (err) {
+        if (err) { return done(err); }
+        expect(Runnable.prototype.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        done();
+      });
+    });
+    it('should cb err if error', function(done) {
+      var testErr = 'apocalypse';
+      Runnable.prototype.githubLogin.yieldsAsync(testErr);
+      api.loginSuperUser(function (err) {
+        expect(err).to.equal(testErr);
+        expect(Runnable.prototype.githubLogin
+          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
+          .to.be.true();
+        done();
+      });
+    });
+  });
   describe('_getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
@@ -111,16 +141,11 @@ describe('api.js unit test', function () {
           'user-agent' : chromeUserAgent
         }
       };
-      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
+          .to.equal('navi-root');
         expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
           .to.not.exist();
-        expect(testReq.apiClient.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        Runnable.prototype.githubLogin.restore();
         done();
       });
     });
@@ -150,16 +175,11 @@ describe('api.js unit test', function () {
         session: {},
         method: 'post'
       };
-      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
+          .to.equal('navi-root');
         expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
           .to.not.exist();
-        expect(testReq.apiClient.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        Runnable.prototype.githubLogin.restore();
         done();
       });
     });
@@ -171,16 +191,11 @@ describe('api.js unit test', function () {
           'user-agent' : 'other guy'
         }
       };
-      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
+          .to.equal('navi-root');
         expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
           .to.not.exist();
-        expect(testReq.apiClient.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        Runnable.prototype.githubLogin.restore();
         done();
       });
     });
