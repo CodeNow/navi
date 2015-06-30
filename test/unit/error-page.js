@@ -53,8 +53,8 @@ describe('error-page.js unit test', function () {
     }
     describe('port', function() {
       it('should return port url', function(done) {
-        var testUrl = errorPage.generateErrorUrl('port', ctx.mockInstance);
-        expectUrl('port', {
+        var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance);
+        expectUrl('ports', {
           ports: testPorts,
           containerUrl: testHostname,
           branchName: testRepoAndBranchName
