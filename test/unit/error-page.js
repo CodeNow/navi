@@ -40,7 +40,6 @@ describe('error-page.js unit test', function () {
         }
       }, testBranch, testContainerUrl);
       ctx.mockInstance.status.returns(testStatus);
-      ctx.mockInstance.getContainerHostname.returns(testHostname);
       ctx.mockInstance.getRepoAndBranchName.returns(testRepoAndBranchName);
       done();
     });
@@ -53,32 +52,43 @@ describe('error-page.js unit test', function () {
     }
     describe('port', function() {
       it('should return port url', function(done) {
+        ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance);
         expectUrl('ports', {
           ports: testPorts,
           containerUrl: testHostname,
-          branchName: testRepoAndBranchName
+          branchName: testRepoAndBranchName,
+          status: testStatus,
+          ownerName: testOwner,
+          instanceName: testName
         }, testUrl);
         done();
       });
       it('should return unresponsive url', function(done) {
+        ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('unresponsive', ctx.mockInstance);
         expectUrl('unresponsive', {
           ports: testPorts,
           containerUrl: testHostname,
-          branchName: testRepoAndBranchName
+          branchName: testRepoAndBranchName,
+          status: testStatus,
+          ownerName: testOwner,
+          instanceName: testName
         }, testUrl);
         done();
       });
     });
     describe('dead', function() {
       it('should return dead url', function(done) {
+        ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('dead', ctx.mockInstance);
         expectUrl('dead', {
-          instanceName: testName,
-          ownerName: testOwner,
+          ports: testPorts,
+          containerUrl: testHostname,
+          branchName: testRepoAndBranchName,
           status: testStatus,
-          branchName: testRepoAndBranchName
+          ownerName: testOwner,
+          instanceName: testName
         }, testUrl);
         done();
       });

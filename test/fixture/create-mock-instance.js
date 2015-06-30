@@ -21,7 +21,6 @@ function createMockInstance (attrs, branch, containerUrl) {
     getBranchName: sinon.stub().returns(branch),
     fetchDependencies: sinon.stub(),
     status: sinon.stub(),
-    getContainerHostname: sinon.stub(),
     getRepoAndBranchName: sinon.stub()
   };
 }
