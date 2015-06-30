@@ -26,7 +26,10 @@ describe('error-page.js unit test', function () {
     var testStatus = 'running';
     var testBranch = 'fig';
     var testContainerUrl = 'newton';
-    var testPorts = 'some ports';
+    var testPorts = {
+      '3000/tcp': [ { HostIp: '0.0.0.0', HostPort: '32856' } ],
+      '80/tcp': [ { HostIp: '0.0.0.0', HostPort: '32858' } ]
+    };
     var testHostname = 'that host';
     var testRepoAndBranchName = 'this-repo-that-branch';
     beforeEach(function(done) {
@@ -55,7 +58,7 @@ describe('error-page.js unit test', function () {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance);
         expectUrl('ports', {
-          ports: testPorts,
+          ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
@@ -68,7 +71,7 @@ describe('error-page.js unit test', function () {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('unresponsive', ctx.mockInstance);
         expectUrl('unresponsive', {
-          ports: testPorts,
+          ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
@@ -83,7 +86,7 @@ describe('error-page.js unit test', function () {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('dead', ctx.mockInstance);
         expectUrl('dead', {
-          ports: testPorts,
+          ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
