@@ -162,6 +162,32 @@ describe('proxy to backend server', function () {
         done();
       });
     });
+    describe('errorPage throws', function() {
+      beforeEach(function(done) {
+        sinon.stub(errorPage, 'generateErrorUrl').throws();
+        done();
+      });
+      afterEach(function(done) {
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      it('should not fall over', function (done) {
+        var reqOpts = {
+          method: 'OPTIONS',
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT,
+          json: true
+        };
+        request(reqOpts, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
+          done();
+        });
+      });
+    });
   });
   describe('error from navi', function () {
     var err;
