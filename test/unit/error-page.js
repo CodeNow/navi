@@ -46,18 +46,18 @@ describe('error-page.js unit test', function () {
       ctx.mockInstance.getRepoAndBranchName.returns(testRepoAndBranchName);
       done();
     });
-    function expectUrl (type, expected, resultUrl) {
+    function expectUrl (expected, resultUrl) {
       var testUrl = url.parse(resultUrl);
       var testQuery = querystring.parse(testUrl.query);
       expect(testQuery).to.deep.equal(expected);
       expect(testUrl.protocol + '//' + testUrl.host).to.equal(process.env.ERROR_URL);
-      expect(testUrl.pathname).to.equal('/error/' + type);
     }
     describe('port', function() {
       it('should return port url', function(done) {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance);
-        expectUrl('ports', {
+        expectUrl({
+          type: 'ports',
           ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
@@ -81,7 +81,8 @@ describe('error-page.js unit test', function () {
         ctx.mockInstance2.getRepoAndBranchName.returns(testRepoAndBranchName);
         ctx.mockInstance2.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance2);
-        expectUrl('ports', {
+        expectUrl({
+          type: 'ports',
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
@@ -95,7 +96,8 @@ describe('error-page.js unit test', function () {
       it('should return unresponsive url', function(done) {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('unresponsive', ctx.mockInstance);
-        expectUrl('unresponsive', {
+        expectUrl({
+          type: 'unresponsive',
           ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
@@ -110,7 +112,8 @@ describe('error-page.js unit test', function () {
       it('should return dead url', function(done) {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('dead', ctx.mockInstance);
-        expectUrl('dead', {
+        expectUrl({
+          type: 'dead',
           ports: ['3000', '80'],
           containerUrl: testHostname,
           branchName: testRepoAndBranchName,
@@ -127,7 +130,8 @@ describe('error-page.js unit test', function () {
         var testUrl = errorPage.generateErrorUrl('signin', {
           redirectUrl: testRedirUrl
         });
-        expectUrl('signin', {
+        expectUrl({
+          type: 'signin',
           redirectUrl: testRedirUrl
         }, testUrl);
         done();
