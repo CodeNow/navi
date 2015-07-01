@@ -1,5 +1,5 @@
 'use strict';
-require('./loadenv.js');
+require('loadenv.js');
 
 if (process.env.NEWRELIC_KEY) {
   require('newrelic');
