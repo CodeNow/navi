@@ -67,6 +67,31 @@ describe('error-page.js unit test', function () {
         }, testUrl);
         done();
       });
+      it('should return port url with no ports', function(done) {
+        ctx.mockInstance2 = createMockInstance({
+          name: testName,
+          owner: {
+            username: testOwner
+          },
+          container: {
+            ports: {}
+          }
+        }, testBranch, testContainerUrl);
+        ctx.mockInstance2.status.returns(testStatus);
+        ctx.mockInstance2.getRepoAndBranchName.returns(testRepoAndBranchName);
+        ctx.mockInstance2.elasticUrl = testHostname;
+        var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance2);
+        expectUrl('ports', {
+          containerUrl: testHostname,
+          branchName: testRepoAndBranchName,
+          status: testStatus,
+          ownerName: testOwner,
+          instanceName: testName
+        }, testUrl);
+        done();
+      });
+    });
+    describe('unresponsive', function() {
       it('should return unresponsive url', function(done) {
         ctx.mockInstance.elasticUrl = testHostname;
         var testUrl = errorPage.generateErrorUrl('unresponsive', ctx.mockInstance);
