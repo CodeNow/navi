@@ -42,7 +42,7 @@ describe('proxy.js unit test', function () {
 
   });
   describe('proxyIfTargetHostExist', function () {
-    var testHost = 'localhost:1234';
+    var testHost = 'http://localhost:1234';
     var testReq = {
       targetHost: testHost
     };
@@ -64,6 +64,26 @@ describe('proxy.js unit test', function () {
         done();
       });
       testMw(testReq, testRes);
+    });
+    it('should add x-runnable-query info', function(done) {
+      var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
+      var testQuery = 'status=running&ports=3000&ports=80&type=ports';
+      var req = {
+        targetHost: testHost + '?' + testQuery,
+        headers: {}
+      };
+      var expectedReq = {
+        targetHost: testHost + '?' + testQuery,
+        headers: { 'x-runnable-query': testQuery }
+      };
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(expectedReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        proxyServer.proxy.web.restore();
+        done();
+      });
+      testMw(req, testRes);
     });
   });
   describe('proxyWsIfTargetHostExist', function () {
