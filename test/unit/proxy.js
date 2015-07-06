@@ -25,7 +25,7 @@ describe('proxy.js unit test', function () {
         targetInstance: 'some_inst'
       };
       var testRes = 'that-res';
-      var testHost = 'somehost';
+      var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
@@ -65,17 +65,21 @@ describe('proxy.js unit test', function () {
       });
       testMw(testReq, testRes);
     });
-    it('should add x-runnable-query info', function(done) {
+    it('should keep path info and append query', function(done) {
       var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';
+      var testPath = '/some/path';
       var req = {
         targetHost: testHost + '?' + testQuery,
-        headers: {}
+        headers: {},
+        url: testPath
       };
       var expectedReq = {
         targetHost: testHost + '?' + testQuery,
-        headers: { 'x-runnable-query': testQuery }
+        headers: {},
+        url: testPath + '?' + testQuery
       };
+
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
           .withArgs(expectedReq, testRes, {target: testHost}).calledOnce).to.be.true();
