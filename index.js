@@ -1,4 +1,9 @@
 'use strict';
+require('loadenv.js');
+
+if (process.env.NEWRELIC_KEY) {
+  require('newrelic');
+}
 var debug = require('auto-debug')();
 
 var App = require('./lib/app.js');

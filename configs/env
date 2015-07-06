@@ -10,3 +10,6 @@ TOKEN_EXPIRES=86400
 REDIS_IPADDRESS=127.0.0.1
 REDIS_PORT=6379
 COOKIE_NAME=runnable.navi.sid
+# needed to configure new relic
+NEWRELIC_LEVEL=fatal
+NEWRELIC_NAME=navi
