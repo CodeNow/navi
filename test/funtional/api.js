@@ -20,6 +20,7 @@ var request = require('request');
 var Runnable = require('runnable');
 var querystring = require('querystring');
 var url = require('url');
+var errorPage = require('models/error-page.js');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -65,7 +66,7 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetch.restore();
       done();
     });
-    it('should redirect to api', function (done) {
+    it('should redirect to error login page', function (done) {
       request({
         headers: {
           'user-agent' : chromeUserAgent
@@ -75,10 +76,11 @@ describe('proxy to backend server', function () {
       }, function (err, res) {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(307);
+
         done();
       });
     });
-    it('should redirect to api if token does not exist in db', function (done) {
+    it('should redirect to error page if token does not exist in db', function (done) {
       request({
         headers: {
           'user-agent' : chromeUserAgent
@@ -106,7 +108,7 @@ describe('proxy to backend server', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, done);
       });
-      it('should redirect to api with force if second time', function (done) {
+      it('should redirect to error login page with force if second time', function (done) {
         request({
           jar: j,
           headers: {
@@ -117,8 +119,15 @@ describe('proxy to backend server', function () {
         }, function (err, res) {
           if (err) { return done(err); }
           expect(res.statusCode).to.equal(307);
+          var fullTestUrl = errorPage.generateErrorUrl('signin', {
+            redirectUrl: 'test'
+          });
           var testUrl = url.parse(res.headers.location);
-          var qs = querystring.parse(testUrl.query);
+          var expectUrl = url.parse(fullTestUrl);
+          expect(testUrl.host).to.equal(expectUrl.host);
+          var query = querystring.parse(testUrl.query);
+          var testRedirUrl = url.parse(query.redirectUrl);
+          var qs = querystring.parse(testRedirUrl.query);
           expect(qs.forceLogin).to.exist();
           done();
         });
@@ -127,18 +136,11 @@ describe('proxy to backend server', function () {
   });
   describe('auth error', function() {
     var resErr;
-    before(function(done) {
-      resErr = ErrorCat.create(400, 'boom');
-      sinon.stub(Runnable.prototype, 'githubLogin').yields(resErr);
-      sinon.spy(ErrorCat, 'report');
+    beforeEach(function(done) {
+      Runnable.prototype.githubLogin.yieldsAsync(resErr);
       done();
     });
-    after(function(done) {
-      Runnable.prototype.githubLogin.restore();
-      ErrorCat.report.restore();
-      done();
-    });
-    it('should respond with the error', function (done) {
+    it('should respond with the signin page', function (done) {
       var reqOpts = {
         method: 'OPTIONS',
         headers: {
@@ -150,14 +152,40 @@ describe('proxy to backend server', function () {
       };
       request(reqOpts, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(resErr.output.statusCode);
-        expect(res.body).to.deep.equal(resErr.output.payload);
-        sinon.assert.calledOnce(ErrorCat.report);
-        sinon.assert.calledWith(ErrorCat.report, resErr);
-        expect(ErrorCat.report.firstCall.args[1]).exist();
-        expect(ErrorCat.report.firstCall.args[1].method)
-          .to.equal(reqOpts.method);
+        expect(res.statusCode).to.equal(307);
+        var fullTestUrl = errorPage.generateErrorUrl('signin', {
+          redirectUrl: 'test'
+        });
+        var testUrl = url.parse(res.headers.location);
+        var expectUrl = url.parse(fullTestUrl);
+        expect(testUrl.host).to.equal(expectUrl.host);
         done();
+      });
+    });
+    describe('errorPage throws', function() {
+      beforeEach(function(done) {
+        sinon.stub(errorPage, 'generateErrorUrl').throws();
+        done();
+      });
+      afterEach(function(done) {
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      it('should not fall over', function (done) {
+        var reqOpts = {
+          method: 'OPTIONS',
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          followRedirect: false,
+          url: 'http://localhost:'+process.env.HTTP_PORT,
+          json: true
+        };
+        request(reqOpts, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
+          done();
+        });
       });
     });
   });

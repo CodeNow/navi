@@ -18,7 +18,8 @@ var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
 var clone = require('101/clone');
 var ErrorCat = require('error-cat');
-
+var errorPage = require('models/error-page.js');
+var Boom = require('boom');
 var api = require('../../lib/models/api.js');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
@@ -273,13 +274,16 @@ describe('api.js unit test', function () {
         };
         var testRes = 'that res';
         var testRedir = 'into.your.heart';
+        var fullTestUrl = errorPage.generateErrorUrl('signin', {
+          redirectUrl: testRedir
+        });
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync(testErr);
         sinon.stub(req.apiClient, 'getGithubAuthUrl')
           .withArgs('http://'+host)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(testRedir);
+          expect(req.redirectUrl).to.equal(fullTestUrl);
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -296,6 +300,9 @@ describe('api.js unit test', function () {
         };
         var testRes = 'that res';
         var testRedir = 'into.your.heart';
+        var fullTestUrl = errorPage.generateErrorUrl('signin', {
+          redirectUrl: testRedir
+        });
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync(testErr);
         req.session = {
@@ -305,7 +312,7 @@ describe('api.js unit test', function () {
           .withArgs('http://'+host, true)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(testRedir);
+          expect(req.redirectUrl).to.equal(fullTestUrl);
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -401,7 +408,8 @@ describe('api.js unit test', function () {
           describe('success', function () {
             beforeEach(function (done) {
               ctx.targetHost = 'http://google.com';
-              sinon.stub(api, '_handleElasticUrl').yieldsAsync(null, ctx.targetHost);
+              sinon.stub(api, '_handleElasticUrl')
+                .yieldsAsync(null, ctx.targetHost, ctx.mockInstance);
               done();
             });
 
@@ -414,6 +422,7 @@ describe('api.js unit test', function () {
                 expect(api._handleElasticUrl.firstCall.args[2]).to.equal(undefined); // referer
                 expect(api._handleElasticUrl.firstCall.args[3]).to.equal(ctx.mockInstance);
                 expect(ctx.mockReq.targetHost).to.equal(ctx.targetHost);
+                expect(ctx.mockReq.targetInstance).to.deep.equal(ctx.mockInstance);
                 done();
               });
             });
@@ -704,9 +713,10 @@ describe('api.js unit test', function () {
             it('should yield the associated instance containerUrl', function (done) {
               api._handleElasticUrl(
                 ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-                function (err, targetUrl) {
+                function (err, targetUrl, targetInstance) {
                   if (err) { return done(err); }
                   expect(targetUrl).to.equal(ctx.assocContainerUrl);
+                  expect(targetInstance).to.deep.equal(ctx.assocInstance);
                   done();
                 });
             });
@@ -736,6 +746,74 @@ describe('api.js unit test', function () {
           });
 
           it('should yield masterInstance containerUrl as target url', expectMasterTarget);
+        });
+
+        describe('container errors', function () {
+          beforeEach(function (done) {
+            ctx.apiClient.fetchRoutes.yieldsAsync(null, ctx.userMappings || []);
+            sinon.stub(errorPage, 'generateErrorUrl').returns();
+            done();
+          });
+          afterEach(function (done) {
+            errorPage.generateErrorUrl.restore();
+            done();
+          });
+          describe('container is not running', function () {
+            beforeEach(function (done) {
+              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.badData());
+              ctx.mockInstance.status.returns('stopped');
+              done();
+            });
+
+            it('should yield dead error page as target url', expectErrPage('dead'));
+          });
+          describe('getContainerUrl returned  504 error', function () {
+            beforeEach(function (done) {
+              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.create(504));
+              ctx.mockInstance.status.returns('running');
+              done();
+            });
+
+            it('should yield dead error page as target url', expectErrPage('dead'));
+          });
+          describe('getContainerUrl returned  503 error', function () {
+            beforeEach(function (done) {
+              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.create(503));
+              ctx.mockInstance.status.returns('running');
+              done();
+            });
+
+            it('should yield dead error page as target url', expectErrPage('dead'));
+          });
+          describe('getContainerUrl returned 400 error', function () {
+            beforeEach(function (done) {
+              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.create(400));
+              ctx.mockInstance.status.returns('running');
+              done();
+            });
+
+            it('should yield port error page as target url', expectErrPage('ports'));
+          });
+          describe('getContainerUrl returned unexpected error', function () {
+            beforeEach(function (done) {
+              ctx.err = new Error('crash');
+              ctx.mockInstance.getContainerUrl.yieldsAsync(ctx.err);
+              ctx.mockInstance.status.returns('running');
+              done();
+            });
+
+            it('should yield port error page as target url', expectErr);
+          });
+          describe('getContainerUrl returned unexpected boom error', function () {
+            beforeEach(function (done) {
+              ctx.err = Boom.unsupportedMediaType();
+              ctx.mockInstance.getContainerUrl.yieldsAsync(ctx.err);
+              ctx.mockInstance.status.returns('running');
+              done();
+            });
+
+            it('should yield port error page as target url', expectErr);
+          });
         });
 
         describe('reqUrl has mapping error', function () {
@@ -783,18 +861,20 @@ describe('api.js unit test', function () {
       function expectMasterTarget (done) {
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-          function (err, targetUrl) {
+          function (err, targetUrl, targetInstance) {
             if (err) { return done(err); }
             expect(targetUrl).to.equal(ctx.containerUrl);
+            expect(targetInstance).to.equal(ctx.mockInstance);
             done();
           });
       }
       function expectMappingTarget (done) {
         api._handleElasticUrl(
           ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
-          function (err, targetUrl) {
+          function (err, targetUrl, targetInstance) {
             if (err) { return done(err); }
             expect(targetUrl).to.equal(ctx.destContainerUrl);
+            expect(targetInstance).to.equal(ctx.destInstance);
             done();
           });
       }
@@ -805,6 +885,18 @@ describe('api.js unit test', function () {
             expect(err).to.equal(ctx.err);
             done();
           });
+      }
+      function expectErrPage (type) {
+        return function (done) {
+          api._handleElasticUrl(
+            ctx.apiClient, ctx.elasticUrl, ctx.refererUrl, ctx.mockInstance,
+              function (err, targetUrl) {
+                expect(errorPage.generateErrorUrl
+                  .withArgs(type, ctx.mockInstance).calledOnce).to.be.true();
+                expect(targetUrl).to.equal(ctx.errorPageUrl);
+                done();
+            });
+        };
       }
     });
   });
