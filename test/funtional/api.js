@@ -12,7 +12,6 @@ var beforeEach = lab.beforeEach;
 var before = lab.before;
 var afterEach = lab.afterEach;
 var after = lab.after;
-var ip = require('ip');
 var App = require('../../lib/app.js');
 var redis = require('../../lib/models/redis.js');
 var TestServer = require('../fixture/test-server.js');
@@ -26,13 +25,19 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
 describe('proxy to backend server', function () {
-  var testIp = ip.address();
+  var testIp = '0.0.0.0';
   var testText = '1346tweyasdf3';
+  var testErrorText = 'ididerror';
   var testPort = 55555;
+  var testErrorPort = 55551;
   var testServer;
+  var testErrorServer;
   var app;
   before(function (done) {
    testServer = TestServer.create(testPort, testIp, testText, done);
+  });
+  before(function (done) {
+   testErrorServer = TestServer.create(testErrorPort, testIp, testErrorText, done);
   });
   before(function (done) {
     redis.flushall(done);
@@ -50,6 +55,9 @@ describe('proxy to backend server', function () {
   after(function (done) {
     testServer.close(done);
   });
+  after(function (done) {
+    testErrorServer.close(done);
+  });
   describe('not logged in', function () {
     before(function(done) {
       sinon.stub(Runnable.prototype, 'fetch').yields({
@@ -66,17 +74,19 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetch.restore();
       done();
     });
-    it('should redirect to error login page', function (done) {
+    it('should proxy to error login page', function (done) {
       request({
         headers: {
           'user-agent' : chromeUserAgent
         },
-        followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res) {
-        if (err) { return done(err); }
-        expect(res.statusCode).to.equal(307);
-
+      }, function (err, res, body) {
+        expect(res.statusCode).to.equal(200);
+        var testTest = body.split(';')[0];
+        var targetInfo = url.parse(body.split(';')[1]);
+        expect(testTest).to.equal(testErrorText);
+        var query = querystring.parse(targetInfo.query);
+        expect(query.type).to.equal('signin');
         done();
       });
     });
@@ -85,14 +95,18 @@ describe('proxy to backend server', function () {
         headers: {
           'user-agent' : chromeUserAgent
         },
-        followRedirect: false,
         qs: {
           runnableappAccessToken: 'doesnotexist'
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res) {
+      }, function (err, res, body) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(307);
+        expect(res.statusCode).to.equal(200);
+        var testTest = body.split(';')[0];
+        var targetInfo = url.parse(body.split(';')[1]);
+        expect(testTest).to.equal(testErrorText);
+        var query = querystring.parse(targetInfo.query);
+        expect(query.type).to.equal('signin');
         done();
       });
     });
@@ -104,7 +118,6 @@ describe('proxy to backend server', function () {
           headers: {
             'user-agent' : chromeUserAgent
           },
-          followRedirect: false,
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, done);
       });
@@ -114,21 +127,18 @@ describe('proxy to backend server', function () {
           headers: {
             'user-agent' : chromeUserAgent
           },
-          followRedirect: false,
           url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
+        }, function (err, res, body) {
           if (err) { return done(err); }
-          expect(res.statusCode).to.equal(307);
-          var fullTestUrl = errorPage.generateErrorUrl('signin', {
-            redirectUrl: 'test'
-          });
-          var testUrl = url.parse(res.headers.location);
-          var expectUrl = url.parse(fullTestUrl);
-          expect(testUrl.host).to.equal(expectUrl.host);
-          var query = querystring.parse(testUrl.query);
-          var testRedirUrl = url.parse(query.redirectUrl);
-          var qs = querystring.parse(testRedirUrl.query);
-          expect(qs.forceLogin).to.exist();
+          expect(res.statusCode).to.equal(200);
+          var testTest = body.split(';')[0];
+          var targetInfo = url.parse(body.split(';')[1]);
+          expect(testTest).to.equal(testErrorText);
+          var query = querystring.parse(targetInfo.query);
+          expect(query.type).to.equal('signin');
+          var testUrl = url.parse(query.redirectUrl);
+          var query2 = querystring.parse(testUrl.query);
+          expect(query2.forceLogin).to.exist();
           done();
         });
       });
@@ -146,19 +156,17 @@ describe('proxy to backend server', function () {
         headers: {
           'user-agent' : chromeUserAgent
         },
-        followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT,
         json: true
       };
-      request(reqOpts, function (err, res) {
+      request(reqOpts, function (err, res, body) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(307);
-        var fullTestUrl = errorPage.generateErrorUrl('signin', {
-          redirectUrl: 'test'
-        });
-        var testUrl = url.parse(res.headers.location);
-        var expectUrl = url.parse(fullTestUrl);
-        expect(testUrl.host).to.equal(expectUrl.host);
+        expect(res.statusCode).to.equal(200);
+        var testTest = body.split(';')[0];
+        var targetInfo = url.parse(body.split(';')[1]);
+        expect(testTest).to.equal(testErrorText);
+        var query = querystring.parse(targetInfo.query);
+        expect(query.type).to.equal('signin');
         done();
       });
     });
@@ -177,7 +185,6 @@ describe('proxy to backend server', function () {
           headers: {
             'user-agent' : chromeUserAgent
           },
-          followRedirect: false,
           url: 'http://localhost:'+process.env.HTTP_PORT,
           json: true
         };
@@ -205,7 +212,6 @@ describe('proxy to backend server', function () {
         headers: {
           'user-agent' : chromeUserAgent
         },
-        followRedirect: false,
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
         if (err) { return done(err); }
