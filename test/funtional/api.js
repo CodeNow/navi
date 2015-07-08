@@ -214,4 +214,26 @@ describe('proxy to backend server', function () {
       });
     });
   });
+
+  describe('logged in', function () {
+    it('should load from the server properly', function (done) {
+      request({
+        headers: {
+          'user-agent': chromeUserAgent
+        },
+        followRedirect: true,
+        url: 'http://localhost:' + process.env.HTTP_PORT
+      }, function (err, res) {
+        if (err) {
+          return done(err);
+        }
+
+        expect(res.body).to.equal(testText);
+        expect(res.statusCode).to.equal(200);
+        expect(res.headers['X-Runnable-Branch']).to.be.ok;
+
+        done();
+      });
+    });
+  });
 });
