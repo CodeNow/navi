@@ -283,7 +283,7 @@ describe('api.js unit test', function () {
           .withArgs('http://'+host)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(fullTestUrl);
+          expect(req.targetHost).to.equal(fullTestUrl);
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -312,7 +312,7 @@ describe('api.js unit test', function () {
           .withArgs('http://'+host, true)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(fullTestUrl);
+          expect(req.targetHost).to.equal(fullTestUrl);
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -322,7 +322,7 @@ describe('api.js unit test', function () {
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync();
         api.checkIfLoggedIn(req, {}, function () {
-          expect(req.redirectUrl).to.be.undefined();
+          expect(req.targetHost).to.be.undefined();
           done();
         });
       });
