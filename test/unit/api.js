@@ -121,9 +121,7 @@ describe('api.js unit test', function () {
       var testReq = {
         session: {},
         method: 'post',
-        headers: {
-          'user-agent' : chromeUserAgent
-        }
+        isBrowser: true
       };
       api.createClient(testReq, {}, function () {
 
@@ -138,9 +136,7 @@ describe('api.js unit test', function () {
       var testReq = {
         session: {},
         method: 'OPTIONS',
-        headers: {
-          'user-agent' : chromeUserAgent
-        }
+        isBrowser: true
       };
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
@@ -154,9 +150,7 @@ describe('api.js unit test', function () {
       var testReq = {
         session: {},
         method: 'post',
-        headers: {
-          'user-agent' : chromeUserAgent
-        }
+        isBrowser: true
       };
       sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
       api.createClient(testReq, {}, function () {
@@ -207,9 +201,7 @@ describe('api.js unit test', function () {
           apiCookie: testCookie
         },
         method: 'post',
-        headers: {
-          'user-agent' : chromeUserAgent
-        }
+        isBrowser: true
       };
       api.createClient(testReq, {}, function () {
         expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
