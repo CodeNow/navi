@@ -39,7 +39,27 @@ describe('proxy.js unit test', function () {
       });
       proxyServer.proxy.emit('error', 'err', testReq, testRes);
     });
+    it('should not proxy to error page twice', function(done) {
+      // this test will fail with error done called twice if there was a failure
+      var testReq = {
+        targetInstance: 'some_inst'
+      };
+      var testRes = 'that-res';
+      var testHost = 'http://somehost:123';
+      sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
 
+        expect(errorPage.generateErrorUrl
+          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        proxyServer.proxy.web.restore();
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+    });
   });
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
