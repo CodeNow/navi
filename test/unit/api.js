@@ -22,9 +22,6 @@ var errorPage = require('models/error-page.js');
 var Boom = require('boom');
 var api = require('../../lib/models/api.js');
 
-var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
-  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
-
 describe('api.js unit test', function () {
   var ctx;
   beforeEach(function (done) {
@@ -67,8 +64,8 @@ describe('api.js unit test', function () {
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
     it('should add 80', function (done) {
       var test = api._getUrlFromRequest({
+        isBrowser: true,
         headers: {
-          'user-agent' : chromeUserAgent,
           host: base
         }
       });
@@ -77,8 +74,8 @@ describe('api.js unit test', function () {
     });
     it('should add https', function (done) {
       var test = api._getUrlFromRequest({
+        isBrowser: true,
         headers: {
-          'user-agent' : chromeUserAgent,
           host: base+':443'
         }
       });
@@ -87,8 +84,8 @@ describe('api.js unit test', function () {
     });
     it('should add 80 to subdomain', function (done) {
       var test = api._getUrlFromRequest({
+        isBrowser: true,
         headers: {
-          'user-agent' : chromeUserAgent,
           host: 'dat.sub.domain.' + base
         }
       });
@@ -97,8 +94,8 @@ describe('api.js unit test', function () {
     });
     it('should add https to subdomain', function (done) {
       var test = api._getUrlFromRequest({
+        isBrowser: true,
         headers: {
-          'user-agent' : chromeUserAgent,
           host: 'dat.sub.domain.' + base + ':443'
         }
       });
@@ -107,8 +104,8 @@ describe('api.js unit test', function () {
     });
     it('should be valid for correct hostname', function (done) {
       var test = api._getUrlFromRequest({
+        isBrowser: true,
         headers: {
-          'user-agent' : chromeUserAgent,
           host: base + ':100'
         }
       });
@@ -217,8 +214,8 @@ describe('api.js unit test', function () {
     var port = ':1234';
     var host = hostName + port;
     var testReq = {
+      isBrowser: true,
       headers: {
-        'user-agent' : chromeUserAgent,
         host: host
       },
       method: 'post'
@@ -380,8 +377,20 @@ describe('api.js unit test', function () {
           });
           beforeEach(createNaviEntry);
           beforeEach(createDirectReq);
-
-          it('should redirect to a master url', expectRedirectToMasterUrl);
+          describe('with browser agent', function() {
+            it('should redirect to a master url', expectRedirectToMasterUrl);
+          });
+          describe('with non-browser agent', function() {
+            it('should redirect to a master url',  function (done) {
+              ctx.mockReq.isBrowser = false;
+              api.getTargetHost(ctx.mockReq, {}, function () {
+                expect(ctx.mockReq.targetHost).to.equal(ctx.containerUrl);
+                expect(ctx.mockReq.targetInstance.attrs._id)
+                  .to.equal(ctx.mockInstance.attrs._id);
+                done();
+              });
+            });
+          });
         });
 
         describe('for an elastic url', function () {
@@ -914,8 +923,8 @@ describe('api.js unit test', function () {
   function createDirectReq (done) {
     ctx.mockReq = {
       session: {},
+      isBrowser: true,
       headers: {
-        'user-agent' : chromeUserAgent,
         host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort
       },
       method: 'post',
@@ -926,8 +935,8 @@ describe('api.js unit test', function () {
   function createElasticReq (done) {
     ctx.mockReq = {
       session: {},
+      isBrowser: true,
       headers: {
-        'user-agent' : chromeUserAgent,
         host: ctx.naviEntry.getElasticHostname() + ':' + ctx.exposedPort
       },
       method: 'post',
