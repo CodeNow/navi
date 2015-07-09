@@ -1,0 +1,15 @@
+c|T|B|
+0|E|0| proxy to master
+1|E|0| proxy to master (maybe check refer)
+0|D|0| proxy to direct
+1|D|0| proxy to direct
+0|E|1| redirect for auth
+1|E|1| proxy to mapping (ref mapping)
+0|D|1| redirect for auth
+1|D|1| redirect to elastic url
+
+c = authenticated cookie
+E = elastic url
+D = direct url
+B = 0: is browser; 1: non browser
+
