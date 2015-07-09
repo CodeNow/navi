@@ -11,5 +11,5 @@ c|T|B|
 c = authenticated cookie
 E = elastic url
 D = direct url
-B = 0: is browser; 1: non browser
+B = 1: is browser; 0: non browser
 
