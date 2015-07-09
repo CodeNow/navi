@@ -59,7 +59,6 @@ describe('error-page.js unit test', function () {
         expectUrl({
           type: 'ports',
           ports: ['3000', '80'],
-          containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
           ownerName: testOwner,
@@ -83,7 +82,6 @@ describe('error-page.js unit test', function () {
         var testUrl = errorPage.generateErrorUrl('ports', ctx.mockInstance2);
         expectUrl({
           type: 'ports',
-          containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
           ownerName: testOwner,
@@ -99,7 +97,6 @@ describe('error-page.js unit test', function () {
         expectUrl({
           type: 'unresponsive',
           ports: ['3000', '80'],
-          containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
           ownerName: testOwner,
@@ -115,7 +112,6 @@ describe('error-page.js unit test', function () {
         expectUrl({
           type: 'dead',
           ports: ['3000', '80'],
-          containerUrl: testHostname,
           branchName: testRepoAndBranchName,
           status: testStatus,
           ownerName: testOwner,
