@@ -10,6 +10,7 @@ var beforeEach = lab.beforeEach;
 var expect = require('code').expect;
 var sinon = require('sinon');
 
+var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
 
 describe('proxy.js unit test', function () {
@@ -18,8 +19,50 @@ describe('proxy.js unit test', function () {
     proxyServer = new ProxyServer();
     done();
   });
+  describe('proxy error handler', function() {
+    it('should proxy to error page if target unresponsive', function(done) {
+      var testReq = {
+        targetInstance: 'some_inst'
+      };
+      var testRes = 'that-res';
+      var testHost = 'http://somehost:123';
+      sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        expect(errorPage.generateErrorUrl
+          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        proxyServer.proxy.web.restore();
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+    });
+    it('should not proxy to error page twice', function(done) {
+      // this test will fail with error done called twice if there was a failure
+      var testReq = {
+        targetInstance: 'some_inst'
+      };
+      var testRes = 'that-res';
+      var testHost = 'http://somehost:123';
+      sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        expect(errorPage.generateErrorUrl
+          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        proxyServer.proxy.web.restore();
+        errorPage.generateErrorUrl.restore();
+        done();
+      });
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+      proxyServer.proxy.emit('error', 'err', testReq, testRes);
+    });
+  });
   describe('proxyIfTargetHostExist', function () {
-    var testHost = 'localhost:1234';
+    var testHost = 'http://localhost:1234';
     var testReq = {
       targetHost: testHost
     };
@@ -41,6 +84,30 @@ describe('proxy.js unit test', function () {
         done();
       });
       testMw(testReq, testRes);
+    });
+    it('should keep path info and append query', function(done) {
+      var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
+      var testQuery = 'status=running&ports=3000&ports=80&type=ports';
+      var testPath = '/some/path';
+      var req = {
+        targetHost: testHost + '?' + testQuery,
+        headers: {},
+        url: testPath
+      };
+      var expectedReq = {
+        targetHost: testHost + '?' + testQuery,
+        headers: {},
+        url: testPath + '?' + testQuery
+      };
+
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        expect(proxyServer.proxy.web
+          .withArgs(expectedReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        proxyServer.proxy.web.restore();
+        done();
+      });
+      testMw(req, testRes);
     });
   });
   describe('proxyWsIfTargetHostExist', function () {
