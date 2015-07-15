@@ -64,21 +64,36 @@ describe('proxy.js unit test', function () {
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
     var testReq = {
-      targetHost: testHost
+      targetHost: testHost,
+      targetInstance: {
+        getBranchName: sinon.stub().returns('testBranchName'),
+        id: sinon.stub().returns('testId')
+      }
     };
-    var testRes = 'res again';
+    var testRes = {
+      setHeader: sinon.spy()
+    };
     var testMw;
     beforeEach(function(done) {
       testMw = proxyServer.proxyIfTargetHostExist();
       done();
     });
     it('should next if no target', function(done) {
-      testMw({}, null, done);
+      sinon.spy(proxyServer.proxy, 'web');
+      testMw({}, null, function () {
+        sinon.assert.notCalled(testReq.targetInstance.getBranchName);
+        sinon.assert.notCalled(testReq.targetInstance.id);
+        sinon.assert.notCalled(proxyServer.proxy.web);
+        done();
+      });
     });
     it('should proxy if target exist', function(done) {
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
           .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        sinon.assert.calledOnce(testReq.targetInstance.getBranchName);
+        sinon.assert.calledOnce(testReq.targetInstance.id);
 
         proxyServer.proxy.web.restore();
         done();
@@ -92,17 +107,19 @@ describe('proxy.js unit test', function () {
       var req = {
         targetHost: testHost + '?' + testQuery,
         headers: {},
-        url: testPath
-      };
-      var expectedReq = {
-        targetHost: testHost + '?' + testQuery,
-        headers: {},
-        url: testPath + '?' + testQuery
+        url: testPath,
+        targetInstance: {
+          getBranchName: sinon.stub().returns('testBranchName'),
+          id: sinon.stub().returns('testId')
+        }
       };
 
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
-          .withArgs(expectedReq, testRes, {target: testHost}).calledOnce).to.be.true();
+          .withArgs(req, testRes, {target: testHost}).calledOnce).to.be.true();
+
+        sinon.assert.calledOnce(req.targetInstance.getBranchName);
+        sinon.assert.calledOnce(req.targetInstance.id);
 
         proxyServer.proxy.web.restore();
         done();

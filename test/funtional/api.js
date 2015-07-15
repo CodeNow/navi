@@ -20,6 +20,7 @@ var Runnable = require('runnable');
 var querystring = require('querystring');
 var url = require('url');
 var errorPage = require('models/error-page.js');
+var NaviEntry = require('navi-entry');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -216,6 +217,44 @@ describe('proxy to backend server', function () {
       }, function (err, res) {
         if (err) { return done(err); }
         expect(res.statusCode).to.equal(500);
+        done();
+      });
+    });
+  });
+
+  describe('logged in', function () {
+    before(function (done) {
+      sinon.stub(Runnable.prototype, 'fetch').yieldsAsync();
+      sinon.stub(NaviEntry, 'createFromUrl').returns({
+        getInfo: function (cb) {
+          cb(null, {
+            instanceName: 'test',
+            elastic: true,
+            ownerGithub: '1236478326'
+          });
+        }
+      });
+      done();
+    });
+    after(function(done) {
+      Runnable.prototype.fetch.restore();
+      done();
+    });
+    it('should load from the server properly', function (done) {
+      request({
+        headers: {
+          'user-agent': chromeUserAgent
+        },
+        followRedirect: true,
+        url: 'http://localhost:' + process.env.HTTP_PORT
+      }, function (err, res) {
+        if (err) {
+          return done(err);
+        }
+
+        expect(res.body).to.equal(testText);
+        expect(res.statusCode).to.equal(200);
+        expect(res.headers['X-Runnable-Branch']).to.be.ok();
         done();
       });
     });
