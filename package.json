@@ -43,6 +43,7 @@
     "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v3.0.2",
     "newrelic": "^1.20.2",
     "node-dogstatsd": "0.0.6",
+    "node-uuid": "^1.4.3",
     "redis": "^0.12.1",
     "rollbar": "^0.4.5",
     "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v4.2.0",
