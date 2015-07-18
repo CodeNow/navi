@@ -27,8 +27,8 @@
   "dependencies": {
     "101": "^0.14.1",
     "async": "^0.9.0",
-    "auto-debug": "^1.0.1",
     "boom": "^2.6.1",
+    "bunyan": "^1.4.0",
     "connect-redis": "^2.2.0",
     "cors": "^2.6.0",
     "dotenv": "^1.0.0",
