@@ -9,6 +9,8 @@ var beforeEach = lab.beforeEach;
 
 var expect = require('code').expect;
 var sinon = require('sinon');
+var pluck = require('101/pluck');
+var clone = require('101/clone');
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
@@ -153,6 +155,50 @@ describe('proxy.js unit test', function () {
         }
       };
       ProxyServer.redirIfRedirectUrlExist(testReq, testRes);
+    });
+  });
+  describe('_addHeadersToRes', function () {
+    it('should add cors headers to all responses', function (done) {
+      var proxyRes = {
+        headers: {}
+      };
+      var refererHost = 'http://referer.com';
+      var referer = refererHost + '/path';
+      var instanceName = 'instanceName';
+      var methodsStr = require('methods').map(pluck('toUpperCase()')).join(',');
+      proxyServer._addHeadersToRes(proxyRes, referer, instanceName);
+      expect(proxyRes.headers).to.deep.contain({
+        'Access-Control-Allow-Origin' : 'http://referer.com',
+        'Access-Control-Allow-Methods': methodsStr,
+        'Access-Control-Allow-Headers': 'accept, content-type',
+        'Access-Control-Allow-Credentials': 'true',
+        'Runnable-Instance-Name': instanceName
+      });
+      done();
+    });
+    it('should only override Access-Control-Allow-Origin', function (done) {
+      var proxyRes = {
+        headers: {}
+      };
+      var referer = null;
+      var instanceName = 'instanceName';
+      proxyServer._addHeadersToRes(proxyRes, referer, instanceName);
+      expect(proxyRes.headers['Access-Control-Allow-Origin']).to.equal('*');
+      done();
+    });
+    it('should use application\'s "origin", "methods", and "headers" when available', function(done) {
+      var proxyRes = {
+        headers: {
+          'Access-Control-Allow-Origin' : 'http://google.com',
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': 'accept'
+        }
+      };
+      var cachedHeaders = clone(proxyRes.headers);
+      var instanceName = 'instanceName';
+      proxyServer._addHeadersToRes(proxyRes, null, instanceName);
+      expect(proxyRes.headers).to.deep.contain(cachedHeaders);
+      done();
     });
   });
 });
