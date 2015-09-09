@@ -40,6 +40,7 @@
     "express-session": "^1.11.1",
     "http-proxy": "^1.9.0",
     "keypather": "^1.10.1",
+    "methods": "^1.1.1",
     "middleware-flow": "^0.6.1",
     "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v3.0.2",
     "newrelic": "^1.20.2",
