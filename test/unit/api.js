@@ -263,16 +263,14 @@ describe('api.js unit test', function () {
         };
         var testRes = 'that res';
         var testRedir = 'into.your.heart';
-        var fullTestUrl = errorPage.generateErrorUrl('signin', {
-          redirectUrl: testRedir
-        });
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync(testErr);
         sinon.stub(req.apiClient, 'getGithubAuthUrl')
           .withArgs('http://'+host)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.targetHost).to.equal(fullTestUrl);
+          expect(req.redirectUrl).to.equal(testRedir);
+          expect(req.targetHost).to.be.undefined();
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -302,6 +300,7 @@ describe('api.js unit test', function () {
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
           expect(req.targetHost).to.equal(fullTestUrl);
+          expect(req.redirectUrl).to.be.undefined();
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -312,6 +311,7 @@ describe('api.js unit test', function () {
         req.apiClient.fetch.yieldsAsync();
         api.checkIfLoggedIn(req, {}, function () {
           expect(req.targetHost).to.be.undefined();
+          expect(req.redirectUrl).to.be.undefined();
           done();
         });
       });
