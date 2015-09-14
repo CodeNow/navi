@@ -51,7 +51,7 @@ describe('proxy.js unit test', function () {
       var testReq = {
         targetInstance: 'some_inst'
       };
-      var testRes = { };
+      var testRes = {};
       var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
@@ -73,7 +73,7 @@ describe('proxy.js unit test', function () {
     var testReq = {
       targetHost: testHost
     };
-    var testRes = { };
+    var testRes = {};
     var testMw;
     beforeEach(function(done) {
       testMw = proxyServer.proxyIfTargetHostExist();
