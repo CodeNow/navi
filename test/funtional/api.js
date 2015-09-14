@@ -74,24 +74,22 @@ describe('proxy to backend server', function () {
       Runnable.prototype.fetch.restore();
       done();
     });
-    it('should proxy to error login page', function (done) {
+    it('should redirect to api for auth', function (done) {
       request({
+        followRedirect: false,
         headers: {
           'user-agent' : chromeUserAgent
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res, body) {
-        expect(res.statusCode).to.equal(200);
-        var testTest = body.split(';')[0];
-        var targetInfo = url.parse(body.split(';')[1]);
-        expect(testTest).to.equal(testErrorText);
-        var query = querystring.parse(targetInfo.query);
-        expect(query.type).to.equal('signin');
+      }, function (err, res) {
+        expect(res.statusCode).to.equal(307);
+        expect(res.headers.location).to.contain(process.env.API_HOST);
         done();
       });
     });
-    it('should redirect to error page if token does not exist in db', function (done) {
+    it('should redirect api if token does not exist in db', function (done) {
       request({
+        followRedirect: false,
         headers: {
           'user-agent' : chromeUserAgent
         },
@@ -99,14 +97,10 @@ describe('proxy to backend server', function () {
           runnableappAccessToken: 'doesnotexist'
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res, body) {
+      }, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(200);
-        var testTest = body.split(';')[0];
-        var targetInfo = url.parse(body.split(';')[1]);
-        expect(testTest).to.equal(testErrorText);
-        var query = querystring.parse(targetInfo.query);
-        expect(query.type).to.equal('signin');
+        expect(res.statusCode).to.equal(307);
+        expect(res.headers.location).to.contain(process.env.API_HOST);
         done();
       });
     });
@@ -121,7 +115,7 @@ describe('proxy to backend server', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, done);
       });
-      it('should redirect to error login page with force if second time', function (done) {
+      it('should proxy to error login page with force if second time', function (done) {
         request({
           jar: j,
           headers: {
@@ -150,8 +144,9 @@ describe('proxy to backend server', function () {
       Runnable.prototype.githubLogin.yieldsAsync(resErr);
       done();
     });
-    it('should respond with the signin page', function (done) {
+    it('should redir to api', function (done) {
       var reqOpts = {
+        followRedirect: false,
         method: 'OPTIONS',
         headers: {
           'user-agent' : chromeUserAgent
@@ -159,24 +154,20 @@ describe('proxy to backend server', function () {
         url: 'http://localhost:'+process.env.HTTP_PORT,
         json: true
       };
-      request(reqOpts, function (err, res, body) {
+      request(reqOpts, function (err, res) {
         if (err) { return done(err); }
-        expect(res.statusCode).to.equal(200);
-        var testTest = body.split(';')[0];
-        var targetInfo = url.parse(body.split(';')[1]);
-        expect(testTest).to.equal(testErrorText);
-        var query = querystring.parse(targetInfo.query);
-        expect(query.type).to.equal('signin');
+        expect(res.statusCode).to.equal(307);
+        expect(res.headers.location).to.contain(process.env.API_HOST);
         done();
       });
     });
-    describe('errorPage throws', function() {
+    describe('getGithubAuthUrl throws', function() {
       beforeEach(function(done) {
-        sinon.stub(errorPage, 'generateErrorUrl').throws();
+        sinon.stub(Runnable.prototype, 'getGithubAuthUrl').throws();
         done();
       });
       afterEach(function(done) {
-        errorPage.generateErrorUrl.restore();
+        Runnable.prototype.getGithubAuthUrl.restore();
         done();
       });
       it('should not fall over', function (done) {
