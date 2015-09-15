@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
-    "test": "LOG_LEVEL=error NODE_PATH=./lib lab -c -t 100 -v --leaks",
+    "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks",
     "test-watch": "nodemon --exec npm run test"
   },
   "repository": {
@@ -57,7 +57,6 @@
     "lab": "^5.5.0",
     "primus": "^3.0.2",
     "request": "^2.54.0",
-    "rewire": "^2.3.4",
     "sinon": "^1.14.1",
     "ws": "^0.7.1"
   }
