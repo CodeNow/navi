@@ -363,6 +363,22 @@ describe('api.js unit test', function () {
         it('should redirect to the master url', expectRedirectToMasterUrl);
       });
 
+      describe('for a non-masterPod instance with origin', function () {
+        beforeEach(function (done) {
+          ctx.mockInstance.attrs.masterPod = false;
+          ctx.mockInstance.attrs.name =
+            ctx.mockInstance.getBranchName() + '-' + ctx.mockInstance.attrs.name;
+          done();
+        });
+        beforeEach(createNaviEntry);
+        beforeEach(createDirectReq);
+        beforeEach(function(done) {
+          ctx.mockReq.headers.origin = 'http://origin.com';
+          done();
+        });
+        it('should redirect to the master url', expectRedirectToMasterUrl);
+      });
+
       describe('for masterPod instances', function () {
         beforeEach(function (done) {
           ctx.mockInstance.attrs.masterPod = true;
@@ -925,7 +941,8 @@ describe('api.js unit test', function () {
       session: {},
       isBrowser: true,
       headers: {
-        host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort
+        host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort,
+        referer: 'http://referer.com'
       },
       method: 'post',
       apiClient: ctx.apiClient
