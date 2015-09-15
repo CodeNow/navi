@@ -44,7 +44,7 @@ describe('lib/logger.js unit test', function () {
   });
 
   it('should cover serializers', function (done) {
-    logger.error({
+    logger.fatal({
       tx: true,
       req: {}
     }, 'msg');
