@@ -29,7 +29,7 @@ describe('lib/logger.js unit test', function () {
     var testToken = 'testToken';
     process.env.LOGGLY_TOKEN = testToken;
     logger._initializeStreams();
-    expect(logger._streams.length).to.equal(1);
+    expect(logger._streams.length).to.equal(2);
     expect(logger._streams[0].stream.logglyConfig.token)
       .to.equal(testToken);
 
@@ -43,13 +43,6 @@ describe('lib/logger.js unit test', function () {
     expect(logger._streams.length).to.equal(1);
     expect(logger._streams[0].stream)
       .to.equal(process.stdout);
-
-    done();
-  });
-
-  it('should log nothing', function (done) {
-    logger._initializeStreams();
-    expect(logger._streams.length).to.equal(0);
 
     done();
   });
