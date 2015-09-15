@@ -13,7 +13,6 @@ var logger = require('../../lib/logger');
 describe('lib/logger.js unit test', function () {
   beforeEach(function (done) {
     delete process.env.LOGGLY_TOKEN;
-    delete process.env.LOG_LEVEL_STDOUT;
     logger._streams.length = 0;
     done();
   });
@@ -21,7 +20,6 @@ describe('lib/logger.js unit test', function () {
   after(function (done) {
     logger._streams.length = 0;
     delete process.env.LOGGLY_TOKEN;
-    delete process.env.LOG_LEVEL_STDOUT;
     done();
   });
 
@@ -37,8 +35,6 @@ describe('lib/logger.js unit test', function () {
   });
 
   it('should logs to stdout if set', function (done) {
-    var testLevel = 'testLevel';
-    process.env.LOG_LEVEL_STDOUT = testLevel;
     logger._initializeStreams();
     expect(logger._streams.length).to.equal(1);
     expect(logger._streams[0].stream)
@@ -48,7 +44,7 @@ describe('lib/logger.js unit test', function () {
   });
 
   it('should cover serializers', function (done) {
-    logger.error({
+    logger.fatal({
       tx: true,
       req: {}
     }, 'msg');
