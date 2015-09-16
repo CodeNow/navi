@@ -11,6 +11,7 @@ var expect = require('code').expect;
 var sinon = require('sinon');
 var pluck = require('101/pluck');
 var clone = require('101/clone');
+var keypather = require('keypather')();
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
@@ -162,11 +163,18 @@ describe('proxy.js unit test', function () {
       var proxyRes = {
         headers: {}
       };
-      var refererHost = 'http://referer.com';
-      var referer = refererHost + '/path';
+      var req = {};
+      keypather.set(req, 'headers.origin', 'http://referer.com');
       var instanceName = 'instanceName';
       var methodsStr = require('methods').map(pluck('toUpperCase()')).join(',');
-      proxyServer._addHeadersToRes(proxyRes, referer, instanceName);
+      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
+      console.log(proxyRes, {
+        'Access-Control-Allow-Origin' : 'http://referer.com',
+        'Access-Control-Allow-Methods': methodsStr,
+        'Access-Control-Allow-Headers': 'accept, content-type',
+        'Access-Control-Allow-Credentials': 'true',
+        'Runnable-Instance-Name': instanceName
+      });
       expect(proxyRes.headers).to.deep.contain({
         'Access-Control-Allow-Origin' : 'http://referer.com',
         'Access-Control-Allow-Methods': methodsStr,
@@ -176,14 +184,21 @@ describe('proxy.js unit test', function () {
       });
       done();
     });
-    it('should only override Access-Control-Allow-Origin', function (done) {
+    it('should override Access-Control-Allow-Origin if it is *', function (done) {
       var proxyRes = {
-        headers: {}
+        headers: {
+          'Access-Control-Allow-Origin' : '*',
+        }
       };
-      var referer = null;
       var instanceName = 'instanceName';
-      proxyServer._addHeadersToRes(proxyRes, referer, instanceName);
-      expect(proxyRes.headers['Access-Control-Allow-Origin']).to.equal('*');
+      var req = {};
+      var origin = 'http://google.com';
+      keypather.set(req, 'headers.origin', origin);
+      keypather.set(req, 'cachedHeaders["Access-Control-Allow-Origin"]', 'http://google.com');
+      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
+      expect(proxyRes.headers).to.deep.contain({
+        'Access-Control-Allow-Origin': origin
+      });
       done();
     });
     it('should use application\'s "origin", "methods", and "headers" when available', function(done) {
@@ -196,7 +211,9 @@ describe('proxy.js unit test', function () {
       };
       var cachedHeaders = clone(proxyRes.headers);
       var instanceName = 'instanceName';
-      proxyServer._addHeadersToRes(proxyRes, null, instanceName);
+      var req = {};
+      keypather.set(req, 'headers.origin', null);
+      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
       expect(proxyRes.headers).to.deep.contain(cachedHeaders);
       done();
     });

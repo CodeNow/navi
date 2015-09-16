@@ -1,7 +1,7 @@
 machine:
   environment:
     NODE_ENV: test
-    LOG_LEVEL: error
+    LOG_LEVEL_STDOUT: fatal
 dependencies:
   override:
     - nvm install 0.10.38
