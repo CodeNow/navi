@@ -263,16 +263,14 @@ describe('api.js unit test', function () {
         };
         var testRes = 'that res';
         var testRedir = 'into.your.heart';
-        var fullTestUrl = errorPage.generateErrorUrl('signin', {
-          redirectUrl: testRedir
-        });
         var req = clone(testReq);
         req.apiClient.fetch.yieldsAsync(testErr);
         sinon.stub(req.apiClient, 'getGithubAuthUrl')
           .withArgs('http://'+host)
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.targetHost).to.equal(fullTestUrl);
+          expect(req.redirectUrl).to.equal(testRedir);
+          expect(req.targetHost).to.be.undefined();
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -302,6 +300,7 @@ describe('api.js unit test', function () {
           .returns(testRedir);
         api.checkIfLoggedIn(req, testRes, function () {
           expect(req.targetHost).to.equal(fullTestUrl);
+          expect(req.redirectUrl).to.be.undefined();
           req.apiClient.getGithubAuthUrl.restore();
           done();
         });
@@ -312,6 +311,7 @@ describe('api.js unit test', function () {
         req.apiClient.fetch.yieldsAsync();
         api.checkIfLoggedIn(req, {}, function () {
           expect(req.targetHost).to.be.undefined();
+          expect(req.redirectUrl).to.be.undefined();
           done();
         });
       });
@@ -360,6 +360,22 @@ describe('api.js unit test', function () {
         beforeEach(createNaviEntry);
         beforeEach(createDirectReq);
 
+        it('should redirect to the master url', expectRedirectToMasterUrl);
+      });
+
+      describe('for a non-masterPod instance with origin', function () {
+        beforeEach(function (done) {
+          ctx.mockInstance.attrs.masterPod = false;
+          ctx.mockInstance.attrs.name =
+            ctx.mockInstance.getBranchName() + '-' + ctx.mockInstance.attrs.name;
+          done();
+        });
+        beforeEach(createNaviEntry);
+        beforeEach(createDirectReq);
+        beforeEach(function(done) {
+          ctx.mockReq.headers.origin = 'http://origin.com';
+          done();
+        });
         it('should redirect to the master url', expectRedirectToMasterUrl);
       });
 
@@ -925,7 +941,8 @@ describe('api.js unit test', function () {
       session: {},
       isBrowser: true,
       headers: {
-        host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort
+        host: ctx.naviEntry.getDirectHostname() + ':' + ctx.exposedPort,
+        referer: 'http://referer.com'
       },
       method: 'post',
       apiClient: ctx.apiClient
