@@ -170,42 +170,42 @@ describe('proxy.js unit test', function () {
       };
       var req = {};
       keypather.set(req, 'headers.origin', 'http://referer.com');
-      keypather.set(req, 'headers["Access-Control-Request-Headers"]', 'accept');
+      keypather.set(req, 'headers["access-control-request-headers"]', 'accept');
       var instanceName = 'instanceName';
       var methodsStr = require('methods').map(pluck('toUpperCase()')).join(',');
       proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain({
-        'Access-Control-Allow-Origin' : 'http://referer.com',
-        'Access-Control-Allow-Methods': methodsStr,
-        'Access-Control-Allow-Headers': req.headers['Access-Control-Request-Headers'],
-        'Access-Control-Allow-Credentials': 'true',
-        'Runnable-Instance-Name': instanceName
+        'access-control-allow-origin' : 'http://referer.com',
+        'access-control-allow-methods': methodsStr,
+        'access-control-allow-headers': req.headers['access-control-request-headers'],
+        'access-control-allow-credentials': 'true',
+        'runnable-instance-name': instanceName
       });
       done();
     });
-    it('should override Access-Control-Allow-Origin if it is *', function (done) {
+    it('should override "access-control-allow-origin" if it is *', function (done) {
       var proxyRes = {
         headers: {
-          'Access-Control-Allow-Origin' : '*',
+          'access-control-allow-origin' : '*',
         }
       };
       var instanceName = 'instanceName';
       var req = {};
       var origin = 'http://google.com';
       keypather.set(req, 'headers.origin', origin);
-      keypather.set(req, 'cachedHeaders["Access-Control-Allow-Origin"]', 'http://google.com');
+      keypather.set(req, 'cachedHeaders["access-control-allow-origin"]', 'http://google.com');
       proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain({
-        'Access-Control-Allow-Origin': origin
+        'access-control-allow-origin': origin
       });
       done();
     });
     it('should use application\'s "origin", "methods", and "headers" when available', function(done) {
       var proxyRes = {
         headers: {
-          'Access-Control-Allow-Origin' : 'http://google.com',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'accept'
+          'access-control-allow-origin' : 'http://google.com',
+          'access-control-allow-methods': 'POST',
+          'access-control-allow-headers': 'accept'
         }
       };
       var cachedHeaders = clone(proxyRes.headers);
@@ -251,9 +251,7 @@ describe('proxy.js unit test', function () {
       it('should transform and pipe the target-response to the response', function (done) {
         var targetRes = {
           headers: {
-            'Content-Type': 'text/html',
             'content-type': 'text/html',
-            'Content-Encoding': 'gzip',
             'content-encoding': 'gzip'
           },
           pipe: sinon.stub().returnsArg(0)
