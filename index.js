@@ -1,9 +1,9 @@
 'use strict';
 require('loadenv.js');
 
-if (process.env.NEWRELIC_KEY) {
-  require('newrelic');
-}
+// if (process.env.NEWRELIC_KEY) {
+//   require('newrelic');
+// }
 
 var App = require('./lib/app.js');
 var logger = require('middlewares/logger')(__filename);

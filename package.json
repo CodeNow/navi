@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
+    "start": "node-inspector --no-preload & NODE_PATH=./lib node --debug index.js",
     "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks",
     "test-watch": "nodemon --exec npm run test"
   },
@@ -45,6 +45,7 @@
     "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v3.0.2",
     "newrelic": "^1.20.2",
     "node-dogstatsd": "0.0.6",
+    "node-inspector": "^0.12.3",
     "node-uuid": "^1.4.3",
     "redis": "^0.12.1",
     "rollbar": "^0.4.5",
