@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "start": "node-inspector --no-preload & NODE_PATH=./lib node --debug index.js",
+    "start": "NODE_PATH=./lib node index.js",
     "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks",
     "test-watch": "nodemon --exec npm run test"
   },
