@@ -211,7 +211,7 @@ describe('proxy.js unit test', function () {
       var cachedHeaders = clone(proxyRes.headers);
       var instanceName = 'instanceName';
       var req = {};
-      keypather.set(req, 'headers.origin', null);
+      keypather.set(req, 'headers.origin', 'http://yahoo.com');
       proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain(cachedHeaders);
       done();
