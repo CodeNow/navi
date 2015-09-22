@@ -6,12 +6,16 @@ var lab = exports.lab = Lab.script();
 var describe = lab.describe;
 var it = lab.test;
 var beforeEach = lab.beforeEach;
+var afterEach = lab.afterEach;
 
 var expect = require('code').expect;
 var sinon = require('sinon');
 var pluck = require('101/pluck');
 var clone = require('101/clone');
+var noop = require('101/noop');
 var keypather = require('keypather')();
+var createResStream = require('../../lib/create-res-stream.js');
+var scriptInjectResStreamFactory = require('../../lib/script-inject-res-stream.js');
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
@@ -24,10 +28,11 @@ describe('proxy.js unit test', function () {
   });
   describe('proxy error handler', function() {
     it('should proxy to error page if target unresponsive', function(done) {
+      var testRes = {};
       var testReq = {
-        targetInstance: 'some_inst'
+        targetInstance: 'some_inst',
+        res: testRes
       };
-      var testRes = 'that-res';
       var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
@@ -44,10 +49,11 @@ describe('proxy.js unit test', function () {
     });
     it('should not proxy to error page twice', function(done) {
       // this test will fail with error done called twice if there was a failure
+      var testRes = {};
       var testReq = {
-        targetInstance: 'some_inst'
+        targetInstance: 'some_inst',
+        res: testRes
       };
-      var testRes = 'that-res';
       var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
@@ -66,10 +72,11 @@ describe('proxy.js unit test', function () {
   });
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
+    var testRes = {};
     var testReq = {
-      targetHost: testHost
+      targetHost: testHost,
+      res: testRes
     };
-    var testRes = 'res again';
     var testMw;
     beforeEach(function(done) {
       testMw = proxyServer.proxyIfTargetHostExist();
@@ -81,7 +88,7 @@ describe('proxy.js unit test', function () {
     it('should proxy if target exist', function(done) {
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
-          .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
+          .withArgs(testReq, sinon.match.any, {target: testHost}).calledOnce).to.be.true();
 
         proxyServer.proxy.web.restore();
         done();
@@ -105,7 +112,7 @@ describe('proxy.js unit test', function () {
 
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
-          .withArgs(expectedReq, testRes, {target: testHost}).calledOnce).to.be.true();
+          .withArgs(expectedReq, sinon.match.any, {target: testHost}).calledOnce).to.be.true();
 
         proxyServer.proxy.web.restore();
         done();
@@ -149,6 +156,7 @@ describe('proxy.js unit test', function () {
     });
     it('should proxy if target exist', function(done) {
       var testRes = {
+        writeHead: noop,
         redirect: function (code, url) {
           expect(code).to.equal(307);
           expect(url).to.equal(testHost);
@@ -165,57 +173,102 @@ describe('proxy.js unit test', function () {
       };
       var req = {};
       keypather.set(req, 'headers.origin', 'http://referer.com');
+      keypather.set(req, 'headers["access-control-request-headers"]', 'accept');
       var instanceName = 'instanceName';
       var methodsStr = require('methods').map(pluck('toUpperCase()')).join(',');
-      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
-      console.log(proxyRes, {
-        'Access-Control-Allow-Origin' : 'http://referer.com',
-        'Access-Control-Allow-Methods': methodsStr,
-        'Access-Control-Allow-Headers': 'accept, content-type',
-        'Access-Control-Allow-Credentials': 'true',
-        'Runnable-Instance-Name': instanceName
-      });
+      proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain({
-        'Access-Control-Allow-Origin' : 'http://referer.com',
-        'Access-Control-Allow-Methods': methodsStr,
-        'Access-Control-Allow-Headers': 'accept, content-type',
-        'Access-Control-Allow-Credentials': 'true',
-        'Runnable-Instance-Name': instanceName
+        'access-control-allow-origin' : 'http://referer.com',
+        'access-control-allow-methods': methodsStr,
+        'access-control-allow-headers': req.headers['access-control-request-headers'],
+        'access-control-allow-credentials': 'true',
+        'runnable-instance-name': instanceName
       });
       done();
     });
-    it('should override Access-Control-Allow-Origin if it is *', function (done) {
+    it('should override "access-control-allow-origin" if it is *', function (done) {
       var proxyRes = {
         headers: {
-          'Access-Control-Allow-Origin' : '*',
+          'access-control-allow-origin' : '*',
         }
       };
       var instanceName = 'instanceName';
       var req = {};
       var origin = 'http://google.com';
       keypather.set(req, 'headers.origin', origin);
-      keypather.set(req, 'cachedHeaders["Access-Control-Allow-Origin"]', 'http://google.com');
-      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
+      keypather.set(req, 'cachedHeaders["access-control-allow-origin"]', 'http://google.com');
+      proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain({
-        'Access-Control-Allow-Origin': origin
+        'access-control-allow-origin': origin
       });
       done();
     });
     it('should use application\'s "origin", "methods", and "headers" when available', function(done) {
       var proxyRes = {
         headers: {
-          'Access-Control-Allow-Origin' : 'http://google.com',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'accept'
+          'access-control-allow-origin' : 'http://google.com',
+          'access-control-allow-methods': 'POST',
+          'access-control-allow-headers': 'accept'
         }
       };
       var cachedHeaders = clone(proxyRes.headers);
       var instanceName = 'instanceName';
       var req = {};
-      keypather.set(req, 'headers.origin', null);
-      proxyServer._addHeadersToRes(proxyRes, req, instanceName);
+      keypather.set(req, 'headers.origin', 'http://yahoo.com');
+      proxyServer._addHeadersToRes(req, proxyRes, instanceName);
       expect(proxyRes.headers).to.deep.contain(cachedHeaders);
       done();
+    });
+  });
+  describe('_streamRes', function() {
+    var ctx = {};
+    beforeEach(function (done) {
+      ctx.scriptInjectResStream = {
+        input: { pipe: sinon.stub().returnsArg(0) },
+        output: { pipe: sinon.stub().returnsArg(0) }
+      };
+      sinon.stub(scriptInjectResStreamFactory, 'create').returns(ctx.scriptInjectResStream);
+      done();
+    });
+    afterEach(function (done) {
+      scriptInjectResStreamFactory.create.restore();
+      done();
+    });
+
+    it('should pipe the target-response to the response', function (done) {
+      var targetRes = {
+        headers: {},
+        pipe: sinon.stub().returnsArg(0)
+      };
+      var proxiedRes = {
+        pipe: sinon.stub().returnsArg(0)
+      };
+      var res = createResStream(); // mock
+
+      proxyServer._streamRes(targetRes, proxiedRes, res);
+      sinon.assert.calledWith(proxiedRes.pipe, res);
+      done();
+    });
+
+    describe('response is html', function() {
+      it('should transform and pipe the target-response to the response', function (done) {
+        var targetRes = {
+          headers: {
+            'content-type': 'text/html',
+            'content-encoding': 'gzip'
+          },
+          pipe: sinon.stub().returnsArg(0)
+        };
+        var proxiedRes = {
+          pipe: sinon.stub().returnsArg(0)
+        };
+        var res = createResStream(); // mock
+
+        proxyServer._streamRes(targetRes, proxiedRes, res);
+        sinon.assert.calledWith(proxiedRes.pipe, ctx.scriptInjectResStream.input);
+        sinon.assert.calledWith(ctx.scriptInjectResStream.output.pipe, res);
+        done();
+      });
     });
   });
 });

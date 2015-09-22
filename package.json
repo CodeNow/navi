@@ -47,12 +47,16 @@
     "node-dogstatsd": "0.0.6",
     "node-uuid": "^1.4.3",
     "redis": "^0.12.1",
+    "response-stream": "0.0.0",
     "rollbar": "^0.4.5",
     "runnable": "git+ssh://git@github.com:CodeNow/runnable-api-client#v4.2.0",
+    "script-injector": "^1.0.0",
+    "through2": "^2.0.0",
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {
     "code": "^1.3.0",
+    "concat-stream": "^1.5.0",
     "ip": "^0.3.2",
     "lab": "^5.5.0",
     "primus": "^3.0.2",
