@@ -28,10 +28,11 @@ describe('proxy.js unit test', function () {
   });
   describe('proxy error handler', function() {
     it('should proxy to error page if target unresponsive', function(done) {
+      var testRes = {};
       var testReq = {
-        targetInstance: 'some_inst'
+        targetInstance: 'some_inst',
+        res: testRes
       };
-      var testRes = 'that-res';
       var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
@@ -48,10 +49,11 @@ describe('proxy.js unit test', function () {
     });
     it('should not proxy to error page twice', function(done) {
       // this test will fail with error done called twice if there was a failure
-      var testReq = {
-        targetInstance: 'some_inst'
-      };
       var testRes = {};
+      var testReq = {
+        targetInstance: 'some_inst',
+        res: testRes
+      };
       var testHost = 'http://somehost:123';
       sinon.stub(errorPage, 'generateErrorUrl').returns(testHost);
       sinon.stub(proxyServer.proxy, 'web', function() {
@@ -70,10 +72,11 @@ describe('proxy.js unit test', function () {
   });
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
-    var testReq = {
-      targetHost: testHost
-    };
     var testRes = {};
+    var testReq = {
+      targetHost: testHost,
+      res: testRes
+    };
     var testMw;
     beforeEach(function(done) {
       testMw = proxyServer.proxyIfTargetHostExist();
