@@ -14,6 +14,8 @@ var sinon = require('sinon');
 var redis = require('../../lib/models/redis.js');
 var Server = require('../../lib/models/server.js');
 var api = require('models/api.js');
+var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
+  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
 describe('server.js unit test', function () {
   var proxyServer = new Server();
@@ -145,16 +147,20 @@ describe('server.js unit test', function () {
             done();
           });
           it('should call proxy', function (done) {
-            var testReq = {};
+            var testReq = {
+              headers: {}
+            };
+            testReq.headers['user-agent'] = chromeUserAgent;
             var testSocket = 'smelly';
             var testHead = 'small';
-            sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist').returns();
+            sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist', function (req, socket, head) {
+              expect(req).to.contain(testReq);
+              expect(socket).to.equal(testSocket);
+              expect(head).to.equal(testHead);
+              done();
+            });
 
             _handleUserWsRequest(testReq, testSocket, testHead);
-            expect(proxyServer.proxy.proxyWsIfTargetHostExist
-              .withArgs(testReq, testSocket, testHead).calledOnce)
-              .to.be.true();
-            done();
           });
         });
       });
