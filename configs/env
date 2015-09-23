@@ -14,3 +14,4 @@ COOKIE_NAME=runnable.navi.sid
 NEWRELIC_LEVEL=fatal
 NEWRELIC_NAME=navi
 TID_RESPONSE_HEADER_KEY=x-runnable-navi-tid
+LOG_LEVEL_STDOUT=trace
