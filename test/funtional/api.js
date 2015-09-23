@@ -19,7 +19,6 @@ var request = require('request');
 var Runnable = require('runnable');
 var querystring = require('querystring');
 var url = require('url');
-var errorPage = require('models/error-page.js');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
