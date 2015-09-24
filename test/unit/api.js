@@ -781,7 +781,6 @@ describe('api.js unit test', function () {
           });
           describe('container is not running', function () {
             beforeEach(function (done) {
-              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.badData());
               ctx.mockInstance.status.returns('stopped');
               done();
             });
@@ -790,7 +789,6 @@ describe('api.js unit test', function () {
           });
           describe('container is crashed', function () {
             beforeEach(function (done) {
-              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.badData());
               ctx.mockInstance.status.returns('crashed');
               done();
             });
