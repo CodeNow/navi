@@ -344,6 +344,7 @@ describe('api.js unit test', function () {
           .returns({ models: [ ctx.mockInstance ] })
           .yieldsAsync();
         ctx.apiClient.createRoute.yieldsAsync();
+        ctx.mockInstance.status.returns('running');
         done();
       });
       afterEach(function (done) {
@@ -556,6 +557,7 @@ describe('api.js unit test', function () {
             username: ctx.apiClient.attrs.accounts.github.username
           }
         }, 'branch', ctx.containerUrl);
+        ctx.mockInstance.status.returns('running');
         ctx.elasticUrl = 'http://api-staging-codenow.runnable.app.com:800';
         done();
       });
@@ -646,6 +648,7 @@ describe('api.js unit test', function () {
                 username: ctx.apiClient.attrs.accounts.github.username
               }
             }, 'branch', ctx.refererUrl);
+            ctx.refInstance.status.returns('running');
             ctx.apiClient.fetchRoutes.yieldsAsync(null, [{
               srcHostname: url.parse(ctx.refererUrl).hostname,
               destInstanceId: refInstanceId
@@ -720,6 +723,7 @@ describe('api.js unit test', function () {
                   username: ctx.apiClient.attrs.accounts.github.username
                 }
               }, 'branch', ctx.assocContainerUrl);
+              ctx.assocInstance.status.returns('running');
               ctx.refInstance.fetchDependencies.yieldsAsync(null, [{ id: assocInstanceId }]);
               ctx.apiClient.fetchInstance
                 .withArgs(assocInstanceId)
@@ -784,6 +788,16 @@ describe('api.js unit test', function () {
 
             it('should yield dead error page as target url', expectErrPage('dead'));
           });
+          describe('container is crashed', function () {
+            beforeEach(function (done) {
+              ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.badData());
+              ctx.mockInstance.status.returns('crashed');
+              done();
+            });
+
+            it('should yield dead error page as target url', expectErrPage('dead'));
+          });
+
           describe('getContainerUrl returned  504 error', function () {
             beforeEach(function (done) {
               ctx.mockInstance.getContainerUrl.yieldsAsync(Boom.create(504));
@@ -856,6 +870,7 @@ describe('api.js unit test', function () {
                 username: ctx.apiClient.attrs.accounts.github.username
               }
             }, 'branch', ctx.destContainerUrl);
+            ctx.destInstance.status.returns('running');
             ctx.userMappings = ctx.userMappings || [];
             ctx.userMappings.push({
               srcHostname: url.parse(ctx.elasticUrl).hostname,
