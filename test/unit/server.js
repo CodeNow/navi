@@ -72,6 +72,7 @@ describe('server.js unit test', function () {
     });
     describe('domain', function() {
       it('should destroy socket if something thrown', function(done) {
+        process.domain.runnableData= {}; // just for coverage of logs
         proxyServer.session.handle.throws('fireball');
         _handleUserWsRequest({}, {
           destroy: done
