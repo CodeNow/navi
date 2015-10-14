@@ -875,17 +875,38 @@ describe('api.js unit test', function () {
               destInstanceId: destInstanceId
             });
             ctx.apiClient.fetchRoutes.yieldsAsync(null, ctx.userMappings);
-            ctx.apiClient.fetchInstance
-              .withArgs(ctx.destInstance.attrs._id)
-              .returns(ctx.destInstance).yieldsAsync();
             done();
           });
-          if (dontUseUserMapping) {
-            it('should yield masterInstance containerUrl as target url', expectMasterTarget);
-          }
-          else {
-            it('should yield the mapping instance containerUrl', expectMappingTarget);
-          }
+
+          describe('fetchInstance error', function() {
+            beforeEach(function (done) {
+              ctx.err = new Error('boom');
+              ctx.apiClient.fetchInstance
+                .withArgs(ctx.destInstance.attrs._id)
+                .returns(ctx.destInstance).yieldsAsync(ctx.err);
+              done();
+            });
+            if (!dontUseUserMapping) {
+              it('should callback the error', expectErr);
+            }
+          });
+
+          describe('fetchInstance success', function() {
+            beforeEach(function (done) {
+              ctx.apiClient.fetchInstance
+                .withArgs(ctx.destInstance.attrs._id)
+                .returns(ctx.destInstance).yieldsAsync();
+              done();
+            });
+            if (dontUseUserMapping) {
+
+              it('should yield masterInstance containerUrl as target url', expectMasterTarget);
+            }
+            else {
+
+              it('should yield the mapping instance containerUrl', expectMappingTarget);
+            }
+          });
         });
       }
       function expectMasterTarget (done) {
