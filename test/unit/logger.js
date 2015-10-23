@@ -44,6 +44,22 @@ describe('lib/logger.js unit test', function () {
         });
       });
 
+      // log delta -- milliseconds since previous log message
+      it('should use previous txTimestamp to derrive log time delta', function (done) {
+        var d = domain.create();
+        d.runnableData = {
+          reqStart: new Date(),
+          txTimestamp: new Date(new Date()-1000000)
+        };
+        d.run(function () {
+          var serialized = logger._serializers.tx();
+          expect(serialized.txTimestamp).to.be.an.instanceOf(Date);
+          expect(serialized.txMSFromReqStart).to.be.a.number();
+          expect(serialized.txMSDelta).to.equal(1000000);
+          done();
+        });
+      });
+
       it('should work when domain.runnableData not defined', function (done) {
         var serialized = logger._serializers.tx();
         expect(serialized.txTimestamp).to.be.an.instanceOf(Date);
