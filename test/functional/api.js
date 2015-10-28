@@ -2,23 +2,26 @@
 require('../../lib/loadenv.js')();
 
 var Lab = require('lab');
+
 var lab = exports.lab = Lab.script();
+
+var Runnable = require('runnable');
 var expect = require('code').expect;
+var querystring = require('querystring');
+var request = require('request');
 var sinon = require('sinon');
-var ErrorCat = require('error-cat');
+var url = require('url');
+
+var App = require('../../lib/app.js');
+var TestServer = require('../fixture/test-server.js');
+var redis = require('../../lib/models/redis.js');
+
+var after = lab.after;
+var afterEach = lab.afterEach;
+var before = lab.before;
+var beforeEach = lab.beforeEach;
 var describe = lab.describe;
 var it = lab.test;
-var beforeEach = lab.beforeEach;
-var before = lab.before;
-var afterEach = lab.afterEach;
-var after = lab.after;
-var App = require('../../lib/app.js');
-var redis = require('../../lib/models/redis.js');
-var TestServer = require('../fixture/test-server.js');
-var request = require('request');
-var Runnable = require('runnable');
-var querystring = require('querystring');
-var url = require('url');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -59,18 +62,9 @@ describe('proxy to backend server', function () {
   });
   describe('not logged in', function () {
     before(function(done) {
-      sinon.stub(Runnable.prototype, 'fetch').yields({
-        output: {
-          statusCode: 401
-        },
-        data: {
-          error: 'Unauthorized'
-        }
-       });
       done();
     });
     after(function(done) {
-      Runnable.prototype.fetch.restore();
       done();
     });
     it('should redirect to api for auth', function (done) {
@@ -183,30 +177,6 @@ describe('proxy to backend server', function () {
           expect(res.statusCode).to.equal(500);
           done();
         });
-      });
-    });
-  });
-  describe('error from navi', function () {
-    var err;
-    before(function(done) {
-      err = ErrorCat.create(500, 'boom');
-      sinon.stub(Runnable.prototype, 'fetch').yields(err);
-      done();
-    });
-    after(function(done) {
-      Runnable.prototype.fetch.restore();
-      done();
-    });
-    it('should recieve the error', function (done) {
-      request({
-        headers: {
-          'user-agent' : chromeUserAgent
-        },
-        url: 'http://localhost:'+process.env.HTTP_PORT
-      }, function (err, res) {
-        if (err) { return done(err); }
-        expect(res.statusCode).to.equal(500);
-        done();
       });
     });
   });
