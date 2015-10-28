@@ -73,10 +73,44 @@ describe('session.js unit test', function () {
         done();
       });
     });
+    describe('with invalid data in redis', function() {
+      beforeEach(function(done) {
+        redis.lpush(testToken, 'invalid-data', done);
+      });
+      afterEach(function(done) {
+        redis.flushall(done);
+      });
+      it('should next with error if JSON.parse failed', function(done) {
+        Session.getCookieFromToken(testReq, null, function(err) {
+          expect(err).to.be.an.instanceOf(SyntaxError);
+          done();
+        });
+      });
+    });
+    describe('without required data in redis', function() {
+      beforeEach(function(done) {
+        redis.lpush(testToken, JSON.stringify({}), done);
+      });
+      afterEach(function(done) {
+        redis.flushall(done);
+      });
+      it('should next with error if JSON.parse failed', function(done) {
+        var req = JSON.parse(JSON.stringify(testReq));
+        req.session = {};
+        Session.getCookieFromToken(req, null, function() {
+          expect(req.session.apiCookie).to.equal(undefined);
+          expect(req.session.apiSessionRedisKey).to.equal(undefined);
+          done();
+        });
+      });
+    });
     describe('with session ID in redis', function() {
       var testUserId = '12837458927345';
       beforeEach(function(done) {
-        redis.lpush(testToken, testUserId, done);
+        redis.lpush(testToken, JSON.stringify({
+          cookie: testUserId,
+          apiSessionRedisKey: 12345
+        }), done);
       });
       afterEach(function(done) {
         redis.flushall(done);
@@ -86,6 +120,7 @@ describe('session.js unit test', function () {
         req.session = {};
         Session.getCookieFromToken(req, null, function() {
           expect(req.session.apiCookie).to.equal(testUserId);
+          expect(req.session.apiSessionRedisKey).to.equal(12345);
           done();
         });
       });
