@@ -2,25 +2,29 @@
 require('loadenv.js');
 
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var afterEach = lab.afterEach;
 var expect = require('code').expect;
 
+var lab = exports.lab = Lab.script();
+
+var Boom = require('boom');
+var ErrorCat = require('error-cat');
 var NaviEntry = require('navi-entry');
+var Runnable = require('runnable');
+var clone = require('101/clone');
 var keypather = require('keypather')();
 var sinon = require('sinon');
-var Runnable = require('runnable');
-var createMockInstance = require('../fixture/create-mock-instance');
-var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
-var clone = require('101/clone');
-var ErrorCat = require('error-cat');
-var errorPage = require('models/error-page.js');
-var Boom = require('boom');
+
 var api = require('../../lib/models/api.js');
+var createMockApiClient = require('../fixture/create-mock-api-client');
+var createMockInstance = require('../fixture/create-mock-instance');
+var errorPage = require('models/error-page.js');
+var redis = require('../../lib/models/redis.js');
+
+var afterEach = lab.afterEach;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var it = lab.test;
 
 describe('api.js unit test', function () {
   var ctx;
@@ -228,62 +232,54 @@ describe('api.js unit test', function () {
     });
 
     describe('checkIfLoggedIn', function () {
-      beforeEach(function (done) {
-        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
-          next();
-        });
-        done();
-      });
-      afterEach(function (done) {
-        api._handleUnauthenticated.restore();
-        done();
-      });
       it('should redir if not logged in', function (done) {
         var req = clone(testReq);
         // This session key set in auth dance
         expect(req.session.apiSessionRedisKey).to.be.undefined();
+
+        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+          next();
+        });
+
         api.checkIfLoggedIn(req, {}, function () {
           expect(api._handleUnauthenticated.callCount).to.equal(1);
+          api._handleUnauthenticated.restore();
           done();
         });
       });
 
       it('should redir with force if not logged in twice', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 401
-          },
-          data: {
-            error: 'Unauthorized'
-          }
-        };
-        var testRes = 'that res';
         var testRedir = 'into.your.heart';
         var fullTestUrl = errorPage.generateErrorUrl('signin', {
           redirectUrl: testRedir
         });
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
         req.session = {
           authTried: true
         };
         sinon.stub(req.apiClient, 'getGithubAuthUrl')
           .withArgs('http://'+host, true)
           .returns(testRedir);
-        api.checkIfLoggedIn(req, testRes, function () {
+        api._handleUnauthenticated(req, {}, function () {
           expect(req.targetHost).to.equal(fullTestUrl);
           expect(req.redirectUrl).to.be.undefined();
-          req.apiClient.getGithubAuthUrl.restore();
           done();
         });
       });
 
       it('should next if logged in', function (done) {
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync();
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(null, JSON.stringify({
+            user: '123'
+          }));
+        });
+        req.session.apiSessionRedisKey = '12345';
         api.checkIfLoggedIn(req, {}, function () {
           expect(req.targetHost).to.be.undefined();
           expect(req.redirectUrl).to.be.undefined();
+          redis.get.restore();
           done();
         });
       });
