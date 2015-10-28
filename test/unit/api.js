@@ -229,49 +229,21 @@ describe('api.js unit test', function () {
 
     describe('checkIfLoggedIn', function () {
       beforeEach(function (done) {
-        sinon.stub(testReq.apiClient, 'fetch');
+        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+          next();
+        });
         done();
       });
       afterEach(function (done) {
-        testReq.apiClient.fetch.restore();
+        api._handleUnauthenticated.restore();
         done();
       });
-
-      it('should next the error if api errors', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 500
-          },
-          data: 'dude this just happed'
-        };
-        var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
-        api.checkIfLoggedIn(req, {}, function (err) {
-          expect(err).to.equal(testErr);
-          done();
-        });
-      });
-
       it('should redir if not logged in', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 401
-          },
-          data: {
-            error: 'Unauthorized'
-          }
-        };
-        var testRes = 'that res';
-        var testRedir = 'into.your.heart';
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
-        sinon.stub(req.apiClient, 'getGithubAuthUrl')
-          .withArgs('http://'+host)
-          .returns(testRedir);
-        api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(testRedir);
-          expect(req.targetHost).to.be.undefined();
-          req.apiClient.getGithubAuthUrl.restore();
+        // This session key set in auth dance
+        expect(req.session.apiSessionRedisKey).to.be.undefined();
+        api.checkIfLoggedIn(req, {}, function () {
+          expect(api._handleUnauthenticated.callCount).to.equal(1);
           done();
         });
       });
