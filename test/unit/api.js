@@ -293,6 +293,21 @@ describe('api.js unit test', function () {
         req.session.apiSessionRedisKey = '12345';
         api.checkIfLoggedIn(req, {}, function (err) {
           expect(err.message).to.equal('redis error');
+          redis.get.restore();
+          done();
+        });
+      });
+
+      it('should next json.parse error', function (done) {
+        var req = clone(testReq);
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(null, 'invalid json');
+        });
+        req.session.apiSessionRedisKey = '12345';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.an.instanceOf(SyntaxError);
+          redis.get.restore();
           done();
         });
       });
