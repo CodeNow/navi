@@ -124,6 +124,8 @@ describe('proxy to backend server', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
           if (err) { return done(err); }
+          expect(redis.lpop.callCount).to.equal(1);
+          expect(redis.get.callCount).to.equal(1);
           expect(res.statusCode).to.equal(307);
           expect(res.headers.location).to.contain(process.env.API_HOST);
           done();
