@@ -61,12 +61,6 @@ describe('proxy to backend server', function () {
     testErrorServer.close(done);
   });
   describe('not logged in', function () {
-    before(function(done) {
-      done();
-    });
-    after(function(done) {
-      done();
-    });
     it('should redirect to api for auth', function (done) {
       request({
         followRedirect: false,
@@ -80,7 +74,7 @@ describe('proxy to backend server', function () {
         done();
       });
     });
-    it('should redirect api if token does not exist in db', function (done) {
+    it('should redirect to api if token does not exist in db', function (done) {
       request({
         followRedirect: false,
         headers: {
@@ -95,6 +89,45 @@ describe('proxy to backend server', function () {
         expect(res.statusCode).to.equal(307);
         expect(res.headers.location).to.contain(process.env.API_HOST);
         done();
+      });
+    });
+    describe('token exists', function () {
+      beforeEach(function (done) {
+        sinon.stub(redis, 'lpop', function (token, cb) {
+          expect(token).to.equal('validAccessToken');
+          cb(null, JSON.stringify({
+            cookie: 'cookie',
+            apiSessionRedisKey: 'apiSessionRedisKey'
+          }));
+        });
+        sinon.stub(redis, 'get', function (key, cb) {
+          expect(key).to.equal('apiSessionRedisKey');
+          cb(null, JSON.stringify({})); // no 'user' key === unauthenticated
+        });
+        done();
+      });
+      afterEach(function(done) {
+        redis.lpop.restore();
+        redis.get.restore();
+        done();
+      });
+      it('should redirect to api if token\'s apiSessionRedisKey redis value does not contain an ' +
+         'authenticated session', function(done) {
+        request({
+          followRedirect: false,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          qs: {
+            runnableappAccessToken: 'validAccessToken'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.contain(process.env.API_HOST);
+          done();
+        });
       });
     });
     describe('with auth attempted before', function() {
@@ -126,55 +159,6 @@ describe('proxy to backend server', function () {
           var testUrl = url.parse(query.redirectUrl);
           var query2 = querystring.parse(testUrl.query);
           expect(query2.forceLogin).to.exist();
-          done();
-        });
-      });
-    });
-  });
-  describe('auth error', function() {
-    var resErr;
-    beforeEach(function(done) {
-      Runnable.prototype.githubLogin.yieldsAsync(resErr);
-      done();
-    });
-    it('should redir to api', function (done) {
-      var reqOpts = {
-        followRedirect: false,
-        method: 'OPTIONS',
-        headers: {
-          'user-agent' : chromeUserAgent
-        },
-        url: 'http://localhost:'+process.env.HTTP_PORT,
-        json: true
-      };
-      request(reqOpts, function (err, res) {
-        if (err) { return done(err); }
-        expect(res.statusCode).to.equal(307);
-        expect(res.headers.location).to.contain(process.env.API_HOST);
-        done();
-      });
-    });
-    describe('getGithubAuthUrl throws', function() {
-      beforeEach(function(done) {
-        sinon.stub(Runnable.prototype, 'getGithubAuthUrl').throws();
-        done();
-      });
-      afterEach(function(done) {
-        Runnable.prototype.getGithubAuthUrl.restore();
-        done();
-      });
-      it('should not fall over', function (done) {
-        var reqOpts = {
-          method: 'OPTIONS',
-          headers: {
-            'user-agent' : chromeUserAgent
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT,
-          json: true
-        };
-        request(reqOpts, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(500);
           done();
         });
       });
