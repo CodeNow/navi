@@ -283,6 +283,19 @@ describe('api.js unit test', function () {
           done();
         });
       });
+
+      it('should next redis error', function (done) {
+        var req = clone(testReq);
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(new Error('redis error'));
+        });
+        req.session.apiSessionRedisKey = '12345';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err.message).to.equal('redis error');
+          done();
+        });
+      });
     });
 
     describe('getTargetHost', function () {
