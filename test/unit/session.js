@@ -75,10 +75,15 @@ describe('session.js unit test', function () {
     });
     describe('with invalid data in redis', function() {
       beforeEach(function(done) {
-        redis.lpush(testToken, 'invalid-data', done);
+        sinon.stub(redis, 'lpop', function (token, cb) {
+          expect(token).to.equal(testToken);
+          cb(null, 'invalid-data');
+        });
+        done();
       });
       afterEach(function(done) {
-        redis.flushall(done);
+        redis.lpop.restore();
+        done();
       });
       it('should next with error if JSON.parse failed', function(done) {
         Session.getCookieFromToken(testReq, null, function(err) {
