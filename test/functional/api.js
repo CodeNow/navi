@@ -166,4 +166,31 @@ describe('proxy to backend server', function () {
       });
     });
   });
+
+  describe('error in system', function () {
+    var j = request.jar();
+    beforeEach(function (done) {
+      sinon.stub(redis, 'get', function (token, cb) {
+        cb(new Error('redis-error'));
+      });
+      done();
+    });
+    afterEach(function (done) {
+      redis.get.restore();
+      done();
+    });
+    it('should return', function (done) {
+      request({
+        jar: j,
+        headers: {
+          'user-agent' : chromeUserAgent
+        },
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        expect(res.statusCode).to.equal(500);
+        done();
+      });
+    });
+  });
+
 });
