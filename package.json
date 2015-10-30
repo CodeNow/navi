@@ -1,6 +1,6 @@
 {
   "name": "navi",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Navi (ナビィ Nabi?) is a application from Runnable.io: The Staging Service. A fairy, Navi serves as the Users's fairy companion throughout the site. She is given the task to aid a user by the Great Hipache. Although she is initially a little frustrated with this duty and does not believe the Users are capable of acts of heroism, she soon becomes much fonder of them, and they become an inseparable team.",
   "main": "index.js",
   "directories": {
