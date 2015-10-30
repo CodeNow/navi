@@ -231,16 +231,32 @@ describe('api.js unit test', function () {
       api.createClient(testReq, {}, done);
     });
 
+    describe('api._allowAuthBypass', function () {
+      it('should return true for options request', function (done) {
+        var res = api._allowAuthBypass({
+          method: 'OPTIONS'
+        });
+        expect(res).to.equal(true);
+        done();
+      });
+      it('should return true for non-browser request', function (done) {
+        var res = api._allowAuthBypass({
+          method: 'GET',
+          isBrowser: false
+        });
+        expect(res).to.equal(true);
+        done();
+      });
+    });
+
     describe('checkIfLoggedIn', function () {
       it('should redir if not logged in', function (done) {
         var req = clone(testReq);
         // This session key set in auth dance
         expect(req.session.apiSessionRedisKey).to.be.undefined();
-
         sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
           next();
         });
-
         api.checkIfLoggedIn(req, {}, function () {
           expect(api._handleUnauthenticated.callCount).to.equal(1);
           api._handleUnauthenticated.restore();
@@ -272,7 +288,9 @@ describe('api.js unit test', function () {
         sinon.stub(redis, 'get', function (token, cb) {
           expect(token).to.equal('12345');
           cb(null, JSON.stringify({
-            user: '123'
+            passport: {
+              user: '123'
+            }
           }));
         });
         req.session.apiSessionRedisKey = '12345';
@@ -308,6 +326,24 @@ describe('api.js unit test', function () {
         api.checkIfLoggedIn(req, {}, function (err) {
           expect(err).to.be.an.instanceOf(SyntaxError);
           redis.get.restore();
+          done();
+        });
+      });
+
+      it('should next if OPTIONS request', function (done) {
+        var req = clone(testReq);
+        req.method = 'options';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
+          done();
+        });
+      });
+
+      it('should next if non-browser', function (done) {
+        var req = clone(testReq);
+        req.isBrowser = false;
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
           done();
         });
       });
