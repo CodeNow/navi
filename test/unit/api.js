@@ -2,25 +2,29 @@
 require('loadenv.js');
 
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var afterEach = lab.afterEach;
 var expect = require('code').expect;
 
+var lab = exports.lab = Lab.script();
+
+var Boom = require('boom');
+var ErrorCat = require('error-cat');
 var NaviEntry = require('navi-entry');
+var Runnable = require('runnable');
+var clone = require('101/clone');
 var keypather = require('keypather')();
 var sinon = require('sinon');
-var Runnable = require('runnable');
-var createMockInstance = require('../fixture/create-mock-instance');
-var createMockApiClient = require('../fixture/create-mock-api-client');
 var url = require('url');
-var clone = require('101/clone');
-var ErrorCat = require('error-cat');
-var errorPage = require('models/error-page.js');
-var Boom = require('boom');
+
 var api = require('../../lib/models/api.js');
+var createMockApiClient = require('../fixture/create-mock-api-client');
+var createMockInstance = require('../fixture/create-mock-instance');
+var errorPage = require('models/error-page.js');
+var redis = require('../../lib/models/redis.js');
+
+var afterEach = lab.afterEach;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var it = lab.test;
 
 describe('api.js unit test', function () {
   var ctx;
@@ -227,91 +231,119 @@ describe('api.js unit test', function () {
       api.createClient(testReq, {}, done);
     });
 
-    describe('checkIfLoggedIn', function () {
-      beforeEach(function (done) {
-        sinon.stub(testReq.apiClient, 'fetch');
-        done();
-      });
-      afterEach(function (done) {
-        testReq.apiClient.fetch.restore();
-        done();
-      });
-
-      it('should next the error if api errors', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 500
-          },
-          data: 'dude this just happed'
-        };
-        var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
-        api.checkIfLoggedIn(req, {}, function (err) {
-          expect(err).to.equal(testErr);
-          done();
+    describe('api._allowAuthBypass', function () {
+      it('should return true for options request', function (done) {
+        var res = api._allowAuthBypass({
+          method: 'OPTIONS'
         });
+        expect(res).to.equal(true);
+        done();
       });
+      it('should return true for non-browser request', function (done) {
+        var res = api._allowAuthBypass({
+          method: 'GET',
+          isBrowser: false
+        });
+        expect(res).to.equal(true);
+        done();
+      });
+    });
 
+    describe('checkIfLoggedIn', function () {
       it('should redir if not logged in', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 401
-          },
-          data: {
-            error: 'Unauthorized'
-          }
-        };
-        var testRes = 'that res';
-        var testRedir = 'into.your.heart';
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
-        sinon.stub(req.apiClient, 'getGithubAuthUrl')
-          .withArgs('http://'+host)
-          .returns(testRedir);
-        api.checkIfLoggedIn(req, testRes, function () {
-          expect(req.redirectUrl).to.equal(testRedir);
-          expect(req.targetHost).to.be.undefined();
-          req.apiClient.getGithubAuthUrl.restore();
+        // This session key set in auth dance
+        expect(req.session.apiSessionRedisKey).to.be.undefined();
+        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+          next();
+        });
+        api.checkIfLoggedIn(req, {}, function () {
+          expect(api._handleUnauthenticated.callCount).to.equal(1);
+          api._handleUnauthenticated.restore();
           done();
         });
       });
 
       it('should redir with force if not logged in twice', function (done) {
-        var testErr = {
-          output: {
-            statusCode: 401
-          },
-          data: {
-            error: 'Unauthorized'
-          }
-        };
-        var testRes = 'that res';
         var testRedir = 'into.your.heart';
         var fullTestUrl = errorPage.generateErrorUrl('signin', {
           redirectUrl: testRedir
         });
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync(testErr);
         req.session = {
           authTried: true
         };
         sinon.stub(req.apiClient, 'getGithubAuthUrl')
           .withArgs('http://'+host, true)
           .returns(testRedir);
-        api.checkIfLoggedIn(req, testRes, function () {
+        api._handleUnauthenticated(req, {}, function () {
           expect(req.targetHost).to.equal(fullTestUrl);
           expect(req.redirectUrl).to.be.undefined();
-          req.apiClient.getGithubAuthUrl.restore();
           done();
         });
       });
 
       it('should next if logged in', function (done) {
         var req = clone(testReq);
-        req.apiClient.fetch.yieldsAsync();
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(null, JSON.stringify({
+            passport: {
+              user: '123'
+            }
+          }));
+        });
+        req.session.apiSessionRedisKey = '12345';
         api.checkIfLoggedIn(req, {}, function () {
           expect(req.targetHost).to.be.undefined();
           expect(req.redirectUrl).to.be.undefined();
+          redis.get.restore();
+          done();
+        });
+      });
+
+      it('should next redis error', function (done) {
+        var req = clone(testReq);
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(new Error('redis error'));
+        });
+        req.session.apiSessionRedisKey = '12345';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err.message).to.equal('redis error');
+          redis.get.restore();
+          done();
+        });
+      });
+
+      it('should next json.parse error', function (done) {
+        var req = clone(testReq);
+        sinon.stub(redis, 'get', function (token, cb) {
+          expect(token).to.equal('12345');
+          cb(null, 'invalid json');
+        });
+        req.session.apiSessionRedisKey = '12345';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.an.instanceOf(SyntaxError);
+          redis.get.restore();
+          done();
+        });
+      });
+
+      it('should next if OPTIONS request', function (done) {
+        var req = clone(testReq);
+        req.method = 'options';
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
+          done();
+        });
+      });
+
+      it('should next if non-browser', function (done) {
+        var req = clone(testReq);
+        req.isBrowser = false;
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
           done();
         });
       });

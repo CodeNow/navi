@@ -2,23 +2,26 @@
 require('../../lib/loadenv.js')();
 
 var Lab = require('lab');
+
 var lab = exports.lab = Lab.script();
+
+var Runnable = require('runnable');
 var expect = require('code').expect;
+var querystring = require('querystring');
+var request = require('request');
 var sinon = require('sinon');
-var ErrorCat = require('error-cat');
+var url = require('url');
+
+var App = require('../../lib/app.js');
+var TestServer = require('../fixture/test-server.js');
+var redis = require('../../lib/models/redis.js');
+
+var after = lab.after;
+var afterEach = lab.afterEach;
+var before = lab.before;
+var beforeEach = lab.beforeEach;
 var describe = lab.describe;
 var it = lab.test;
-var beforeEach = lab.beforeEach;
-var before = lab.before;
-var afterEach = lab.afterEach;
-var after = lab.after;
-var App = require('../../lib/app.js');
-var redis = require('../../lib/models/redis.js');
-var TestServer = require('../fixture/test-server.js');
-var request = require('request');
-var Runnable = require('runnable');
-var querystring = require('querystring');
-var url = require('url');
 
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
@@ -58,21 +61,6 @@ describe('proxy to backend server', function () {
     testErrorServer.close(done);
   });
   describe('not logged in', function () {
-    before(function(done) {
-      sinon.stub(Runnable.prototype, 'fetch').yields({
-        output: {
-          statusCode: 401
-        },
-        data: {
-          error: 'Unauthorized'
-        }
-       });
-      done();
-    });
-    after(function(done) {
-      Runnable.prototype.fetch.restore();
-      done();
-    });
     it('should redirect to api for auth', function (done) {
       request({
         followRedirect: false,
@@ -86,7 +74,7 @@ describe('proxy to backend server', function () {
         done();
       });
     });
-    it('should redirect api if token does not exist in db', function (done) {
+    it('should redirect to api if token does not exist in db', function (done) {
       request({
         followRedirect: false,
         headers: {
@@ -101,6 +89,47 @@ describe('proxy to backend server', function () {
         expect(res.statusCode).to.equal(307);
         expect(res.headers.location).to.contain(process.env.API_HOST);
         done();
+      });
+    });
+    describe('token exists', function () {
+      beforeEach(function (done) {
+        sinon.stub(redis, 'lpop', function (token, cb) {
+          expect(token).to.equal('validAccessToken');
+          cb(null, JSON.stringify({
+            cookie: 'cookie',
+            apiSessionRedisKey: 'apiSessionRedisKey'
+          }));
+        });
+        sinon.stub(redis, 'get', function (key, cb) {
+          expect(key).to.equal('apiSessionRedisKey');
+          cb(null, JSON.stringify({})); // no 'user' key === unauthenticated
+        });
+        done();
+      });
+      afterEach(function(done) {
+        redis.lpop.restore();
+        redis.get.restore();
+        done();
+      });
+      it('should redirect to api if token\'s apiSessionRedisKey redis value does not contain an ' +
+         'authenticated session', function(done) {
+        request({
+          followRedirect: false,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          qs: {
+            runnableappAccessToken: 'validAccessToken'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(redis.lpop.callCount).to.equal(1);
+          expect(redis.get.callCount).to.equal(1);
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.contain(process.env.API_HOST);
+          done();
+        });
       });
     });
     describe('with auth attempted before', function() {
@@ -137,77 +166,31 @@ describe('proxy to backend server', function () {
       });
     });
   });
-  describe('auth error', function() {
-    var resErr;
-    beforeEach(function(done) {
-      Runnable.prototype.githubLogin.yieldsAsync(resErr);
+
+  describe('error in system', function () {
+    var j = request.jar();
+    beforeEach(function (done) {
+      sinon.stub(redis, 'get', function (token, cb) {
+        cb(new Error('redis-error'));
+      });
       done();
     });
-    it('should redir to api', function (done) {
-      var reqOpts = {
-        followRedirect: false,
-        method: 'OPTIONS',
-        headers: {
-          'user-agent' : chromeUserAgent
-        },
-        url: 'http://localhost:'+process.env.HTTP_PORT,
-        json: true
-      };
-      request(reqOpts, function (err, res) {
-        if (err) { return done(err); }
-        expect(res.statusCode).to.equal(307);
-        expect(res.headers.location).to.contain(process.env.API_HOST);
-        done();
-      });
-    });
-    describe('getGithubAuthUrl throws', function() {
-      beforeEach(function(done) {
-        sinon.stub(Runnable.prototype, 'getGithubAuthUrl').throws();
-        done();
-      });
-      afterEach(function(done) {
-        Runnable.prototype.getGithubAuthUrl.restore();
-        done();
-      });
-      it('should not fall over', function (done) {
-        var reqOpts = {
-          method: 'OPTIONS',
-          headers: {
-            'user-agent' : chromeUserAgent
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT,
-          json: true
-        };
-        request(reqOpts, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(500);
-          done();
-        });
-      });
-    });
-  });
-  describe('error from navi', function () {
-    var err;
-    before(function(done) {
-      err = ErrorCat.create(500, 'boom');
-      sinon.stub(Runnable.prototype, 'fetch').yields(err);
+    afterEach(function (done) {
+      redis.get.restore();
       done();
     });
-    after(function(done) {
-      Runnable.prototype.fetch.restore();
-      done();
-    });
-    it('should recieve the error', function (done) {
+    it('should return', function (done) {
       request({
+        jar: j,
         headers: {
           'user-agent' : chromeUserAgent
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
-        if (err) { return done(err); }
         expect(res.statusCode).to.equal(500);
         done();
       });
     });
   });
+
 });
