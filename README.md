@@ -12,7 +12,7 @@ if the user does not have a cookie, she looks at where the user came from, then 
 When API tells her where to send the user Navi tells the user to give her a cookie next time and sends the user in the right direction.
 
 ## Logic Flowchart
-![alt tag](docs/navi-flow.jpg)
+![alt tag](https://cloud.githubusercontent.com/assets/467885/10923107/ef47af68-8233-11e5-8bb0-802f58767484.png)
 
 
 ## Contributing
