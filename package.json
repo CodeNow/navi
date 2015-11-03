@@ -3,6 +3,9 @@
   "version": "2.7.0",
   "description": "Navi (ナビィ Nabi?) is a application from Runnable.io: The Staging Service. A fairy, Navi serves as the Users's fairy companion throughout the site. She is given the task to aid a user by the Great Hipache. Although she is initially a little frustrated with this duty and does not believe the Users are capable of acts of heroism, she soon becomes much fonder of them, and they become an inseparable team.",
   "main": "index.js",
+  "engines": {
+    "node": ">=4.1.0 < 4.2.0"
+  },
   "directories": {
     "test": "test"
   },
@@ -25,7 +28,7 @@
   },
   "homepage": "https://github.com/CodeNow/navi",
   "dependencies": {
-    "101": "^1.1.0",
+    "101": "^1.2.0",
     "async": "^1.4.2",
     "boom": "^2.6.1",
     "bunyan": "^1.4.0",
@@ -37,7 +40,7 @@
     "express": "^4.12.3",
     "express-domain-middleware": "^0.1.0",
     "express-session": "^1.11.1",
-    "http-proxy": "^1.9.0",
+    "http-proxy": "^1.12.0",
     "keypather": "^1.10.1",
     "methods": "^1.1.1",
     "middleware-flow": "^0.8.0",
@@ -59,7 +62,7 @@
     "ip": "^1.0.1",
     "lab": "^6.2.0",
     "primus": "^3.0.2",
-    "request": "^2.54.0",
+    "request": "^2.65.0",
     "sinon": "^1.14.1",
     "ws": "^0.8.0"
   }
