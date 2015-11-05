@@ -44,6 +44,7 @@
     "keypather": "^1.10.1",
     "methods": "^1.1.1",
     "middleware-flow": "^0.8.0",
+    "mongodb": "^2.0.47",
     "navi-entry": "git+ssh://git@github.com/CodeNow/navi-entry.git#v3.0.2",
     "newrelic": "^1.22.2",
     "node-dogstatsd": "0.0.6",
