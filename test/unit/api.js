@@ -9,7 +9,6 @@ var lab = exports.lab = Lab.script();
 var Boom = require('boom');
 var ErrorCat = require('error-cat');
 var NaviEntry = require('navi-entry');
-var Runnable = require('runnable');
 var clone = require('101/clone');
 var keypather = require('keypather')();
 var sinon = require('sinon');
@@ -32,38 +31,14 @@ describe('api.js unit test', function () {
     ctx = {};
     done();
   });
-  describe('loginSuperUser', function() {
-    beforeEach(function(done) {
-      sinon.stub(Runnable.prototype, 'githubLogin');
-      done();
-    });
-    afterEach(function (done) {
-      Runnable.prototype.githubLogin.restore();
-      done();
-    });
-    it('should login as hello runnable', function(done) {
-      Runnable.prototype.githubLogin.yieldsAsync();
-      api.loginSuperUser(function (err) {
-        if (err) { return done(err); }
-        expect(Runnable.prototype.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        done();
-      });
-    });
-    it('should cb err if error', function(done) {
-      var testErr = 'apocalypse';
-      Runnable.prototype.githubLogin.yieldsAsync(testErr);
-      api.loginSuperUser(function (err) {
-        expect(err).to.equal(testErr);
-        expect(Runnable.prototype.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.true();
-        done();
-      });
-    });
-  });
-  describe('_getUrlFromRequest', function () {
+
+  describe('api.checkIfLoggedIn', function () {});
+
+  describe('api._getGithubAuthUrl', function () {});
+
+  describe('api._handleUnauthenticated', function () {});
+
+  describe('api._getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
     it('should add 80', function (done) {
@@ -117,102 +92,72 @@ describe('api.js unit test', function () {
       done();
     });
   });
-  describe('createClient', function () {
-    it('should not add cookie if it does not exist', function (done) {
-      var testReq = {
-        session: {},
-        method: 'post',
-        isBrowser: true
-      };
-      api.createClient(testReq, {}, function () {
 
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.not.exist();
+  describe('api._getDestinationProxyUrl', function () {});
+
+  describe('api.getTargetHost', function () {
+    describe('redis url entry error', function () {
+      beforeEach(function (done) {
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return '';
+        });
+        sinon.stub(NaviEntry, 'createFromUrl', function () {
+          return {
+            getInfo: function (cb) {
+              cb(new Error('redis error'));
+            }
+          };
+        });
         done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        NaviEntry.createFromUrl.restore();
+        done();
+      });
+      it('should next error', function (done) {
+        api.getTargetHost({}, {}, function (err) {
+          expect(err.message).to.equal('redis error');
+          done();
+        });
       });
     });
-    it('should login with super user if options request', function (done) {
-      var testReq = {
-        session: {},
-        method: 'OPTIONS',
-        isBrowser: true
-      };
-      api.createClient(testReq, {}, function () {
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi-root');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.not.exist();
+
+    describe('elastic url incoming request', function () {
+      beforeEach(function (done) {
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return '';
+        });
+        sinon.stub(NaviEntry, 'createFromUrl', function () {
+          return {
+            getInfo: function (cb) {
+              cb(null, {
+                elastic: true
+              });
+            }
+          };
+        });
         done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        NaviEntry.createFromUrl.restore();
+        done();
+      });
+      it('should next error', function (done) {
+        api.getTargetHost({}, {}, function (err) {
+          expect(err.message).to.equal('redis error');
+          done();
+        });
       });
     });
-    it('should NOT login with super user if browser request', function (done) {
-      var testReq = {
-        session: {},
-        method: 'post',
-        isBrowser: true
-      };
-      sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
-      api.createClient(testReq, {}, function () {
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.not.exist();
-        expect(testReq.apiClient.githubLogin
-          .calledWith(process.env.HELLO_RUNNABLE_GITHUB_TOKEN))
-          .to.be.false();
-        Runnable.prototype.githubLogin.restore();
-        done();
-      });
-    });
-    it('should login with super user if no headers', function (done) {
-      var testReq = {
-        session: {},
-        method: 'post'
-      };
-      api.createClient(testReq, {}, function () {
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi-root');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.not.exist();
-        done();
-      });
-    });
-    it('should login with super user if NOT browser request', function (done) {
-      var testReq = {
-        session: {},
-        method: 'post',
-        headers: {
-          'user-agent' : 'other guy'
-        }
-      };
-      api.createClient(testReq, {}, function () {
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi-root');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.not.exist();
-        done();
-      });
-    });
-    it('should add runnable client with cookie', function (done) {
-      var testCookie = 'sid:longcookie;';
-      var testReq = {
-        session: {
-          apiCookie: testCookie
-        },
-        method: 'post',
-        isBrowser: true
-      };
-      api.createClient(testReq, {}, function () {
-        expect(testReq.apiClient.opts.requestDefaults.headers['user-agent'])
-          .to.equal('navi');
-        expect(testReq.apiClient.opts.requestDefaults.headers.Cookie)
-          .to.equal(testCookie);
-        done();
-      });
+
+    describe('direct url incoming request', function () {
+
     });
   });
+
+  /*
   describe('with logged in user', function () {
     var hostName = 'localhost';
     var port = ':1234';
@@ -231,23 +176,6 @@ describe('api.js unit test', function () {
       api.createClient(testReq, {}, done);
     });
 
-    describe('api._allowAuthBypass', function () {
-      it('should return true for options request', function (done) {
-        var res = api._allowAuthBypass({
-          method: 'OPTIONS'
-        });
-        expect(res).to.equal(true);
-        done();
-      });
-      it('should return true for non-browser request', function (done) {
-        var res = api._allowAuthBypass({
-          method: 'GET',
-          isBrowser: false
-        });
-        expect(res).to.equal(true);
-        done();
-      });
-    });
 
     describe('checkIfLoggedIn', function () {
       it('should redir if not logged in', function (done) {
@@ -348,7 +276,36 @@ describe('api.js unit test', function () {
         });
       });
     });
+*/
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
     describe('getTargetHost', function () {
       beforeEach(function (done) {
         var apiClient = ctx.apiClient = createMockApiClient();
@@ -1047,4 +1004,6 @@ describe('api.js unit test', function () {
       done();
     }
   }
+*/
 });
+
