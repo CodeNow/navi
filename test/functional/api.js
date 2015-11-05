@@ -74,7 +74,7 @@ describe('proxy to backend server', function () {
         done();
       });
     });
-    it('should redirect to api if token does not exist in db', function (done) {
+    it('should redirect to api if shared token/key does not exist in redis', function (done) {
       request({
         followRedirect: false,
         headers: {
