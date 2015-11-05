@@ -18,6 +18,7 @@ var api = require('../../lib/models/api.js');
 var errorPage = require('models/error-page.js');
 var mongo = require('models/mongo');
 var naviEntriesFixtures = require('../fixture/navi-entries');
+var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
 var redis = require('../../lib/models/redis.js');
 
 var afterEach = lab.afterEach;
@@ -96,7 +97,8 @@ describe('api.js unit test', function () {
   describe('api._getDestinationProxyUrl', function () {});
 
   describe('api.getTargetHost', function () {
-    describe('redis url entry error', function () {
+
+    describe('redis error', function () {
       beforeEach(function (done) {
         sinon.stub(api, '_getUrlFromRequest', function () {
           return '';
@@ -114,6 +116,59 @@ describe('api.js unit test', function () {
       it('should next error', function (done) {
         api.getTargetHost({}, {}, function (err) {
           expect(err.message).to.equal('redis error');
+          done();
+        });
+      });
+    });
+
+    describe('redis url entry parse error', function () {
+      beforeEach(function (done) {
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return '';
+        });
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          cb(null, ['not valid JSON string']);
+        });
+        done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        redis.lrange.restore();
+        done();
+      });
+      it('should next error', function (done) {
+        api.getTargetHost({}, {}, function (err) {
+          expect(err).to.be.an.instanceOf(SyntaxError);
+          done();
+        });
+      });
+    });
+
+    describe('target owner not member of authenticated users orgs', function () {
+      beforeEach(function (done) {
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return '';
+        });
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          // ownerGithub === 495765
+          cb(null, [naviRedisEntriesFixture]);
+        });
+        done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        redis.lrange.restore();
+        done();
+      });
+      it('should next an error object', function (done) {
+        var req = {
+          session: {
+            userGithubOrgs: ["19495", "93722", "958321"]
+          }
+        };
+        api.getTargetHost(req, {}, function (err) {
+          expect(err.isBoom).to.equal(true);
+          expect(err.output.payload.statusCode).to.equal(404);
           done();
         });
       });
@@ -141,9 +196,31 @@ describe('api.js unit test', function () {
       });
 
       describe('is not browser', function () {
-        it('should redirect if requested port is not exposed by container', function (done) {
+        /*
+         * Currently, hipache only forwards requests to navi if the requests are to valid containers
+         * on actually exposed ports. These tests will have to be implemented if we decide to remove
+         * hipache in the future and have Navi handle proxying to custom error pages.
+        it('should proxy to error page if target does not exist', function (done) {
           done();
         });
+        it('should proxy to error page if port is not exposed by target', function (done) {
+          done();
+        });
+        */
+
+        it('should proxy to error page if target does not belong to users github orgs',
+        function (done) {
+          var req = {
+            session: {
+              userGithubOrgs: ["19495", "93722", "958321"]
+            }
+          };
+          api.getTargetHost(req, {}, function () {
+            done();
+          });
+        });
+
+
         it('should set req.targetHost to proxy to master instance', function (done) {
           var base = 'repo-staging-codenow.runnableapp.com';
           var req = {

@@ -1,0 +1,7 @@
+/**
+ * @module test/fixtures/navi-redis-entries
+ */
+'use strict';
+
+module.exports = "{\"shortHash\":\"1mlnxe\",\"exposedPort\":[\"8000\"],\"branch\":\"b\",\"instanceName\":\"b-node-hello-world\",\"ownerUsername\":\"Myztiq\",\"ownerGithub\":495765,\"userContentDomain\":\"runnablecloud.com\",\"masterPod\":false,\"direct\":true}";
+
