@@ -8,16 +8,16 @@ var lab = exports.lab = Lab.script();
 
 var Boom = require('boom');
 var ErrorCat = require('error-cat');
-var NaviEntry = require('navi-entry');
 var clone = require('101/clone');
 var keypather = require('keypather')();
+var redis = require('models/redis');
 var sinon = require('sinon');
 var url = require('url');
 
 var api = require('../../lib/models/api.js');
-var createMockApiClient = require('../fixture/create-mock-api-client');
-var createMockInstance = require('../fixture/create-mock-instance');
 var errorPage = require('models/error-page.js');
+var mongo = require('models/mongo');
+var naviEntriesFixtures = require('../fixture/navi-entries');
 var redis = require('../../lib/models/redis.js');
 
 var afterEach = lab.afterEach;
@@ -101,18 +101,14 @@ describe('api.js unit test', function () {
         sinon.stub(api, '_getUrlFromRequest', function () {
           return '';
         });
-        sinon.stub(NaviEntry, 'createFromUrl', function () {
-          return {
-            getInfo: function (cb) {
-              cb(new Error('redis error'));
-            }
-          };
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          cb(new Error('redis error'));
         });
         done();
       });
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
-        NaviEntry.createFromUrl.restore();
+        redis.lrange.restore();
         done();
       });
       it('should next error', function (done) {
@@ -125,31 +121,45 @@ describe('api.js unit test', function () {
 
     describe('elastic url incoming request', function () {
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return '';
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          cb(null, [{
+            elastic: true
+          }]);
         });
-        sinon.stub(NaviEntry, 'createFromUrl', function () {
-          return {
-            getInfo: function (cb) {
-              cb(null, {
-                elastic: true
-              });
-            }
-          };
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, cb) {
+          cb(null, naviEntriesFixtures);
         });
         done();
       });
       afterEach(function (done) {
-        api._getUrlFromRequest.restore();
-        NaviEntry.createFromUrl.restore();
+        redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
         done();
       });
-      it('should next error', function (done) {
-        api.getTargetHost({}, {}, function (err) {
-          expect(err.message).to.equal('redis error');
+
+      describe('is browser', function () {
+      });
+
+      describe('is not browser', function () {
+        it('should redirect if requested port is not exposed by container', function (done) {
           done();
         });
+        it('should set req.targetHost to proxy to master instance', function (done) {
+          var base = 'repo-staging-codenow.runnableapp.com';
+          var req = {
+            isBrowser: false,
+            headers: {
+              host: base + ':80'
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err).to.be.undefined();
+            expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+            done();
+          });
+        });
       });
+
     });
 
     describe('direct url incoming request', function () {

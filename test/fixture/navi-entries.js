@@ -5,6 +5,7 @@
 'use strict';
 
 module.exports = {
+  toJSON: function () {},
   elasticUrl: 'api-staging-codenow.runnableapp.com',
   directUrls: {
     'e4rov2': {
