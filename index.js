@@ -21,9 +21,8 @@ var manager = new ClusterManager({
         log.error({
           err: err
         }, 'app.start error');
-        process.exit(1);
-      }
-      else {
+        throw err;
+      } else {
         log.info('app.start success');
       }
     });
