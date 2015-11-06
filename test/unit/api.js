@@ -151,7 +151,7 @@ describe('api.js unit test', function () {
         });
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           // ownerGithub === 495765
-          cb(null, [naviRedisEntriesFixture]);
+          cb(null, [naviRedisEntriesFixture.elastic]);
         });
         done();
       });
@@ -175,6 +175,40 @@ describe('api.js unit test', function () {
     });
 
     describe('elastic url incoming request', function () {
+
+      describe('mongo fetchNaviEntry error', function () {
+        beforeEach(function (done) {
+          sinon.stub(api, '_getUrlFromRequest', function () {
+            return '';
+          });
+          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+            // ownerGithub === 495765
+            cb(null, [naviRedisEntriesFixture.elastic]);
+          });
+          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, cb) {
+            cb(new Error('mongo error'));
+          });
+          done();
+        });
+        afterEach(function (done) {
+          api._getUrlFromRequest.restore();
+          redis.lrange.restore();
+          mongo.fetchNaviEntry.restore();
+          done();
+        });
+        it('should next error', function (done) {
+          var req = {
+            session: {
+              userGithubOrgs: ["495765"]
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err.message).to.equal('mongo error');
+            done();
+          });
+        });
+      });
+/*
       beforeEach(function (done) {
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           cb(null, [{
@@ -191,7 +225,7 @@ describe('api.js unit test', function () {
         mongo.fetchNaviEntry.restore();
         done();
       });
-
+*/
       describe('is browser', function () {
       });
 
