@@ -238,6 +238,26 @@ describe('api.js unit test', function () {
       });
 
       describe('is not browser', function () {
+        beforeEach(function (done) {
+          sinon.stub(api, '_getUrlFromRequest', function () {
+            return 'http://0.0.0.0:80';
+          });
+          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+            // ownerGithub === 495765
+            cb(null, [naviRedisEntriesFixture.elastic]);
+          });
+          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+            cb(null, naviEntriesFixtures);
+          });
+          done();
+        });
+        afterEach(function (done) {
+          api._getUrlFromRequest.restore();
+          redis.lrange.restore();
+          mongo.fetchNaviEntry.restore();
+          done();
+        });
+
         /*
          * Currently, hipache only forwards requests to navi if the requests are to valid containers
          * on actually exposed ports. These tests will have to be implemented if we decide to remove
@@ -256,12 +276,12 @@ describe('api.js unit test', function () {
             session: {
               userGithubOrgs: ["19495", "93722", "958321"]
             },
+            isBrowser: false,
             headers: {
               host: ''
             }
           };
           api.getTargetHost(req, {}, function () {
-            console.log('req.')
             done();
           });
         });
@@ -269,14 +289,17 @@ describe('api.js unit test', function () {
         it('should set req.targetHost to proxy to master instance', function (done) {
           var base = 'repo-staging-codenow.runnableapp.com';
           var req = {
+            session: {
+              userGithubOrgs: ['495765']
+            },
             isBrowser: false,
             headers: {
               host: base + ':80'
             }
           };
           api.getTargetHost(req, {}, function (err) {
-            //expect(err).to.be.undefined();
-            //expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+            expect(err).to.be.undefined();
+            expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
             done();
           });
         });
@@ -285,7 +308,6 @@ describe('api.js unit test', function () {
     });
 
     describe('direct url incoming request', function () {
-
     });
   });
 
