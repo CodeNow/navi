@@ -5,8 +5,8 @@ var Lab = require('lab');
 
 var lab = exports.lab = Lab.script();
 
-var Runnable = require('runnable');
 var expect = require('code').expect;
+var hostile = require('hostile');
 var querystring = require('querystring');
 var request = require('request');
 var sinon = require('sinon');
@@ -15,6 +15,7 @@ var url = require('url');
 var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
 var redis = require('../../lib/models/redis.js');
+var seedMongo = require('../fixture/mongo/seed-mongo.js');
 
 var after = lab.after;
 var afterEach = lab.afterEach;
@@ -45,13 +46,11 @@ describe('proxy to backend server', function () {
     redis.flushall(done);
   });
   beforeEach(function (done) {
-    sinon.stub(Runnable.prototype, 'githubLogin').yieldsAsync();
     redis.removeAllListeners();
     app = new App();
     app.start(done);
   });
   afterEach(function (done) {
-    Runnable.prototype.githubLogin.restore();
     app.stop(done);
   });
   after(function (done) {
@@ -193,4 +192,26 @@ describe('proxy to backend server', function () {
     });
   });
 
+  describe('authenticated browser request to elastic url with user mapping', function () {
+    beforeEach(function (done) {
+      done();
+    });
+    afterEach(function (done) {
+      done();
+    });
+    it('should proxy to user mapped instance', function () {
+      var j = request.jar();
+      request({
+        jar: j,
+        headers: {
+          'user-agent' : chromeUserAgent,
+          'host': ''
+        },
+        url: 'http://api-codenow-staging.runnableapp.com:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        expect(res.statusCode).to.equal(500);
+        done();
+      });
+    });
+  });
 });

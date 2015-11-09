@@ -304,7 +304,6 @@ describe('api.js unit test', function () {
           });
         });
       });
-
     });
 
     describe('direct url incoming request', function () {
