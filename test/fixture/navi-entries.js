@@ -6,7 +6,7 @@
 
 module.exports = {
   toJSON: function () {},
-  elasticUrl: 'api-staging-codenow.runnableapp.com',
+  elasticUrl: 'frontend-staging-codenow.runnableapp.com',
   directUrls: {
     'e4rov2': {
       branch: 'master',
@@ -16,7 +16,9 @@ module.exports = {
         '8080': 23453
       },
       status: 'running',
-      associations: {}
+      associations: {
+        'api-staging-codenow.runnableapp.com': 'x3245g'
+      }
     },
     'f8k3v2': {
       branch: 'feature-branch1',
