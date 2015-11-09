@@ -168,6 +168,8 @@ describe('api.js unit test', function () {
       });
       it('should next an error object', function (done) {
         var req = {
+          method: 'get',
+          isBrowser: true,
           session: {
             userGithubOrgs: ["19495", "93722", "958321"]
           },
@@ -205,6 +207,8 @@ describe('api.js unit test', function () {
         });
         it('should next error', function (done) {
           var req = {
+            method: 'get',
+            isBrowser: true,
             session: {
               userGithubOrgs: ["495765"]
             },
@@ -216,24 +220,7 @@ describe('api.js unit test', function () {
           });
         });
       });
-/*
-      beforeEach(function (done) {
-        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-          cb(null, [{
-            elastic: true
-          }]);
-        });
-        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, cb) {
-          cb(null, naviEntriesFixtures);
-        });
-        done();
-      });
-      afterEach(function (done) {
-        redis.lrange.restore();
-        mongo.fetchNaviEntry.restore();
-        done();
-      });
-*/
+
       describe('is browser', function () {
       });
 
@@ -273,6 +260,8 @@ describe('api.js unit test', function () {
         it('should proxy to error page if target does not belong to users github orgs',
         function (done) {
           var req = {
+            method: 'get',
+            isBrowser: true,
             session: {
               userGithubOrgs: ["19495", "93722", "958321"]
             },
@@ -289,6 +278,8 @@ describe('api.js unit test', function () {
         it('should set req.targetHost to proxy to master instance', function (done) {
           var base = 'repo-staging-codenow.runnableapp.com';
           var req = {
+            method: 'get',
+            isBrowser: true,
             session: {
               userGithubOrgs: ['495765']
             },

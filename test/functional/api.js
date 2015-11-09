@@ -191,27 +191,4 @@ describe('proxy to backend server', function () {
       });
     });
   });
-
-  describe('authenticated browser request to elastic url with user mapping', function () {
-    beforeEach(function (done) {
-      done();
-    });
-    afterEach(function (done) {
-      done();
-    });
-    it('should proxy to user mapped instance', function () {
-      var j = request.jar();
-      request({
-        jar: j,
-        headers: {
-          'user-agent' : chromeUserAgent,
-          'host': ''
-        },
-        url: 'http://api-codenow-staging.runnableapp.com:'+process.env.HTTP_PORT
-      }, function (err, res) {
-        expect(res.statusCode).to.equal(500);
-        done();
-      });
-    });
-  });
 });

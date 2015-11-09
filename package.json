@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
-    "test": "NODE_PATH=./lib lab  -c -t 100 -v --leaks test/functional/api.js",
+    "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks",
     "test-watch": "nodemon --exec npm run test"
   },
   "repository": {
