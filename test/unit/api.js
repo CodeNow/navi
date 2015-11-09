@@ -260,7 +260,7 @@ describe('api.js unit test', function () {
             done();
           });
 
-          it('should proxy to user-mapped instance', function (done) {
+          it('should proxy to instance mapped by current user user-mapping', function (done) {
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
               expect(req.targetHost).to.equal('http://0.0.0.1:39941');
@@ -268,7 +268,7 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should proxy to master instance if no user-mapped instance', function (done) {
+          it('should proxy to master instance if no user mapping for current user', function (done) {
             req.session.userId = 555; // no user mapping for this user exists
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
