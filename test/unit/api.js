@@ -222,6 +222,61 @@ describe('api.js unit test', function () {
       });
 
       describe('is browser', function () {
+        //TODO
+        describe('referer', function () {
+        });
+        describe('no referer', function () {
+          var base = 'repo-staging-codenow.runnableapp.com';
+          var req;
+          beforeEach(function (done) {
+            req = {
+              // no origin or referer
+              method: 'get',
+              isBrowser: true,
+              session: {
+                userGithubOrgs: ['495765', '847390'],
+                userId: 847390
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            sinon.stub(api, '_getUrlFromRequest', function () {
+              return 'http://0.0.0.0:80';
+            });
+            sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+              // ownerGithub === 495765
+              cb(null, [naviRedisEntriesFixture.elastic]);
+            });
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, naviEntriesFixtures);
+            });
+            done();
+          });
+          afterEach(function (done) {
+            api._getUrlFromRequest.restore();
+            redis.lrange.restore();
+            mongo.fetchNaviEntry.restore();
+            done();
+          });
+
+          it('should proxy to user-mapped instance', function (done) {
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.1:39941');
+              done();
+            });
+          });
+
+          it('should proxy to master instance if no user-mapped instance', function (done) {
+            req.session.userId = 555; // no user mapping for this user exists
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940');
+              done();
+            });
+          });
+        });
       });
 
       describe('is not browser', function () {
@@ -265,7 +320,6 @@ describe('api.js unit test', function () {
             session: {
               userGithubOrgs: ["19495", "93722", "958321"]
             },
-            isBrowser: false,
             headers: {
               host: ''
             }
@@ -283,7 +337,6 @@ describe('api.js unit test', function () {
             session: {
               userGithubOrgs: ['495765']
             },
-            isBrowser: false,
             headers: {
               host: base + ':80'
             }
