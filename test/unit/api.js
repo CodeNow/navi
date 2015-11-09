@@ -222,9 +222,51 @@ describe('api.js unit test', function () {
       });
 
       describe('is browser', function () {
-        //TODO
         describe('referer', function () {
+          var base = 'api-staging-codenow.runnableapp.com';
+          var req;
+          beforeEach(function (done) {
+            req = {
+              method: 'get',
+              isBrowser: true,
+              session: {
+                userGithubOrgs: ['495765', '847390'],
+                userId: 847390
+              },
+              headers: {
+                origin: 'frontend-staging-codenow.runnableapp.com',
+                host: base + ':80'
+              }
+            };
+            sinon.stub(api, '_getUrlFromRequest', function () {
+              return 'http://' + base + ':80';
+            });
+            sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+              // ownerGithub === 495765
+              cb(null, [naviRedisEntriesFixture.elastic]);
+            });
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, naviEntriesFixtures);
+            });
+            done();
+          });
+          afterEach(function (done) {
+            api._getUrlFromRequest.restore();
+            redis.lrange.restore();
+            mongo.fetchNaviEntry.restore();
+            done();
+          });
+
+          it('should proxy to instance mapped by referer naviEntry association', function (done) {
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              // feature-branch1 of API
+              expect(req.targetHost).to.equal('http://0.0.0.1:39941');
+              done();
+            });
+          });
         });
+
         describe('no referer', function () {
           var base = 'repo-staging-codenow.runnableapp.com';
           var req;
@@ -268,7 +310,8 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should proxy to master instance if no user mapping for current user', function (done) {
+          it('should proxy to master instance if no user mapping for current user', 
+          function (done) {
             req.session.userId = 555; // no user mapping for this user exists
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
