@@ -15,7 +15,7 @@ var refererNaviEntry = {
         '80': 39940,
         '8080': 23453
       },
-      status: 'running',
+      running: true,
       associations: {
         'api-staging-codenow.runnableapp.com': 'e4v7ve'
       }
@@ -27,7 +27,7 @@ var refererNaviEntry = {
         '80': 39941,
         '8080': 23423
       },
-      status: 'running',
+      running: true,
       associations: {
         'api-staging-codenow.runnableapp.com': 'f8k3v2'
       }
@@ -39,7 +39,7 @@ var refererNaviEntry = {
         '80': 39942,
         '8080': 23453
       },
-      status: 'running',
+      running: true,
       associations: {
         'api-staging-codenow.runnableapp.com': 'f8k3v2'
       }
@@ -51,7 +51,7 @@ var refererNaviEntry = {
         '80': 39943,
         '8080': 23453
       },
-      status: 'stopped',
+      running: false,
       associations: {
         'api-staging-codenow.runnableapp.com': 'f8k3v2'
       }
@@ -74,7 +74,7 @@ module.exports = {
         '80': 39940,
         '8080': 23453
       },
-      status: 'running',
+      running: true,
       associations: {}
     },
     'f8k3v2': {
@@ -84,7 +84,7 @@ module.exports = {
         '80': 39941,
         '8080': 23423
       },
-      status: 'running',
+      running: true,
       associations: {}
     },
     'e4v7ve': {
@@ -94,7 +94,7 @@ module.exports = {
         '80': 39942,
         '8080': 23453
       },
-      status: 'running',
+      running: true,
       associations: {}
     },
     'fukw3w': {
@@ -104,7 +104,7 @@ module.exports = {
         '80': 39943,
         '8080': 23453
       },
-      status: 'stopped',
+      running: true,
       associations: {}
     },
   },
