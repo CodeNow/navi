@@ -29,17 +29,27 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
 describe('functional test: proxy to instance container', function () {
+  var app;
+  var testErrorPort = 55551;
+  var testErrorServer;
+  var testErrorText = 'ididerror';
   var testHost = '0.0.0.0';
   var testPort = 39940;
   var testResponse = 'non-browser running container';
   var testServer;
-  var app;
 
   before(function (done) {
     testServer = TestServer.create(testPort, testHost, testResponse, done);
   });
+  before(function (done) {
+    testErrorServer = TestServer.create(
+      testErrorPort, testHost, testErrorText, done);
+  });
   after(function (done) {
     testServer.close(done);
+  });
+  after(function (done) {
+    testErrorServer.close(done);
   });
   beforeEach(fixtureRedis.seed);
   afterEach(fixtureRedis.clean);
@@ -110,8 +120,8 @@ describe('functional test: proxy to instance container', function () {
         });
       });
 
-      it('should redirect to api if token\'s apiSessionRedisKey redis value does not contain an ' +'authenticated session', function(done) {
-
+      it('should redirect to api if token\'s apiSessionRedisKey redis value does not contain an ' +
+         'authenticated session', function(done) {
         redis.rpush('validAccessToken', JSON.stringify({}), function (err) {
           if (err) { return done(err); }
           request({
@@ -136,6 +146,40 @@ describe('functional test: proxy to instance container', function () {
         });
       });
 
+      describe('with auth attempted before', function() {
+        var j = request.jar();
+        beforeEach(function(done) {
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              'user-agent' : chromeUserAgent
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, done);
+        });
+        it('should proxy to error login page with force if second time', function (done) {
+          request({
+            jar: j,
+            headers: {
+              'user-agent' : chromeUserAgent
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res, body) {
+            if (err) { return done(err); }
+            expect(res.statusCode).to.equal(200);
+            var testTest = body.split(';')[0];
+            var targetInfo = url.parse(body.split(';')[1]);
+            expect(testTest).to.equal(testErrorText);
+            var query = querystring.parse(targetInfo.query);
+            expect(query.type).to.equal('signin');
+            var testUrl = url.parse(query.redirectUrl);
+            var query2 = querystring.parse(testUrl.query);
+            expect(query2.forceLogin).to.exist();
+            done();
+          });
+        });
+      });
     });
 
     describe('referer', function () {
