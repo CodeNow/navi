@@ -13,8 +13,8 @@ var url = require('url');
 
 var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
+var mongo = require('models/mongo');
 var fixtureMongo = require('../fixture/mongo');
-var fixtureNaviEntry = require('../fixture/navi-entries');
 var fixtureRedis = require('../fixture/redis');
 var redis = require('models/redis');
 
@@ -183,6 +183,88 @@ describe('functional test: proxy to instance container', function () {
     });
 
     describe('referer', function () {
+      var j = request.jar();
+      var userId = '9999';
+      // set up authenticated session
+      before(function (done) {
+        redis.set('apiSessionRedisKeyVal', JSON.stringify({
+          passport: {
+            user: '84234234'
+          }
+        }), done);
+      });
+      before(function (done) {
+        redis.rpush('validAccessToken', JSON.stringify({
+          cookie: '', // TODO nix
+          apiSessionRedisKey: 'apiSessionRedisKeyVal',
+          userGithubOrgs: [userId, '1111', '958313'],
+          userId: userId
+        }), done);
+      });
+
+      before(function (done) {
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          qs: {
+            runnableappAccessToken: 'validAccessToken'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function () {
+          done();
+        });
+      });
+
+      it('should ignore non-runnable referer and proxy to user mapping or master', function (done) {
+        /**
+         * No user-mapping, should proxy to master
+         */
+        var host = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent,
+            host: host,
+            referer: 'google.com'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(200);
+          expect(res.body).to.equal(testResponse+';'+host+'/');
+          done();
+        });
+      });
+
+      it('set user-mapping and redirect to elastic', function (done) {
+        /**
+         * No user-mapping, should proxy to master
+         */
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent,
+            host: host,
+            referer: 'google.com'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.equal('http://'+elasticUrl);
+          mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
+            expect(result.userMappings[userId]).to.equal('f8k3v2');
+            done();
+          });
+        });
+      });
     });
 
     describe('non-referer', function () {

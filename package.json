@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
-    "test": "NODE_PATH=./lib lab -i 1 -c -t 100 -v --leaks test/functional/api.js",
+    "test": "NODE_PATH=./lib lab -i 8 -c -t 100 -v --leaks test/functional/api.js",
     "test-watch": "nodemon --exec npm run test"
   },
   "repository": {
@@ -58,6 +58,7 @@
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {
+    "callback-count": "^0.2.0",
     "code": "^1.5.0",
     "concat-stream": "^1.5.0",
     "ip": "^1.0.1",
