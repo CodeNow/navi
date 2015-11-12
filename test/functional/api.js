@@ -15,7 +15,7 @@ var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
 var fixtureMongo = require('../fixture/mongo');
 var fixtureNaviEntry = require('../fixture/navi-entries');
-var redis = require('../../lib/models/redis.js');
+var fixtureRedis = require('../fixture/redis');
 
 var after = lab.after;
 var afterEach = lab.afterEach;
@@ -64,6 +64,7 @@ describe('functional test: proxy to instance container', function () {
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
+        console.log('-------', [res.body]);
         expect(res.statusCode).to.equal(200);
         expect(res.body).to.equal(testResponse);
         done();
