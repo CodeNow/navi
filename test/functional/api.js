@@ -6,16 +6,16 @@ var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 
 var expect = require('code').expect;
-var hostile = require('hostile');
 var querystring = require('querystring');
 var request = require('request');
 var sinon = require('sinon');
 var url = require('url');
 
 var App = require('../../lib/app.js');
-var redis = require('../../lib/models/redis.js');
+var TestServer = require('../fixture/test-server.js');
 var fixtureMongo = require('../fixture/mongo');
-var testServer = require('../fixture/test-server.js');
+var fixtureNaviEntry = require('../fixture/navi-entries');
+var redis = require('../../lib/models/redis.js');
 
 var after = lab.after;
 var afterEach = lab.afterEach;
@@ -30,22 +30,44 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
 describe('functional test: proxy to instance container', function () {
   describe('non-browser', function () {
     var testHost = '0.0.0.0';
-    var testPort = 12345;
+    var testPort = 39940;
     var testResponse = 'non-browser running container';
     var testServer;
+    var app;
 
     before(function (done) {
-      testServer = testServer.create(testPort, testHost, testResponse, done);
+      testServer = TestServer.create(testPort, testHost, testResponse, done);
     });
     after(function (done) {
       testServer.close(done);
     });
 
+    beforeEach(fixtureRedis.seed);
+    afterEach(fixtureRedis.clean);
+
     beforeEach(fixtureMongo.seed);
     afterEach(fixtureMongo.clean);
 
+    before(function (done) {
+      app = new App();
+      app.start(done);
+    });
+    after(function (done) {
+      app.stop(done);
+    });
+
     it('should bypass auth and proxy directly to master instance', function (done) {
-      done();
+      request({
+        followRedirect: false,
+        headers: {
+          host: 'api-staging-codenow.runnableapp.com'
+        },
+        url: 'http://localhost:'+process.env.HTTP_PORT
+      }, function (err, res) {
+        expect(res.statusCode).to.equal(200);
+        expect(res.body).to.equal(testResponse);
+        done();
+      });
     });
 
     it('should return detention if container not running', function (done) {
