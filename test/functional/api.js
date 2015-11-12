@@ -13,9 +13,9 @@ var sinon = require('sinon');
 var url = require('url');
 
 var App = require('../../lib/app.js');
-var TestServer = require('../fixture/test-server.js');
 var redis = require('../../lib/models/redis.js');
-var seedMongo = require('../fixture/mongo/seed-mongo.js');
+var fixtureMongo = require('../fixture/mongo');
+var testServer = require('../fixture/test-server.js');
 
 var after = lab.after;
 var afterEach = lab.afterEach;
@@ -27,15 +27,58 @@ var it = lab.test;
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
+describe('functional test: proxy to instance container', function () {
+  describe('non-browser', function () {
+    var testHost = '0.0.0.0';
+    var testPort = 12345;
+    var testResponse = 'non-browser running container';
+    var testServer;
+
+    before(function (done) {
+      testServer = testServer.create(testPort, testHost, testResponse, done);
+    });
+    after(function (done) {
+      testServer.close(done);
+    });
+
+    beforeEach(fixtureMongo.seed);
+    afterEach(fixtureMongo.clean);
+
+    it('should bypass auth and proxy directly to master instance', function (done) {
+      done();
+    });
+
+    it('should return detention if container not running', function (done) {
+    });
+  });
+
+  describe('browser', function () {
+    describe('unathenticated', function () {
+    });
+
+    describe('referer', function () {
+    });
+
+    describe('non-referer', function () {
+    });
+  });
+});
+
+
+/*
 describe('proxy to backend server', function () {
   var testIp = '0.0.0.0';
   var testText = '1346tweyasdf3';
+
   var testErrorText = 'ididerror';
   var testPort = 55555;
   var testErrorPort = 55551;
   var testServer;
   var testErrorServer;
   var app;
+
+
+
   before(function (done) {
    testServer = TestServer.create(testPort, testIp, testText, done);
   });
@@ -192,3 +235,4 @@ describe('proxy to backend server', function () {
     });
   });
 });
+*/
