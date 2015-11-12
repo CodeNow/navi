@@ -16,6 +16,7 @@ var TestServer = require('../fixture/test-server.js');
 var fixtureMongo = require('../fixture/mongo');
 var fixtureNaviEntry = require('../fixture/navi-entries');
 var fixtureRedis = require('../fixture/redis');
+var redis = require('models/redis');
 
 var after = lab.after;
 var afterEach = lab.afterEach;
@@ -28,33 +29,30 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
 describe('functional test: proxy to instance container', function () {
+  var testHost = '0.0.0.0';
+  var testPort = 39940;
+  var testResponse = 'non-browser running container';
+  var testServer;
+  var app;
+
+  before(function (done) {
+    testServer = TestServer.create(testPort, testHost, testResponse, done);
+  });
+  after(function (done) {
+    testServer.close(done);
+  });
+  beforeEach(fixtureRedis.seed);
+  afterEach(fixtureRedis.clean);
+  beforeEach(fixtureMongo.seed);
+  afterEach(fixtureMongo.clean);
+  before(function (done) {
+    app = new App();
+    app.start(done);
+  });
+  after(function (done) {
+    app.stop(done);
+  });
   describe('non-browser', function () {
-    var testHost = '0.0.0.0';
-    var testPort = 39940;
-    var testResponse = 'non-browser running container';
-    var testServer;
-    var app;
-
-    before(function (done) {
-      testServer = TestServer.create(testPort, testHost, testResponse, done);
-    });
-    after(function (done) {
-      testServer.close(done);
-    });
-
-    beforeEach(fixtureRedis.seed);
-    afterEach(fixtureRedis.clean);
-
-    beforeEach(fixtureMongo.seed);
-    afterEach(fixtureMongo.clean);
-
-    before(function (done) {
-      app = new App();
-      app.start(done);
-    });
-    after(function (done) {
-      app.stop(done);
-    });
 
     it('should bypass auth and proxy directly to master instance', function (done) {
       var host = 'api-staging-codenow.runnableapp.com';
@@ -72,11 +70,72 @@ describe('functional test: proxy to instance container', function () {
     });
 
     it('should return detention if container not running', function (done) {
+      done();
     });
   });
 
   describe('browser', function () {
     describe('unathenticated', function () {
+      it('should redirect to API login', function (done) {
+        var host = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          headers: {
+            host: host,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.contain(process.env.API_HOST);
+          done();
+        });
+      });
+
+      it('should redirect to api if shared token/key does not exist in redis', function (done) {
+        request({
+          followRedirect: false,
+          headers: {
+            'user-agent' : chromeUserAgent
+          },
+          qs: {
+            runnableappAccessToken: 'doesnotexist'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.contain(process.env.API_HOST);
+          done();
+        });
+      });
+
+      it('should redirect to api if token\'s apiSessionRedisKey redis value does not contain an ' +'authenticated session', function(done) {
+
+        redis.rpush('validAccessToken', JSON.stringify({}), function (err) {
+          if (err) { return done(err); }
+          request({
+            followRedirect: false,
+            headers: {
+              'user-agent' : chromeUserAgent
+            },
+            qs: {
+              runnableappAccessToken: 'validAccessToken'
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) { return done(err); }
+            redis.lpop('validAccessToken', function (err, result) {
+              if (err) { return done(err); }
+              expect(result).to.be.null(); // Validate navi popped value out of redis
+              expect(res.statusCode).to.equal(307);
+              expect(res.headers.location).to.contain(process.env.API_HOST);
+              done();
+            });
+          });
+        });
+      });
+
     });
 
     describe('referer', function () {
