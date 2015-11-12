@@ -16,9 +16,10 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: true,
-      associations: {
-        'api-staging-codenow.runnableapp.com': 'e4v7ve'
-      }
+      associations: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: 'e4v7ve'
+      }]
     },
     'bbbbb2': {
       branch: 'frontend-feature-branch1',
@@ -28,9 +29,10 @@ var refererNaviEntry = {
         '8080': 23423
       },
       running: true,
-      associations: {
-        'api-staging-codenow.runnableapp.com': 'f8k3v2'
-      }
+      associations: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        directUrl: 'f8k3v2'
+      }]
     },
     'ccccc3': {
       branch: 'frontend-feature-branch2',
@@ -40,9 +42,10 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: true,
-      associations: {
-        'api-staging-codenow.runnableapp.com': 'f8k3v2'
-      }
+      associations: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: 'f8k3v2'
+      }]
     },
     'ddddd4': {
       branch: 'frontend-feature-branch3',
@@ -52,9 +55,10 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: false,
-      associations: {
-        'api-staging-codenow.runnableapp.com': 'f8k3v2'
-      }
+      associations: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: 'f8k3v2'
+      }]
     },
   },
   userMappings: {
