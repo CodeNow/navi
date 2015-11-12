@@ -83,7 +83,7 @@ module.exports = {
     },
     'f8k3v2': {
       branch: 'feature-branch1',
-      dockerHost: '0.0.0.1',
+      dockerHost: '0.0.0.0',
       ports: {
         '80': 39941,
         '8080': 23423

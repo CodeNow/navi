@@ -35,18 +35,28 @@ describe('functional test: proxy to instance container', function () {
   var testErrorText = 'ididerror';
   var testHost = '0.0.0.0';
   var testPort = 39940;
+  var testPort2 = 39941;
   var testResponse = 'non-browser running container';
-  var testServer;
+  var testResponseFeatureBranch = 'non-browser running container feature branch 1';
+  var testServerMasterInstance;
+  var testServerFeatureBranchInstance;
 
   before(function (done) {
-    testServer = TestServer.create(testPort, testHost, testResponse, done);
+    testServerMasterInstance = TestServer.create(testPort, testHost, testResponse, done);
+  });
+  before(function (done) {
+    testServerFeatureBranchInstance =
+      TestServer.create(testPort2, testHost, testResponseFeatureBranch, done);
   });
   before(function (done) {
     testErrorServer = TestServer.create(
       testErrorPort, testHost, testErrorText, done);
   });
   after(function (done) {
-    testServer.close(done);
+    testServerMasterInstance.close(done);
+  });
+  after(function (done) {
+    testServerFeatureBranchInstance.close(done);
   });
   after(function (done) {
     testErrorServer.close(done);
@@ -261,6 +271,41 @@ describe('functional test: proxy to instance container', function () {
           expect(res.headers.location).to.equal('http://'+elasticUrl);
           mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
             expect(result.userMappings[userId]).to.equal('f8k3v2');
+            done();
+          });
+        });
+      });
+
+      it('set user-mapping and redirect to elastic and proxy to mapped container', function (done) {
+        /**
+         * No user-mapping, should proxy to master
+         */
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent,
+            host: host
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.equal('http://'+elasticUrl);
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              'user-agent' : chromeUserAgent,
+              host: elasticUrl
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) { return done(err); }
+            expect(res.statusCode).to.equal(200);
+            expect(res.body).to.equal(testResponseFeatureBranch+';'+elasticUrl+'/');
             done();
           });
         });
