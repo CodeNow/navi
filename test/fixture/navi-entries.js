@@ -79,7 +79,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: {}
+      associations: []
     },
     'f8k3v2': {
       branch: 'feature-branch1',
@@ -89,7 +89,7 @@ module.exports = {
         '8080': 23423
       },
       running: true,
-      associations: {}
+      associations: []
     },
     'e4v7ve': {
       branch: 'feature-branch2',
@@ -99,7 +99,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: {}
+      associations: []
     },
     'fukw3w': {
       branch: 'feature-branch3',
@@ -109,7 +109,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: {}
+      associations: []
     },
   },
   userMappings: {
