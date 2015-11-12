@@ -31,7 +31,7 @@ var refererNaviEntry = {
       running: true,
       associations: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
-        directUrl: 'f8k3v2'
+        shortHash: 'f8k3v2'
       }]
     },
     'ccccc3': {
