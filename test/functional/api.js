@@ -57,16 +57,16 @@ describe('functional test: proxy to instance container', function () {
     });
 
     it('should bypass auth and proxy directly to master instance', function (done) {
+      var host = 'api-staging-codenow.runnableapp.com';
       request({
         followRedirect: false,
         headers: {
-          host: 'api-staging-codenow.runnableapp.com'
+          host: host
         },
         url: 'http://localhost:'+process.env.HTTP_PORT
       }, function (err, res) {
-        console.log('-------', [res.body]);
         expect(res.statusCode).to.equal(200);
-        expect(res.body).to.equal(testResponse);
+        expect(res.body).to.equal(testResponse+';'+host+'/');
         done();
       });
     });
