@@ -311,9 +311,6 @@ describe('functional test: proxy to instance container', function () {
         });
       });
     });
-
-    describe('non-referer', function () {
-    });
   });
 });
 
