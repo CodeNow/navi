@@ -8,7 +8,6 @@ var lab = exports.lab = Lab.script();
 var expect = require('code').expect;
 var querystring = require('querystring');
 var request = require('request');
-var sinon = require('sinon');
 var url = require('url');
 
 var App = require('../../lib/app.js');
