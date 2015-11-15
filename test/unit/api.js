@@ -275,7 +275,7 @@ describe('api.js unit test', function () {
               method: 'get',
               isBrowser: true,
               session: {
-                userGithubOrgs: [495765, 847390],
+                userGithubOrgs: [495765, 847390, 958313],
                 userId: 847390
               },
               headers: {
@@ -304,7 +304,7 @@ describe('api.js unit test', function () {
           it('should proxy to instance mapped by current user user-mapping', function (done) {
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
-              expect(req.targetHost).to.equal('http://0.0.0.1:39941');
+              expect(req.targetHost).to.equal('http://0.0.0.0:39941');
               done();
             });
           });
@@ -360,7 +360,7 @@ describe('api.js unit test', function () {
             method: 'get',
             isBrowser: true,
             session: {
-              userGithubOrgs: [19495, 93722, 958321],
+              userGithubOrgs: [19495, 93722, 958321, 958313],
               userId: 958321
             },
             headers: {
@@ -378,7 +378,7 @@ describe('api.js unit test', function () {
             method: 'get',
             isBrowser: true,
             session: {
-              userGithubOrgs: [495765],
+              userGithubOrgs: [495765, 958313],
               userId: 495765
             },
             headers: {
