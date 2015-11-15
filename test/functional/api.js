@@ -194,12 +194,12 @@ describe('functional test: proxy to instance container', function () {
 
     describe('referer', function () {
       var j = request.jar();
-      var userId = '9999';
+      var userId = 9999;
       // set up authenticated session
       before(function (done) {
         redis.set('apiSessionRedisKeyVal', JSON.stringify({
           passport: {
-            user: '84234234'
+            user: 84234234
           }
         }), done);
       });
@@ -207,7 +207,7 @@ describe('functional test: proxy to instance container', function () {
         redis.rpush('validAccessToken', JSON.stringify({
           cookie: '', // TODO nix
           apiSessionRedisKey: 'apiSessionRedisKeyVal',
-          userGithubOrgs: [userId, '1111', '958313'],
+          userGithubOrgs: [userId, 1111, 958313],
           userId: userId
         }), done);
       });
