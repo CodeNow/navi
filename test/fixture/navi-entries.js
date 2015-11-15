@@ -17,7 +17,7 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: true,
-      associations: [{
+      dependencies: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
         shortHash: 'e4v7ve'
       }]
@@ -31,7 +31,7 @@ var refererNaviEntry = {
         '8080': 23423
       },
       running: true,
-      associations: [{
+      dependencies: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
         shortHash: 'f8k3v2'
       }]
@@ -45,7 +45,7 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: true,
-      associations: [{
+      dependencies: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
         shortHash: 'f8k3v2'
       }]
@@ -59,7 +59,7 @@ var refererNaviEntry = {
         '8080': 23453
       },
       running: false,
-      associations: [{
+      dependencies: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
         shortHash: 'f8k3v2'
       }]
@@ -84,7 +84,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: []
+      dependencies: []
     },
     'f8k3v2': {
       branch: 'feature-branch1',
@@ -95,7 +95,7 @@ module.exports = {
         '8080': 23423
       },
       running: true,
-      associations: []
+      dependencies: []
     },
     'e4v7ve': {
       branch: 'feature-branch2',
@@ -106,7 +106,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: []
+      dependencies: []
     },
     'fukw3w': {
       branch: 'feature-branch3',
@@ -117,7 +117,7 @@ module.exports = {
         '8080': 23453
       },
       running: true,
-      associations: []
+      dependencies: []
     },
   },
   userMappings: {
