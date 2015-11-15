@@ -10,6 +10,7 @@ var refererNaviEntry = {
   directUrls: {
     'aaaaa1': {
       branch: 'master',
+      masterPod: true,
       dockerHost: '0.0.0.0',
       ports: {
         '80': 39940,
@@ -23,6 +24,7 @@ var refererNaviEntry = {
     },
     'bbbbb2': {
       branch: 'frontend-feature-branch1',
+      masterPod: false,
       dockerHost: '0.0.0.1',
       ports: {
         '80': 39941,
@@ -36,6 +38,7 @@ var refererNaviEntry = {
     },
     'ccccc3': {
       branch: 'frontend-feature-branch2',
+      masterPod: false,
       dockerHost: '0.0.0.2',
       ports: {
         '80': 39942,
@@ -49,6 +52,7 @@ var refererNaviEntry = {
     },
     'ddddd4': {
       branch: 'frontend-feature-branch3',
+      masterPod: false,
       dockerHost: '0.0.0.3',
       ports: {
         '80': 39943,
@@ -73,6 +77,7 @@ module.exports = {
   directUrls: {
     'e4rov2': {
       branch: 'master',
+      masterPod: true,
       dockerHost: '0.0.0.0',
       ports: {
         '80': 39940,
@@ -83,6 +88,7 @@ module.exports = {
     },
     'f8k3v2': {
       branch: 'feature-branch1',
+      masterPod: false,
       dockerHost: '0.0.0.0',
       ports: {
         '80': 39941,
@@ -93,6 +99,7 @@ module.exports = {
     },
     'e4v7ve': {
       branch: 'feature-branch2',
+      masterPod: false,
       dockerHost: '0.0.0.2',
       ports: {
         '80': 39942,
@@ -103,6 +110,7 @@ module.exports = {
     },
     'fukw3w': {
       branch: 'feature-branch3',
+      masterPod: false,
       dockerHost: '0.0.0.3',
       ports: {
         '80': 39943,
