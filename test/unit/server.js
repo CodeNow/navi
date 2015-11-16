@@ -9,6 +9,7 @@ var beforeEach = lab.beforeEach;
 var afterEach = lab.afterEach;
 
 var expect = require('code').expect;
+var mongodb = require('mongodb');
 var sinon = require('sinon');
 
 var redis = require('../../lib/models/redis.js');
@@ -31,6 +32,18 @@ describe('server.js unit test', function () {
         expect(proxyServer.server.listen
           .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
         proxyServer.server.listen.restore();
+        done();
+      });
+    });
+    it('should error if mongo connect fails', function (done) {
+      var mongoErr = new Error('mongo err');
+      sinon.stub(proxyServer.server, 'listen').yieldsAsync();
+      sinon.stub(mongodb.MongoClient, 'connect').yieldsAsync(mongoErr);
+      proxyServer.start(function (err) {
+        expect(err.message).to.equal('mongo err');
+        expect(proxyServer.server.listen.callCount).to.equal(0);
+        proxyServer.server.listen.restore();
+        mongodb.MongoClient.connect.restore();
         done();
       });
     });
