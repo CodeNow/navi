@@ -1,3 +1,6 @@
+/**
+ * @module test/unit/api
+ */
 'use strict';
 require('loadenv.js');
 
