@@ -26,24 +26,11 @@ describe('server.js unit test', function () {
   describe('start', function () {
     it('should start http server', function (done) {
       sinon.stub(proxyServer.server, 'listen').yieldsAsync();
-      sinon.stub(api, 'loginSuperUser').yieldsAsync();
       proxyServer.start(function (err) {
         if (err) { return done(err); }
         expect(proxyServer.server.listen
           .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-        expect(api.loginSuperUser.calledOnce).to.be.true();
         proxyServer.server.listen.restore();
-        api.loginSuperUser.restore();
-        done();
-      });
-    });
-    it('should cb error if failed to login', function (done) {
-      var testErr = 'attack by dementors';
-      sinon.stub(api, 'loginSuperUser').yieldsAsync(testErr);
-      proxyServer.start(function (err) {
-        expect(err).to.equal(testErr);
-        expect(api.loginSuperUser.calledOnce).to.be.true();
-        api.loginSuperUser.restore();
         done();
       });
     });
@@ -81,14 +68,12 @@ describe('server.js unit test', function () {
     });
     describe('valid client', function () {
       beforeEach(function(done) {
-        sinon.stub(api, 'createClient').yields();
         proxyServer.session.handle.returns(function (req, res , cb) {
           cb();
         });
         done();
       });
       afterEach(function (done) {
-        api.createClient.restore();
         done();
       });
       describe('not logged in', function() {
