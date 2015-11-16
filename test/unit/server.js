@@ -1,20 +1,25 @@
+/**
+ * @module test/unit/server
+ */
 'use strict';
-require('../../lib/loadenv.js');
+require('loadenv');
 
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var afterEach = lab.afterEach;
-
 var expect = require('code').expect;
 var mongodb = require('mongodb');
 var sinon = require('sinon');
 
-var redis = require('../../lib/models/redis.js');
-var Server = require('../../lib/models/server.js');
-var api = require('models/api.js');
+var Server = require('models/server');
+var api = require('models/api');
+var redis = require('models/redis');
+
+var lab = exports.lab = Lab.script();
+
+var afterEach = lab.afterEach;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var it = lab.test;
+
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
