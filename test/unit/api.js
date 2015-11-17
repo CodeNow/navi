@@ -34,7 +34,9 @@ describe('api.js unit test', function () {
     var req = {
       session: {
         authTried: false,
-        apiSessionRedisKey: 'redis-session-key'
+        apiSessionRedisKey: 'redis-session-key',
+        userId: 555,
+        userGithubOrgs: [555]
       },
       method: 'get',
     };
