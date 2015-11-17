@@ -418,6 +418,20 @@ describe('api.js unit test', function () {
               done();
             });
           });
+
+          it('should next with error if !instanceShortHash', function (done) {
+            sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
+              return 'FFFFF'; //This is an instance not defined in requestUrl directUrls
+            });
+            sinon.stub(api, '_processTargetInstance',
+                       function (targetNaviEntryInstance) {
+              expect(targetNaviEntryInstance.masterPod).to.equal(true);
+              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+              api._processTargetInstance.restore();
+              done();
+            });
+            api.getTargetHost(req, {}, function () {});
+          });
         });
 
         describe('no referer', function () {
@@ -463,7 +477,7 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should proxy to master instance if no user mapping for current user', 
+          it('should proxy to master instance if no user mapping for current user',
           function (done) {
             req.session.userId = 555; // no user mapping for this user exists
             api.getTargetHost(req, {}, function (err) {
@@ -471,6 +485,22 @@ describe('api.js unit test', function () {
               expect(req.targetHost).to.equal('http://0.0.0.0:39940');
               done();
             });
+          });
+
+          it('should use masterPod instance if document has no user-mappings',
+          function (done) {
+            sinon.stub(api, '_processTargetInstance', function (targetNaviEntryInstance) {
+              expect(targetNaviEntryInstance.masterPod).to.equal(true);
+              api._processTargetInstance.restore();
+              done();
+            });
+            var copy = put({}, naviEntriesFixtures);
+            delete copy.userMappings;
+            mongo.fetchNaviEntry.restore();
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, copy);
+            });
+            api.getTargetHost(req, {}, function () {});
           });
         });
       });
@@ -549,6 +579,50 @@ describe('api.js unit test', function () {
     });
 
     describe('direct url incoming request', function () {
+      var base = '44444-repo-staging-codenow.runnableapp.com';
+      var req;
+      beforeEach(function (done) {
+        req = {
+          // no origin or referer
+          method: 'get',
+          isBrowser: true,
+          session: {
+            userGithubOrgs: [495765, 847390, 958313],
+            userId: 847390
+          },
+          headers: {
+            host: base + ':80'
+          }
+        };
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return 'http://0.0.0.0:80';
+        });
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          // ownerGithub === 495765
+          cb(null, [naviRedisEntriesFixture.direct]);
+        });
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures);
+        });
+        done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
+        done();
+      });
+      it('should next with error if mongo error', function (done) {
+        sinon.stub(mongo, 'setUserMapping', function (elasticUrl, userId, shortHash, cb) {
+          expect(userId).to.equal(847390);
+          mongo.setUserMapping.restore();
+          cb(new Error('mongo error'));
+        });
+        api.getTargetHost(req, {}, function (err) {
+          expect(err.message).to.equal('mongo error');
+          done();
+        });
+      });
     });
   });
 });
