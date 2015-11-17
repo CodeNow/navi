@@ -238,6 +238,7 @@ describe('lib/models/mongodb', function () {
       expect(masterPod).to.equal(copy.directUrls.e4v7ve);
       done();
     });
+
     it('should return null if no masterPod:true directUrl obj', function (done) {
       var copy = put({}, naviEntryFixtures);
       copy.directUrls = {};
@@ -255,16 +256,19 @@ describe('lib/models/mongodb', function () {
       elasticUrl: 'B',
       shortHash: 'B1'
     }];
+
     it('should return associations object with matching elasticUrl', function (done) {
       var result = mongo.constructor.findAssociationShortHashByElasticUrl(associations, 'A');
       expect(result).to.equal(associations[0].shortHash);
       done();
     });
+
     it('should return null if no associations', function (done) {
       var result = mongo.constructor.findAssociationShortHashByElasticUrl([], 'A');
       expect(result).to.equal(undefined);
       done();
     });
+
     it('should return null if no matching associations', function (done) {
       var result = mongo.constructor.findAssociationShortHashByElasticUrl(associations, 'C');
       expect(result).to.equal(undefined);

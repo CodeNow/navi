@@ -6,18 +6,17 @@ require('loadenv.js');
 
 var Lab = require('lab');
 var expect = require('code').expect;
+var put = require('101/put');
+var sinon = require('sinon');
 
 var lab = exports.lab = Lab.script();
 
-var redis = require('models/redis');
-var sinon = require('sinon');
-
-var api = require('../../lib/models/api.js');
 //var errorPage = require('models/error-page.js');
+var api = require('models/api.js');
 var mongo = require('models/mongo');
 var naviEntriesFixtures = require('../fixture/navi-entries');
 var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
-var redis = require('../../lib/models/redis.js');
+var redis = require('models/redis');
 
 var afterEach = lab.afterEach;
 var beforeEach = lab.beforeEach;
@@ -32,12 +31,81 @@ describe('api.js unit test', function () {
   });
 
   describe('api.checkIfLoggedIn', function () {
+    var req = {
+      session: {
+        authTried: false,
+        apiSessionRedisKey: 'redis-session-key'
+      },
+      method: 'get',
+    };
+    it('should next if should bypass auth', function (done) {
+      sinon.stub(api, '_shouldBypassAuth', function () { return true; });
+      api.checkIfLoggedIn(req, {}, function (err) {
+        expect(err).to.equal(undefined);
+        expect(api._shouldBypassAuth.callCount).to.equal(1);
+        api._shouldBypassAuth.restore();
+        done();
+      });
+    });
 
+    it('should next with error if redis.get returns error', function (done) {
+      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
+      sinon.stub(redis, 'get', function (key, cb) {
+        expect(key).to.equal('redis-session-key');
+        cb(new Error('redis error'));
+      });
+      api.checkIfLoggedIn(req, {}, function (err) {
+        expect(err.message).to.equal('redis error');
+        expect(api._shouldBypassAuth.callCount).to.equal(1);
+        expect(redis.get.callCount).to.equal(1);
+        api._shouldBypassAuth.restore();
+        redis.get.restore();
+        done();
+      });
+    });
+
+    it('should next with error if redis.get return data is invalid json', function (done) {
+      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
+      sinon.stub(redis, 'get', function (key, cb) {
+        expect(key).to.equal('redis-session-key');
+        cb(null, 'invalid-json');
+      });
+      api.checkIfLoggedIn(req, {}, function (err) {
+        expect(err).to.be.instanceOf(SyntaxError);
+        expect(api._shouldBypassAuth.callCount).to.equal(1);
+        expect(redis.get.callCount).to.equal(1);
+        api._shouldBypassAuth.restore();
+        redis.get.restore();
+        done();
+      });
+    });
+
+    it('should route to unathenticated helper if redis session data indicates user is unauth',
+    function (done) {
+      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
+      sinon.stub(redis, 'get', function (key, cb) {
+        expect(key).to.equal('redis-session-key');
+        cb(null, JSON.stringify({
+          passport: {
+            // no user
+          }
+        }));
+      });
+      sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+        next();
+      });
+      api.checkIfLoggedIn(req, {}, function (err) {
+        expect(err).to.be.undefined();
+        expect(api._shouldBypassAuth.callCount).to.equal(1);
+        expect(redis.get.callCount).to.equal(1);
+        expect(api._handleUnauthenticated.callCount).to.equal(1);
+        api._shouldBypassAuth.restore();
+        api._handleUnauthenticated.restore();
+        redis.get.restore();
+        done();
+      });
+    });
   });
-
-  describe('api._getGithubAuthUrl', function () {});
-
-  describe('api._handleUnauthenticated', function () {});
 
   describe('api._getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
@@ -94,10 +162,58 @@ describe('api.js unit test', function () {
     });
   });
 
-  describe('api._getDestinationProxyUrl', function () {});
+  describe('api._shouldBypassAuth', function () {
+    it('should return true if options request', function (done) {
+      var result = api._shouldBypassAuth({
+        method: 'options'
+      });
+      expect(result).to.equal(true);
+      done();
+    });
+
+    it('should return true if !isBrowser request', function (done) {
+      var result = api._shouldBypassAuth({
+        isBrowser: false,
+        method: 'get'
+      });
+      expect(result).to.equal(true);
+      done();
+    });
+
+    it('should return false if should not bypass', function (done) {
+      var result = api._shouldBypassAuth({
+        isBrowser: true,
+        method: 'get'
+      });
+      expect(result).to.equal(false);
+      done();
+    });
+  });
+
+  describe('_processTargetInstance', function () {
+    it('should next with error if !targetNaviEntryInstance', function (done) {
+      api._processTargetInstance(null, '', {}, function (err) {
+        expect(err.message).to.equal('Not Found');
+        done();
+      });
+    });
+
+    it('should set req.targetHost if !running', function (done) {
+      var req = {};
+      var reqUrl = 'api-staging-codenow.runnableapp.com';
+      api._processTargetInstance({
+        running: false,
+        branch: 'master'
+      }, reqUrl, req, function (err) {
+        expect(err).to.be.undefined();
+        expect(req.targetHost).to.equal('http://localhost:55551?type=not_running&elasticUrl='+
+                                        reqUrl+'&targetBranch=master');
+        done();
+      });
+    });
+  });
 
   describe('api.getTargetHost', function () {
-
     describe('redis error', function () {
       beforeEach(function (done) {
         sinon.stub(api, '_getUrlFromRequest', function () {
@@ -185,7 +301,6 @@ describe('api.js unit test', function () {
     });
 
     describe('elastic url incoming request', function () {
-
       describe('mongo fetchNaviEntry error', function () {
         beforeEach(function (done) {
           sinon.stub(api, '_getUrlFromRequest', function () {
@@ -264,6 +379,42 @@ describe('api.js unit test', function () {
               expect(err).to.be.undefined();
               // feature-branch1 of API
               expect(req.targetHost).to.equal('http://0.0.0.0:39941');
+              done();
+            });
+          });
+
+          it('should handle navientires document with no user-mappings', function (done) {
+            var restore = put({}, naviEntriesFixtures.refererNaviEntry);
+            delete naviEntriesFixtures.refererNaviEntry.userMappings;
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.2:39942');
+              naviEntriesFixtures.refererNaviEntry.userMappings = restore;
+              done();
+            });
+          });
+
+          it('should next with error if navientries document with no user-mappings and no '+
+             'masterpod', function (done) {
+            var restore = put({}, naviEntriesFixtures.refererNaviEntry);
+            delete naviEntriesFixtures.refererNaviEntry.userMappings;
+            naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = false;
+            api.getTargetHost(req, {}, function (err) {
+              expect(err.message).to.equal('Not Found');
+              naviEntriesFixtures.refererNaviEntry.userMappings = restore;
+              naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = true;
+              done();
+            });
+          });
+
+          it('should next with error if !instanceShortHash', function (done) {
+            sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
+              return null;
+            });
+            api.getTargetHost(req, {}, function (err) {
+              expect(err.message).to.equal('Not Found');
+              expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
+              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
               done();
             });
           });
