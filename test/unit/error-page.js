@@ -21,7 +21,8 @@ describe('error-page.js unit test', function () {
       });
       expect(proxyUrl).to
         .equal(
-          'http://localhost:55551?type=signin&redirectUrl=api-staging-codenow.runnableapp.com');
+          'http://localhost:55551?type=signin&redirectUrl=http%3A%2F%2Fapi.runnable.io%2Fauth%2F'+
+          'github%3FrequiresToken%3Dyes%26redirect%3Dapi-staging-codenow.runnableapp.com');
       done();
     });
 

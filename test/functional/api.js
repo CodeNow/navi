@@ -106,8 +106,9 @@ describe('functional test: proxy to instance container', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
           expect(res.body).to.equal(
-            'ididerror;api-staging-codenow.runnableapp.com/?type=signin&'+
-            'redirectUrl=http%3A%2F%2Fapi-staging-codenow.runnableapp.com%3A80');
+            'ididerror;api-staging-codenow.runnableapp.com/?type=signin&redirectUrl=http%3A%2F%2F'+
+            'api.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26redirect%3Dhttp%3A%2F%2Fapi-'+
+            'staging-codenow.runnableapp.com%3A80');
           expect(res.statusCode).to.equal(200);
           expect(res.headers.location).to.be.undefined();
           done();
@@ -127,8 +128,9 @@ describe('functional test: proxy to instance container', function () {
         }, function (err, res) {
           if (err) { return done(err); }
           expect(res.body).to.equal(
-            'ididerror;localhost:51234/?runnableappAccessToken='+
-            'doesnotexist?type=signin&redirectUrl=http%3A%2F%2Flocalhost%3A51234');
+            'ididerror;localhost:51234/?runnableappAccessToken=doesnotexist?type=signin&'+
+            'redirectUrl=http%3A%2F%2Fapi.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26'+
+            'redirect%3Dhttp%3A%2F%2Flocalhost%3A51234');
           expect(res.statusCode).to.equal(200);
           expect(res.headers.location).to.be.undefined();
           done();
