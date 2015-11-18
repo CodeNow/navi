@@ -376,6 +376,17 @@ describe('api.js unit test', function () {
             done();
           });
 
+          it('should should ignore referer if same as requestUrl', function (done) {
+            req.headers.origin = 'http://'+base;
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              // feature-branch1 of API
+              expect(req.targetHost).to.equal('http://0.0.0.0:39941');
+              done();
+            });
+          });
+
+
           it('should proxy to instance mapped by referer naviEntry association', function (done) {
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
