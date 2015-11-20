@@ -108,12 +108,14 @@ describe('session.js unit test', function () {
         });
       });
     });
-    describe('with session ID in redis', function() {
+    describe('with required ata in redis', function() {
       var testUserId = '12837458927345';
       beforeEach(function(done) {
         redis.lpush(testToken, JSON.stringify({
           cookie: testUserId,
-          apiSessionRedisKey: 12345
+          apiSessionRedisKey: 12345,
+          userId: 555,
+          userGithubOrgs: [555]
         }), done);
       });
       afterEach(function(done) {
@@ -124,6 +126,8 @@ describe('session.js unit test', function () {
         req.session = {};
         Session.getSharedSessionDataFromStore(req, null, function() {
           expect(req.session.apiSessionRedisKey).to.equal(12345);
+          expect(req.session.userGithubOrgs[0]).to.equal(555);
+          expect(req.session.userId).to.equal(555);
           done();
         });
       });
