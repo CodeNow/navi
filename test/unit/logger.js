@@ -55,7 +55,7 @@ describe('lib/logger.js unit test', function () {
           var serialized = logger._serializers.tx();
           expect(serialized.txTimestamp).to.be.an.instanceOf(Date);
           expect(serialized.txMSFromReqStart).to.be.a.number();
-          expect(serialized.txMSDelta).to.equal(1000000);
+          expect(serialized.txMSDelta >= 1000000).to.equal(true);
           done();
         });
       });

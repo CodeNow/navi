@@ -1,19 +1,25 @@
+/**
+ * @module test/unit/server
+ */
 'use strict';
-require('../../lib/loadenv.js');
+require('loadenv');
 
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var afterEach = lab.afterEach;
-
 var expect = require('code').expect;
+var mongodb = require('mongodb');
 var sinon = require('sinon');
 
-var redis = require('../../lib/models/redis.js');
-var Server = require('../../lib/models/server.js');
-var api = require('models/api.js');
+var Server = require('models/server');
+var api = require('models/api');
+var redis = require('models/redis');
+
+var lab = exports.lab = Lab.script();
+
+var afterEach = lab.afterEach;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var it = lab.test;
+
 var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
@@ -26,24 +32,23 @@ describe('server.js unit test', function () {
   describe('start', function () {
     it('should start http server', function (done) {
       sinon.stub(proxyServer.server, 'listen').yieldsAsync();
-      sinon.stub(api, 'loginSuperUser').yieldsAsync();
       proxyServer.start(function (err) {
         if (err) { return done(err); }
         expect(proxyServer.server.listen
           .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-        expect(api.loginSuperUser.calledOnce).to.be.true();
         proxyServer.server.listen.restore();
-        api.loginSuperUser.restore();
         done();
       });
     });
-    it('should cb error if failed to login', function (done) {
-      var testErr = 'attack by dementors';
-      sinon.stub(api, 'loginSuperUser').yieldsAsync(testErr);
+    it('should error if mongo connect fails', function (done) {
+      var mongoErr = new Error('mongo err');
+      sinon.stub(proxyServer.server, 'listen').yieldsAsync();
+      sinon.stub(mongodb.MongoClient, 'connect').yieldsAsync(mongoErr);
       proxyServer.start(function (err) {
-        expect(err).to.equal(testErr);
-        expect(api.loginSuperUser.calledOnce).to.be.true();
-        api.loginSuperUser.restore();
+        expect(err.message).to.equal('mongo err');
+        expect(proxyServer.server.listen.callCount).to.equal(0);
+        proxyServer.server.listen.restore();
+        mongodb.MongoClient.connect.restore();
         done();
       });
     });
@@ -81,14 +86,12 @@ describe('server.js unit test', function () {
     });
     describe('valid client', function () {
       beforeEach(function(done) {
-        sinon.stub(api, 'createClient').yields();
         proxyServer.session.handle.returns(function (req, res , cb) {
           cb();
         });
         done();
       });
       afterEach(function (done) {
-        api.createClient.restore();
         done();
       });
       describe('not logged in', function() {
