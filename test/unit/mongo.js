@@ -24,8 +24,7 @@ var it = lab.test;
 
 describe('lib/models/mongodb', function () {
   var mockDb = {
-    collection: function () {
-    }
+    collection: function () {}
   };
   beforeEach(function (done) {
     sinon.stub(mongodb.MongoClient, 'connect').yieldsAsync(null, mockDb);
