@@ -430,7 +430,8 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should next with error if !instanceShortHash', function (done) {
+          it('should default to masterPod instance if assocation not in requestUrl directUrls ',
+             function (done) {
             sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return 'FFFFF'; //This is an instance not defined in requestUrl directUrls
             });
