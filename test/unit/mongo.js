@@ -58,7 +58,7 @@ describe('lib/models/mongodb', function () {
   describe('Mongo.prototype.stop', function () {
     beforeEach(function (done) {
       mongo._db = {
-        close: sinon.spy(function (cb) { cb(); })
+        close: sinon.stub().yieldsAsync()
       };
       done();
     });

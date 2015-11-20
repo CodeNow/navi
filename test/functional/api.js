@@ -71,8 +71,8 @@ describe('functional test: proxy to instance container', function () {
   after(function (done) {
     app.stop(done);
   });
-  describe('non-browser', function () {
 
+  describe('non-browser', function () {
     it('should bypass auth and proxy directly to master instance', function (done) {
       var host = 'api-staging-codenow.runnableapp.com';
       request({

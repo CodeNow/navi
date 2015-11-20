@@ -270,9 +270,7 @@ describe('api.js unit test', function () {
 
     describe('target owner not member of authenticated users orgs', function () {
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return '';
-        });
+        sinon.stub(api, '_getUrlFromRequest').returns('');
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           // ownerGithub === 495765
           cb(null, [naviRedisEntriesFixture.elastic]);
