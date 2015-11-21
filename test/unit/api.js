@@ -42,6 +42,18 @@ describe('api.js unit test', function () {
       expect(result).to.equal(true);
       done();
     });
+
+    it('should return false if user is NOT in whitelistedUsers list', function (done) {
+      var req = {
+        session: {
+          userId: 46788511111,
+          userGithubOrgs: [46788511111]
+        }
+      };
+      var result = api._isUserAuthorized(req, 9999);
+      expect(result).to.equal(false);
+      done();
+    });
   });
 
   describe('api.checkIfLoggedIn', function () {
