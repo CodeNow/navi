@@ -30,6 +30,20 @@ describe('api.js unit test', function () {
     done();
   });
 
+  describe('api._isUserAuthorized', function () {
+    it('should return true if user is in whitelistedUsers list', function (done) {
+      var req = {
+        session: {
+          userId: 467885,
+          userGithubOrgs: [467885]
+        }
+      };
+      var result = api._isUserAuthorized(req, 9999);
+      expect(result).to.equal(true);
+      done();
+    });
+  });
+
   describe('api.checkIfLoggedIn', function () {
     var req = {
       session: {
