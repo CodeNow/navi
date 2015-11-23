@@ -258,7 +258,7 @@ describe('functional test: proxy to instance container', function () {
         /**
          * No user-mapping, should proxy to master
          */
-        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com:8080';
         var elasticUrl = 'api-staging-codenow.runnableapp.com';
         request({
           followRedirect: false,
@@ -272,7 +272,7 @@ describe('functional test: proxy to instance container', function () {
         }, function (err, res) {
           if (err) { return done(err); }
           expect(res.statusCode).to.equal(307);
-          expect(res.headers.location).to.equal('http://'+elasticUrl);
+          expect(res.headers.location).to.equal('http://'+elasticUrl+':8080');
           mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
             expect(result.userMappings[userId]).to.equal('f8k3v2');
             done();
