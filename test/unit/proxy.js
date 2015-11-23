@@ -39,8 +39,7 @@ describe('proxy.js unit test', function () {
         expect(proxyServer.proxy.web
           .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
 
-        expect(errorPage.generateErrorUrl
-          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        expect(errorPage.generateErrorUrl.args[0][0]).to.equal('unresponsive');
         proxyServer.proxy.web.restore();
         errorPage.generateErrorUrl.restore();
         done();
@@ -60,8 +59,7 @@ describe('proxy.js unit test', function () {
         expect(proxyServer.proxy.web
           .withArgs(testReq, testRes, {target: testHost}).calledOnce).to.be.true();
 
-        expect(errorPage.generateErrorUrl
-          .withArgs('unresponsive', 'some_inst').calledOnce).to.be.true();
+        expect(errorPage.generateErrorUrl.args[0][0]).to.equal('unresponsive');
         proxyServer.proxy.web.restore();
         errorPage.generateErrorUrl.restore();
         done();
