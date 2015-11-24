@@ -297,7 +297,7 @@ describe('functional test: proxy to instance container', function () {
         }, function (err, res) {
           if (err) { return done(err); }
           expect(res.statusCode).to.equal(307);
-          expect(res.headers.location).to.equal('http://'+elasticUrl);
+          expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
           request({
             followRedirect: false,
             jar: j,
