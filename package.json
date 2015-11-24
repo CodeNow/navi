@@ -54,8 +54,8 @@
     "redis": "^2.0.0",
     "response-stream": "0.0.0",
     "rollbar": "^0.5.8",
-    "script-injector": "git+https://github.com/Runnable/script-injector.git#master",
     "through2": "^2.0.0",
+    "trumpet": "^1.7.2",
     "user-agent-is-browser": "^0.1.0"
   },
   "devDependencies": {
