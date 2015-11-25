@@ -98,5 +98,103 @@ describe('script inject response stream', function() {
       });
       resStream.end();
     });
-  })
+  });
+  describe('when chunks don\'t contain the entire <head> tag.', function () {
+    var html = [
+      '<html>',
+      '<head>',
+      '<script>alert("yoyoma");</script>',
+      '</head>',
+      '</html>'
+    ].join('\n');
+
+    var script = function () {
+      console.log('hello');
+    }.toString();
+
+    var expected = [
+      '<html>',
+      '<head><script type="text/javascript">',
+      ';('+script+')()',
+      '</script>',
+      '',
+      '<script>alert("yoyoma");</script>',
+      '</head>',
+      '</html>'
+    ].join('\n');
+
+    it('should still function', function (done) {
+      var resIsGziped = false;
+      var injectScriptStream = createScriptInjectResStream(script, resIsGziped);
+      var resStream = createResStream();
+
+      resStream
+        .pipe(injectScriptStream.input);
+      injectScriptStream.output
+        .pipe(concat(function (html) {
+          expect(html.toString()).to.equal(expected);
+          done();
+        }));
+      // write html
+      var splitHtml = html.split('<hea');
+      resStream.emit('data', splitHtml[0] + '<hea');
+      var chunks = splitHtml[1].split('\n');
+      chunks.forEach(function (chunk, index) {
+        resStream.emit('data',  (index === 0 ? '' : '\n') + chunk );
+      });
+      resStream.end();
+    });
+  });
+  describe('when both head and body exist', function () {
+    var html = [
+      '<html>',
+      '<head>',
+      '<script>alert("yoyoma");</script>',
+      '</head>',
+      '<body>',
+      'Hello World',
+      '</body>',
+      '</html>'
+    ].join('\n');
+
+    var script = function () {
+      console.log('hello');
+    }.toString();
+
+    var expected = [
+      '<html>',
+      '<head><script type="text/javascript">',
+      ';('+script+')()',
+      '</script>',
+      '',
+      '<script>alert("yoyoma");</script>',
+      '</head>',
+      '<body>',
+      'Hello World',
+      '</body>',
+      '</html>'
+    ].join('\n');
+
+    it('should only inject on head', function (done) {
+      var resIsGziped = false;
+      var injectScriptStream = createScriptInjectResStream(script, resIsGziped);
+      var resStream = createResStream();
+
+      resStream
+        .pipe(injectScriptStream.input);
+      injectScriptStream.output
+        .pipe(concat(function (html) {
+          expect(html.toString()).to.equal(expected);
+          done();
+        }));
+      // write html
+      var splitHtml = html.split('<hea');
+      resStream.emit('data', splitHtml[0] + '<hea');
+      var chunks = splitHtml[1].split('\n');
+      chunks.forEach(function (chunk, index) {
+        resStream.emit('data',  (index === 0 ? '' : '\n') + chunk );
+      });
+      resStream.end();
+    });
+  });
 });
