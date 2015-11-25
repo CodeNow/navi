@@ -1,6 +1,7 @@
 'use strict';
 require('../../lib/loadenv.js');
 var zlib = require('zlib');
+var async = require('async');
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
@@ -74,4 +75,28 @@ describe('script inject response stream', function() {
       resStream.end();
     });
   });
+
+  describe('when chunks don\'t contain the entire <body> tag.', function () {
+    it('should still function', function (done) {
+      var resIsGziped = false;
+      var injectScriptStream = createScriptInjectResStream(script, resIsGziped);
+      var resStream = createResStream();
+
+      resStream
+        .pipe(injectScriptStream.input);
+      injectScriptStream.output
+        .pipe(concat(function (html) {
+          expect(html.toString()).to.equal(expected);
+          done();
+        }));
+      // write html
+      var splitHtml = html.split('<bod');
+      resStream.emit('data', splitHtml[0] + '<bod');
+      var chunks = splitHtml[1].split('\n');
+      chunks.forEach(function (chunk, index) {
+        resStream.emit('data',  (index === 0 ? '' : '\n') + chunk );
+      });
+      resStream.end();
+    });
+  })
 });
