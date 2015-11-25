@@ -13,10 +13,10 @@ var createResStream = require('../../lib/create-res-stream.js');
 
 var html = [
   '<html>',
-  '  <body>',
-  '   Hello World',
-  '   <script>alert("yoyoma");</script>',
-  '  </body>',
+  '<body>',
+  'Hello World',
+  '<script>alert("yoyoma");</script>',
+  '</body>',
   '</html>'
 ].join('\n');
 
@@ -26,13 +26,13 @@ var script = function () {
 
 var expected = [
   '<html>',
-  '  <body>',
-  '   Hello World',
-  '   <script type="text/javascript">',
+  '<body><script type="text/javascript">',
   ';('+script+')()',
   '</script>',
+  '',
+  'Hello World',
   '<script>alert("yoyoma");</script>',
-  '  </body>',
+  '</body>',
   '</html>'
 ].join('\n');
 
