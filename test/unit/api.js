@@ -220,7 +220,7 @@ describe('api.js unit test', function () {
 
   describe('_processTargetInstance', function () {
     it('should next with error if !targetNaviEntryInstance', function (done) {
-      api._processTargetInstance(null, '', {}, function (err) {
+      api._processTargetInstance(null, '', '', {}, function (err) {
         expect(err.message).to.equal('Not Found');
         done();
       });
@@ -232,10 +232,10 @@ describe('api.js unit test', function () {
       api._processTargetInstance({
         running: false,
         branch: 'master'
-      }, reqUrl, req, function (err) {
+      }, '55555', reqUrl, req, function (err) {
         expect(err).to.be.undefined();
         expect(req.targetHost).to.equal('http://localhost:55551?type=not_running&elasticUrl='+
-                                        reqUrl+'&targetBranch=master');
+                                        reqUrl+'&shortHash=55555');
         done();
       });
     });
