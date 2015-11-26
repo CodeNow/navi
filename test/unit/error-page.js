@@ -29,39 +29,39 @@ describe('error-page.js unit test', function () {
     it('should generate error url for not-running error', function (done) {
       var proxyUrl = errorPage.generateErrorUrl('not_running', {
         elasticUrl: 'api-staging-codenow.runnableapp.com',
-        targetBranch: 'master'
+        shortHash: '555'
       });
       expect(proxyUrl).to
         .equal(
           'http://localhost:55551?'+
           'type=not_running&elasticUrl=api-staging-codenow.runnableapp.com'+
-          '&targetBranch=master');
+          '&shortHash=555');
       done();
     });
 
     it('should generate error url for unresponsive error', function (done) {
       var proxyUrl = errorPage.generateErrorUrl('unresponsive', {
         elasticUrl: 'api-staging-codenow.runnableapp.com',
-        targetBranch: 'master'
+        shortHash: '555'
       });
       expect(proxyUrl).to
         .equal(
           'http://localhost:55551?'+
           'type=unresponsive&elasticUrl=api-staging-codenow.runnableapp.com'+
-          '&targetBranch=master');
+          '&shortHash=555');
       done();
     });
 
     it('should generate error url for ports error', function (done) {
       var proxyUrl = errorPage.generateErrorUrl('ports', {
         elasticUrl: 'api-staging-codenow.runnableapp.com',
-        targetBranch: 'master'
+        shortHash: '555'
       });
       expect(proxyUrl).to
         .equal(
           'http://localhost:55551?'+
           'type=ports&elasticUrl=api-staging-codenow.runnableapp.com'+
-          '&targetBranch=master');
+          '&shortHash=555');
       done();
     });
 
@@ -69,7 +69,7 @@ describe('error-page.js unit test', function () {
       function throws () {
         errorPage.generateErrorUrl('skjfasghasdg', {
           elasticUrl: 'api-staging-codenow.runnableapp.com',
-          targetBranch: 'master'
+          shortHash: '555'
         });
       }
       expect(throws).to.throw();
