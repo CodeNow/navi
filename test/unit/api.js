@@ -464,11 +464,35 @@ describe('api.js unit test', function () {
             sinon.stub(api, '_processTargetInstance',
                        function (targetNaviEntryInstance, reqUrl, req, next) {
               expect(targetNaviEntryInstance.masterPod).to.equal(true);
-              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-              api._processTargetInstance.restore();
               next();
             });
             api.getTargetHost(req, {}, function () {
+              api._processTargetInstance.restore();
+              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+              done();
+            });
+          });
+
+          it('should default to masterPod instance if no associations/dns-mappings defined',
+             function (done) {
+              sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
+              return undefined;
+            });
+            sinon.stub(mongo.constructor, 'findMasterPodBranch', function (refererNaviEntry) {
+              expect(refererNaviEntry).to.be.an.object();
+              return {
+                directUrlShortHash: 'e4rov2'
+              };
+            });
+            sinon.stub(api, '_processTargetInstance',
+                       function (targetNaviEntryInstance, reqUrl, req, next) {
+              expect(targetNaviEntryInstance.masterPod).to.equal(true);
+              next();
+            });
+            api.getTargetHost(req, {}, function () {
+              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+              mongo.constructor.findMasterPodBranch.restore();
+              api._processTargetInstance.restore();
               done();
             });
           });
