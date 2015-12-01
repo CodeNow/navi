@@ -239,6 +239,7 @@ describe('api.js unit test', function () {
 
   describe('api._getTargetHostElasticReferer', function () {
     it('should call _processTargetInstance with proxy information for the referrer');
+    it('should handle when we can\'t find the masterPodBranch and we can\'t find the user mappings for the current elastic url');
   });
 
   describe('api._getTargetHostElastic', function () {
