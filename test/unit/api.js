@@ -444,14 +444,25 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should next with error if !instanceShortHash', function (done) {
+          it('should default to masterPod if !instanceShortHash', function (done) {
+            var mockNaviEntry = {};
             sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return null;
             });
+            sinon.stub(mongo.constructor, 'findMasterPodBranch', function () {
+              return mockNaviEntry;
+            });
+            sinon.stub(api, '_processTargetInstance',
+                       function (targetNaviEntryInstance, reqUrl, req, next) {
+              expect(targetNaviEntryInstance).to.equal(mockNaviEntry);
+              next();
+            });
             api.getTargetHost(req, {}, function (err) {
-              expect(err.message).to.equal('Not Found');
+              expect(err).to.be.undefined();
               expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+              mongo.constructor.findMasterPodBranch.restore();
+              api._processTargetInstance.restore();
               done();
             });
           });
@@ -481,7 +492,7 @@ describe('api.js unit test', function () {
             sinon.stub(mongo.constructor, 'findMasterPodBranch', function (refererNaviEntry) {
               expect(refererNaviEntry).to.be.an.object();
               return {
-                directUrlShortHash: 'e4rov2'
+                masterPod: true
               };
             });
             sinon.stub(api, '_processTargetInstance',

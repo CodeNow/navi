@@ -242,7 +242,7 @@ describe('lib/models/mongodb', function () {
       var copy = put({}, naviEntryFixtures);
       copy.directUrls = {};
       var masterPod = mongo.constructor.findMasterPodBranch(copy);
-      expect(masterPod).to.equal(null);
+      expect(masterPod).to.be.undefined();
       done();
     });
   });
