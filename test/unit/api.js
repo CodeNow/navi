@@ -240,17 +240,19 @@ describe('api.js unit test', function () {
   describe('api.getTargetHost', function () {
     beforeEach(function (done) {
       sinon.stub(api, '_getUrlFromRequest').returns('');
-      sinon.stub(redis, 'lrange').yieldsAsync(null, [naviRedisEntriesFixture.elastic]);
       sinon.stub(api, '_shouldBypassAuth').returns(true);
       sinon.stub(api, '_isUserAuthorized').returns(true);
+      sinon.stub(api, '_getTargetHostElastic').yieldsAsync();
+      sinon.stub(redis, 'lrange').yieldsAsync(null, [naviRedisEntriesFixture.elastic]);
       sinon.stub(mongo, 'setUserMapping').yieldsAsync();
       done();
     });
     afterEach(function (done) {
       api._getUrlFromRequest.restore();
-      redis.lrange.restore();
       api._shouldBypassAuth.restore();
       api._isUserAuthorized.restore();
+      api._getTargetHostElastic.restore();
+      redis.lrange.restore();
       mongo.setUserMapping.restore();
       done();
     });
@@ -316,7 +318,12 @@ describe('api.js unit test', function () {
     });
 
     describe('elastic url incoming request', function () {
-      it('should next error', function (done) {
+      beforeEach(function (done) {
+        api._shouldBypassAuth.returns(true);
+        api._isUserAuthorized.returns(true);
+        done();
+      });
+      it('should call _getTargetHostElastic with the request', function (done) {
         var req = {
           method: 'get',
           isBrowser: true,
@@ -326,14 +333,11 @@ describe('api.js unit test', function () {
           },
           headers: {}
         };
-        api.getTargetHost(req, {}, function (err) {
-          expect(err.message).to.equal('mongo error');
+        api.getTargetHost(req, {}, function () {
+          sinon.assert.calledOnce(api._getTargetHostElastic);
+          sinon.assert.calledWith(api._getTargetHostElastic, sinon.match.object, req, sinon.match.func);
           done();
         });
-      });
-
-      it('should call _getTargetHostElastic with the request', function (done) {
-        done();
       });
     });
 
@@ -353,6 +357,9 @@ describe('api.js unit test', function () {
             host: base + ':80'
           }
         };
+        api._shouldBypassAuth.returns(true);
+        api._isUserAuthorized.returns(true);
+        redis.lrange.yieldsAsync(null, [naviRedisEntriesFixture.direct]);
         api._getUrlFromRequest.returns('http://0.0.0.0:80');
         done();
       });
