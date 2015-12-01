@@ -393,6 +393,8 @@ describe('api.js unit test', function () {
             });
 
             sinon.stub(api, '_processTargetInstance').yields();
+            sinon.stub(mongo.constructor, 'findMasterPodBranch');
+
             done();
           });
           afterEach(function (done) {
@@ -400,7 +402,14 @@ describe('api.js unit test', function () {
             redis.lrange.restore();
             mongo.fetchNaviEntry.restore();
             if (api._processTargetInstance.restore) {
+              // future note to self, don't make function unit tests that don't stub 100%
+              // of external function calls.
               api._processTargetInstance.restore();
+            }
+            if (mongo.constructor.findMasterPodBranch.restore) {
+              // future note to self, don't make function unit tests that don't stub 100%
+              // of external function calls.
+              mongo.constructor.findMasterPodBranch.restore();
             }
             done();
           });
@@ -416,7 +425,6 @@ describe('api.js unit test', function () {
             });
           });
 
-
           it('should proxy to instance mapped by referer naviEntry association', function (done) {
             api._processTargetInstance.restore();
             api.getTargetHost(req, {}, function (err) {
@@ -428,7 +436,10 @@ describe('api.js unit test', function () {
           });
 
           it('should handle navientires document with no user-mappings', function (done) {
+
             api._processTargetInstance.restore();
+            mongo.constructor.findMasterPodBranch.restore();
+
             var restore = put({}, naviEntriesFixtures.refererNaviEntry);
             delete naviEntriesFixtures.refererNaviEntry.userMappings;
             api.getTargetHost(req, {}, function (err) {
@@ -458,9 +469,8 @@ describe('api.js unit test', function () {
             sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return null;
             });
-            sinon.stub(mongo.constructor, 'findMasterPodBranch', function () {
-              return mockNaviEntry;
-            });
+
+            mongo.constructor.findMasterPodBranch.returns(mockNaviEntry);
 
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
@@ -469,8 +479,6 @@ describe('api.js unit test', function () {
 
               expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-              mongo.constructor.findMasterPodBranch.restore();
-              api._processTargetInstance.restore();
               done();
             });
           });
@@ -482,28 +490,24 @@ describe('api.js unit test', function () {
             });
 
             api.getTargetHost(req, {}, function () {
-              api._processTargetInstance.restore();
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
               done();
             });
           });
 
           it('should default to masterPod instance if no associations/dns-mappings defined',
-             function (done) {
-              sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
+            function (done) {
+
+            sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return undefined;
             });
-            sinon.stub(mongo.constructor, 'findMasterPodBranch', function (refererNaviEntry) {
-              expect(refererNaviEntry).to.be.an.object();
-              return {
-                masterPod: true
-              };
+
+            mongo.constructor.findMasterPodBranch.returns({
+              masterPod: true
             });
 
             api.getTargetHost(req, {}, function () {
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-              mongo.constructor.findMasterPodBranch.restore();
-              api._processTargetInstance.restore();
               done();
             });
           });
@@ -564,17 +568,22 @@ describe('api.js unit test', function () {
 
           it('should use masterPod instance if document has no user-mappings',
           function (done) {
+
             sinon.stub(api, '_processTargetInstance', function (targetNaviEntryInstance) {
               expect(targetNaviEntryInstance.masterPod).to.equal(true);
               api._processTargetInstance.restore();
               done();
             });
+
             var copy = put({}, naviEntriesFixtures);
             delete copy.userMappings;
+
             mongo.fetchNaviEntry.restore();
+
             sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
               cb(null, copy);
             });
+
             api.getTargetHost(req, {}, function () {});
           });
         });
