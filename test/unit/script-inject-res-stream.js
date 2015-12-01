@@ -1,8 +1,6 @@
 'use strict';
 require('../../lib/loadenv.js');
 var zlib = require('zlib');
-var async = require('async');
-
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();
 var describe = lab.describe;
