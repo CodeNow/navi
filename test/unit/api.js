@@ -237,6 +237,14 @@ describe('api.js unit test', function () {
     });
   });
 
+  describe('api._getTargetHostElasticReferer', function () {
+    it('should call _processTargetInstance with proxy information for the referrer');
+  });
+
+  describe('api._getTargetHostElastic', function () {
+    it('should call _processTargetInstance with proxy information for the elastic url');
+  });
+
   describe('api.getTargetHost', function () {
     beforeEach(function (done) {
       sinon.stub(api, '_getUrlFromRequest').returns('');
