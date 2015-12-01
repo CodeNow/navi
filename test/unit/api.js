@@ -391,16 +391,22 @@ describe('api.js unit test', function () {
             sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
               cb(null, naviEntriesFixtures);
             });
+
+            sinon.stub(api, '_processTargetInstance').yields();
             done();
           });
           afterEach(function (done) {
             api._getUrlFromRequest.restore();
             redis.lrange.restore();
             mongo.fetchNaviEntry.restore();
+            if (api._processTargetInstance.restore) {
+              api._processTargetInstance.restore();
+            }
             done();
           });
 
           it('should should ignore referer if same as requestUrl', function (done) {
+            api._processTargetInstance.restore();
             req.headers.origin = 'http://'+base;
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
@@ -412,6 +418,7 @@ describe('api.js unit test', function () {
 
 
           it('should proxy to instance mapped by referer naviEntry association', function (done) {
+            api._processTargetInstance.restore();
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
               // feature-branch1 of API
@@ -421,6 +428,7 @@ describe('api.js unit test', function () {
           });
 
           it('should handle navientires document with no user-mappings', function (done) {
+            api._processTargetInstance.restore();
             var restore = put({}, naviEntriesFixtures.refererNaviEntry);
             delete naviEntriesFixtures.refererNaviEntry.userMappings;
             api.getTargetHost(req, {}, function (err) {
@@ -433,6 +441,7 @@ describe('api.js unit test', function () {
 
           it('should next with error if navientries document with no user-mappings and no '+
              'masterpod', function (done) {
+            api._processTargetInstance.restore();
             var restore = put({}, naviEntriesFixtures.refererNaviEntry);
             delete naviEntriesFixtures.refererNaviEntry.userMappings;
             naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = false;
@@ -452,13 +461,12 @@ describe('api.js unit test', function () {
             sinon.stub(mongo.constructor, 'findMasterPodBranch', function () {
               return mockNaviEntry;
             });
-            sinon.stub(api, '_processTargetInstance',
-                       function (targetNaviEntryInstance, reqUrl, req, next) {
-              expect(targetNaviEntryInstance).to.equal(mockNaviEntry);
-              next();
-            });
+
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
+
+              sinon.assert.calledWith(api._processTargetInstance, mockNaviEntry);
+
               expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
               mongo.constructor.findMasterPodBranch.restore();
@@ -472,11 +480,7 @@ describe('api.js unit test', function () {
             sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return 'FFFFF'; //This is an instance not defined in requestUrl directUrls
             });
-            sinon.stub(api, '_processTargetInstance',
-                       function (targetNaviEntryInstance, reqUrl, req, next) {
-              expect(targetNaviEntryInstance.masterPod).to.equal(true);
-              next();
-            });
+
             api.getTargetHost(req, {}, function () {
               api._processTargetInstance.restore();
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
@@ -495,11 +499,7 @@ describe('api.js unit test', function () {
                 masterPod: true
               };
             });
-            sinon.stub(api, '_processTargetInstance',
-                       function (targetNaviEntryInstance, reqUrl, req, next) {
-              expect(targetNaviEntryInstance.masterPod).to.equal(true);
-              next();
-            });
+
             api.getTargetHost(req, {}, function () {
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
               mongo.constructor.findMasterPodBranch.restore();
