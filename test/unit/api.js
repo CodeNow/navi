@@ -219,6 +219,16 @@ describe('api.js unit test', function () {
   });
 
   describe('_processTargetInstance', function () {
+    beforeEach(function (done) {
+      sinon.stub(api, '_getDestinationProxyUrl');
+      done();
+    });
+
+    afterEach(function (done) {
+      api._getDestinationProxyUrl.restore();
+      done();
+    });
+
     it('should next with error if !targetNaviEntryInstance', function (done) {
       api._processTargetInstance(null, '', '', {}, function (err) {
         expect(err.message).to.equal('Not Found');
@@ -226,7 +236,7 @@ describe('api.js unit test', function () {
       });
     });
 
-    it('should set req.targetHost if !running', function (done) {
+    it('should set req.targetHost to error url if !running', function (done) {
       var req = {};
       var reqUrl = 'api-staging-codenow.runnableapp.com';
       api._processTargetInstance({
@@ -236,6 +246,20 @@ describe('api.js unit test', function () {
         expect(err).to.be.undefined();
         expect(req.targetHost).to.equal('http://localhost:55551?type=not_running&elasticUrl='+
                                         reqUrl+'&shortHash=55555');
+        done();
+      });
+    });
+
+    it('should set req.targetHost to container host & port if running', function (done) {
+      api._getDestinationProxyUrl.returns('http://0.0.0.0:600');
+      var req = {};
+      var reqUrl = 'api-staging-codenow.runnableapp.com';
+      api._processTargetInstance({
+        running: true,
+        branch: 'master'
+      }, '55555', reqUrl, req, function (err) {
+        expect(err).to.be.undefined();
+        expect(req.targetHost).to.equal('http://0.0.0.0:600');
         done();
       });
     });
