@@ -456,19 +456,21 @@ describe('api.js unit test', function () {
             });
           });
 
-          it('should default to masterPod instance if assocation not in requestUrl directUrls ',
+          it('should default to masterPod instance if assocation not in requestUrl directUrls',
              function (done) {
             sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl', function () {
               return 'FFFFF'; //This is an instance not defined in requestUrl directUrls
             });
             sinon.stub(api, '_processTargetInstance',
-                       function (targetNaviEntryInstance) {
+                       function (targetNaviEntryInstance, shortHash, reqUrl, req, next) {
               expect(targetNaviEntryInstance.masterPod).to.equal(true);
               mongo.constructor.findAssociationShortHashByElasticUrl.restore();
               api._processTargetInstance.restore();
+              next();
+            });
+            api.getTargetHost(req, {}, function () {
               done();
             });
-            api.getTargetHost(req, {}, function () {});
           });
         });
 
