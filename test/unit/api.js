@@ -424,7 +424,6 @@ describe('api.js unit test', function () {
             });
           });
 
-
           it('should proxy to instance mapped by referer naviEntry association', function (done) {
             api._processTargetInstance.restore();
             mongo.constructor.findAssociationShortHashByElasticUrl.restore();
@@ -472,20 +471,9 @@ describe('api.js unit test', function () {
 
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
-
               sinon.assert.calledWith(api._processTargetInstance, mockNaviEntry);
-
               expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
               mongo.constructor.findMasterPodBranch.restore();
-              api._processTargetInstance.restore();
-              done();
-            });
-          });
-
-          it('should default to masterPod instance if assocation not in requestUrl directUrls',
-            function (done) {
-            api.getTargetHost(req, {}, function () {
-              api._processTargetInstance.restore();
               done();
             });
           });
@@ -501,8 +489,11 @@ describe('api.js unit test', function () {
             });
 
             api.getTargetHost(req, {}, function () {
+              sinon.assert.calledWith(api._processTargetInstance, sinon.match({
+                masterPod: true
+              }));
+              sinon.assert.calledWith(api._processTargetInstance)
               mongo.constructor.findMasterPodBranch.restore();
-              api._processTargetInstance.restore();
               done();
             });
           });
