@@ -517,8 +517,6 @@ describe('api.js unit test', function () {
           it('should default to masterPod instance if no associations/dns-mappings defined',
             function (done) {
 
-            log.info('===========================')
-
             sinon.stub(mongo.constructor, 'findMasterPodBranch');
             mongo.constructor.findMasterPodBranch.onFirstCall().returns({});
             mongo.constructor.findMasterPodBranch.onSecondCall().returns(undefined);
@@ -529,14 +527,11 @@ describe('api.js unit test', function () {
             });
 
             api.getTargetHost(req, {}, function () {
-
-              log.info('===========================')
               sinon.assert.calledWith(api._processTargetInstance, sinon.match({
                 masterPod: true
               }));
               sinon.assert.calledWith(api._processTargetInstance)
               mongo.constructor.findMasterPodBranch.restore();
-
               done();
             });
           });
