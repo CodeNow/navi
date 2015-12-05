@@ -232,7 +232,8 @@ describe('lib/models/mongodb', function () {
       var copy = put({}, naviEntryFixtures);
       copy.directUrls.e4rov2.masterPod = false;
       copy.directUrls.e4v7ve.masterPod = true;
-      var masterPod = mongo.constructor.findMasterPodBranch(copy);
+      var findResult = mongo.constructor.findMasterPodBranch(copy);
+      var masterPod = findResult.directUrlObj;
       expect(masterPod.masterPod).to.equal(true);
       expect(masterPod).to.equal(copy.directUrls.e4v7ve);
       done();

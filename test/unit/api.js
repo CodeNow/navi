@@ -13,6 +13,7 @@ var lab = exports.lab = Lab.script();
 
 //var errorPage = require('models/error-page.js');
 var api = require('models/api.js');
+var log = require('middlewares/logger')(__filename).log;
 var mongo = require('models/mongo');
 var naviEntriesFixtures = require('../fixture/navi-entries');
 var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
@@ -148,6 +149,7 @@ describe('api.js unit test', function () {
       expect(test).to.equal(result);
       done();
     });
+
     it('should add https', function (done) {
       var test = api._getUrlFromRequest({
         isBrowser: true,
@@ -219,23 +221,47 @@ describe('api.js unit test', function () {
   });
 
   describe('_processTargetInstance', function () {
+    beforeEach(function (done) {
+      sinon.stub(api, '_getDestinationProxyUrl');
+      done();
+    });
+
+    afterEach(function (done) {
+      api._getDestinationProxyUrl.restore();
+      done();
+    });
+
     it('should next with error if !targetNaviEntryInstance', function (done) {
-      api._processTargetInstance(null, '', {}, function (err) {
+      api._processTargetInstance(null, '', '', {}, function (err) {
         expect(err.message).to.equal('Not Found');
         done();
       });
     });
 
-    it('should set req.targetHost if !running', function (done) {
+    it('should set req.targetHost to error url if !running', function (done) {
       var req = {};
       var reqUrl = 'api-staging-codenow.runnableapp.com';
       api._processTargetInstance({
         running: false,
         branch: 'master'
-      }, reqUrl, req, function (err) {
+      }, '55555', reqUrl, req, function (err) {
         expect(err).to.be.undefined();
         expect(req.targetHost).to.equal('http://localhost:55551?type=not_running&elasticUrl='+
-                                        reqUrl+'&targetBranch=master');
+                                        reqUrl+'&shortHash=55555');
+        done();
+      });
+    });
+
+    it('should set req.targetHost to container host & port if running', function (done) {
+      api._getDestinationProxyUrl.returns('http://0.0.0.0:600');
+      var req = {};
+      var reqUrl = 'api-staging-codenow.runnableapp.com';
+      api._processTargetInstance({
+        running: true,
+        branch: 'master'
+      }, '55555', reqUrl, req, function (err) {
+        expect(err).to.be.undefined();
+        expect(req.targetHost).to.equal('http://0.0.0.0:600');
         done();
       });
     });
@@ -438,35 +464,45 @@ describe('api.js unit test', function () {
           it('should handle navientires document with no user-mappings', function (done) {
             api._processTargetInstance.restore();
             mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+
             var restore = put({}, naviEntriesFixtures.refererNaviEntry);
             delete naviEntriesFixtures.refererNaviEntry.userMappings;
+
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
               expect(req.targetHost).to.equal('http://0.0.0.2:39942');
-              naviEntriesFixtures.refererNaviEntry.userMappings = restore;
+              naviEntriesFixtures.refererNaviEntry = restore;
               done();
             });
           });
 
           it('should next with error if navientries document with no user-mappings and no '+
              'masterpod', function (done) {
+
             api._processTargetInstance.restore();
             mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+
             var restore = put({}, naviEntriesFixtures.refererNaviEntry);
             delete naviEntriesFixtures.refererNaviEntry.userMappings;
             naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = false;
+
             api.getTargetHost(req, {}, function (err) {
               expect(err.message).to.equal('Not Found');
               naviEntriesFixtures.refererNaviEntry.userMappings = restore;
               naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = true;
+
+              naviEntriesFixtures.refererNaviEntry = restore;
+
               done();
             });
           });
 
           it('should default to masterPod if !instanceShortHash', function (done) {
             var mockNaviEntry = {};
-            sinon.stub(mongo.constructor, 'findMasterPodBranch', function () {
-              return mockNaviEntry;
+
+            sinon.stub(mongo.constructor, 'findMasterPodBranch').returns({
+              directUrlObj: mockNaviEntry,
+              directUrlShortHash: 'FFFF'
             });
 
             api.getTargetHost(req, {}, function (err) {
@@ -484,8 +520,10 @@ describe('api.js unit test', function () {
             sinon.stub(mongo.constructor, 'findMasterPodBranch');
             mongo.constructor.findMasterPodBranch.onFirstCall().returns({});
             mongo.constructor.findMasterPodBranch.onSecondCall().returns(undefined);
-            mongo.constructor.findMasterPodBranch.onThirdCall().returns({
-              masterPod: true
+            mongo.constructor.findMasterPodBranch.onSecondCall().returns({
+              directUrlObj: {
+                masterPod: true
+              }
             });
 
             api.getTargetHost(req, {}, function () {
