@@ -30,6 +30,7 @@
   "dependencies": {
     "101": "^1.2.0",
     "async": "^1.4.2",
+    "bluebird": "^3.0.6",
     "boom": "^2.6.1",
     "bunyan": "^1.4.0",
     "callback-count": "^0.2.0",
