@@ -274,6 +274,7 @@ describe('functional test: proxy to instance container', function () {
           expect(res.statusCode).to.equal(307);
           expect(res.headers.location).to.equal('http://'+elasticUrl+':8080');
           mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
+            expect(err).to.be.null();
             expect(result.userMappings[userId]).to.equal('f8k3v2');
             done();
           });

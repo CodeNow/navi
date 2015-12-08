@@ -12,12 +12,14 @@ var mongodb = require('mongodb');
 var put = require('101/put');
 var sinon = require('sinon');
 
+var cache = require('cache');
 var mongo = require('models/mongo');
 var naviEntryFixtures = require('../fixture/navi-entries');
 
 var lab = exports.lab = Lab.script();
 
 var afterEach = lab.afterEach;
+var before = lab.before;
 var beforeEach = lab.beforeEach;
 var describe = lab.describe;
 var it = lab.test;
@@ -79,133 +81,124 @@ describe('lib/models/mongodb', function () {
   });
 
   describe('Mongo.prototype.fetchNaviEntry', function () {
-    it('should callback mongo error', function (done) {
-      keypather.set(mongo, '_naviEntriesCollection.find', sinon.spy(function () {
-        return {
-          toArray: function (cb) {
-            cb(new Error('mongo error'));
-          }
-        };
-      }));
-      mongo.fetchNaviEntry('api-staging-codenow.runnableapp.com', null, function (err) {
-        expect(mongo._naviEntriesCollection.find.callCount).to.equal(1);
-        expect(err.message).to.equal('mongo error');
-        done();
+
+    beforeEach(function (done) {
+      sinon.stub(cache, 'set');
+      keypather.set(mongo, '_naviEntriesCollection.find', function () {});
+      sinon.stub(mongo._naviEntriesCollection, 'find').returns({
+        toArray: sinon.stub().yieldsAsync(new Error('mongo error'))
       });
+      done();
     });
 
-    it('should fetch one navientries document if !refererUrl', function (done) {
-      var naviEntriesDocument = {};
-      var elasticUrl = 'api-staging-codenow.runnableapp.com';
-      keypather.set(mongo, '_naviEntriesCollection.find', sinon.spy(function (query) {
-        expect(query).to.deep.equal({
+    afterEach(function (done) {
+      cache.set.restore();
+      mongo._naviEntriesCollection.find.restore();
+      done();
+    });
+
+    describe('no LRU cache', function () {
+
+      before(function (done) {
+        delete process.env.ENABLE_LRU_CACHE;
+        done();
+      });
+
+      it('should callback mongo error', function (done) {
+        mongo.fetchNaviEntry('api-staging-codenow.runnableapp.com', null, function (err) {
+          sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
+          expect(err.message).to.equal('mongo error');
+          done();
+        });
+      });
+
+      it('should fetch one navientries document if !refererUrl', function (done) {
+        var naviEntriesDocument = {};
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+
+        mongo._naviEntriesCollection.find.returns({
+          toArray: sinon.stub().yieldsAsync(null, [naviEntriesDocument])
+        });
+
+        mongo.fetchNaviEntry(elasticUrl, null, function (err, response) {
+          sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
+          sinon.assert.calledWith(mongo._naviEntriesCollection.find,
+                                  sinon.match.has('elasticUrl', elasticUrl));
+
+          expect(response).to.equal(naviEntriesDocument);
+          expect(err).to.be.null();
+          done();
+        });
+      });
+
+      it('should fetch two navientries documents if refererUrl', function (done) {
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        var refererUrl = 'frontend-staging-codenow.runnableapp.com';
+        var naviEntriesDocument = {
           elasticUrl: elasticUrl
-        });
-        return {
-          toArray: function (cb) {
-            cb(null, [naviEntriesDocument]);
-          }
         };
-      }));
-      mongo.fetchNaviEntry(elasticUrl, null, function (err, response) {
-        expect(mongo._naviEntriesCollection.find.callCount).to.equal(1);
-        expect(response).to.equal(naviEntriesDocument);
-        expect(err).to.be.null();
-        done();
-      });
-    });
+        var naviEntriesDocumentReferer = {
+          elasticUrl: refererUrl
+        };
+        mongo._naviEntriesCollection.find.returns({
+          toArray: sinon.stub().yieldsAsync(null, [naviEntriesDocument, naviEntriesDocumentReferer])
+        });
+        mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
+          sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
+          sinon.assert.calledWith(mongo._naviEntriesCollection.find,
+                                  sinon.match.has('$or', sinon.match.array));
 
-    it('should fetch two navientries documents if refererUrl', function (done) {
-      var elasticUrl = 'api-staging-codenow.runnableapp.com';
-      var refererUrl = 'frontend-staging-codenow.runnableapp.com';
-      var naviEntriesDocument = {
-        elasticUrl: elasticUrl
-      };
-      var naviEntriesDocumentReferer = {
-        elasticUrl: refererUrl
-      };
-      keypather.set(mongo, '_naviEntriesCollection.find', sinon.spy(function (query) {
-        expect(query).to.deep.equal({
-          $or: [{
-            elasticUrl: elasticUrl
-          }, {
-            elasticUrl: refererUrl
-          }]
+          expect(response).to.equal(naviEntriesDocument);
+          expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
+          expect(err).to.be.null();
+          done();
         });
-        return {
-          toArray: function (cb) {
-            cb(null, [naviEntriesDocument, naviEntriesDocumentReferer]);
-          }
-        };
-      }));
-      mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
-        expect(mongo._naviEntriesCollection.find.callCount).to.equal(1);
-        expect(response).to.equal(naviEntriesDocument);
-        expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
-        expect(err).to.be.null();
-        delete mongo._naviEntriesCollection;
-        done();
       });
-    });
 
-    it('should fetch two navientries documents if refererUrl (inverse possible response order)',
-    function (done) {
-      var elasticUrl = 'api-staging-codenow.runnableapp.com';
-      var refererUrl = 'frontend-staging-codenow.runnableapp.com';
-      var naviEntriesDocument = {
-        elasticUrl: elasticUrl
-      };
-      var naviEntriesDocumentReferer = {
-        elasticUrl: refererUrl
-      };
-      keypather.set(mongo, '_naviEntriesCollection.find', sinon.spy(function (query) {
-        expect(query).to.deep.equal({
-          $or: [{
-            elasticUrl: elasticUrl
-          }, {
-            elasticUrl: refererUrl
-          }]
-        });
-        return {
-          toArray: function (cb) {
-            cb(null, [naviEntriesDocument, naviEntriesDocumentReferer].reverse());
-          }
+      it('should fetch two navientries documents if refererUrl (inverse possible response order)',
+      function (done) {
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        var refererUrl = 'frontend-staging-codenow.runnableapp.com';
+        var naviEntriesDocument = {
+          elasticUrl: elasticUrl
         };
-      }));
-      mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
-        expect(mongo._naviEntriesCollection.find.callCount).to.equal(1);
-        expect(response).to.equal(naviEntriesDocument);
-        expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
-        expect(err).to.be.null();
-        delete mongo._naviEntriesCollection;
-        done();
+        var naviEntriesDocumentReferer = {
+          elasticUrl: refererUrl
+        };
+        mongo._naviEntriesCollection.find.returns({
+          toArray: sinon.stub().yieldsAsync(null,
+            [naviEntriesDocument, naviEntriesDocumentReferer].reverse())
+        });
+        mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
+          sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
+          sinon.assert.calledWith(mongo._naviEntriesCollection.find,
+                                  sinon.match.has('$or', sinon.match.array));
+          expect(response).to.equal(naviEntriesDocument);
+          expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
+          expect(err).to.be.null();
+          done();
+        });
       });
-    });
 
-    it('should callback with error if no navientries found', function (done) {
-      var elasticUrl = 'api-staging-codenow.runnableapp.com';
-      var refererUrl = 'frontend-staging-codenow.runnableapp.com';
-      keypather.set(mongo, '_naviEntriesCollection.find', sinon.spy(function (query) {
-        expect(query).to.deep.equal({
-          $or: [{
-            elasticUrl: elasticUrl
-          }, {
-            elasticUrl: refererUrl
-          }]
+      it('should callback with error if no navientries found', function (done) {
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        var refererUrl = 'frontend-staging-codenow.runnableapp.com';
+        mongo._naviEntriesCollection.find.returns({
+          toArray: sinon.stub().yieldsAsync(null, [])
         });
-        return {
-          toArray: function (cb) {
-            cb(null, []);
-          }
-        };
-      }));
-      mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err) {
-        expect(err.message).to.equal('internal server error');
-        delete mongo._naviEntriesCollection;
+        mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err) {
+          expect(err.message).to.equal('internal server error');
+          done();
+        });
+      });
+    }); // no LRU cache
+
+    describe('LRU cache', function () {
+      it('should use LRU cache if no', function (done) {
         done();
       });
-    });
-  });
+    }); // LRU cache
+  }); // Mongo.prototype.fetchNaviEntry
 
   describe('Mongo.prototype.setUserMapping', function () {
     it('should update a navientries document with a new user-mapping', function (done) {
