@@ -6,7 +6,7 @@ var sinon = require('sinon');
 
 var lab = exports.lab = Lab.script();
 
-var after = lab.after;
+var afterEach = lab.afterEach;
 var before = lab.before;
 var beforeEach = lab.beforeEach;
 var describe = lab.describe;
@@ -53,30 +53,6 @@ describe('app.js unit test', function () {
 
         datadog.monitorStop.restore();
         app.server.stop.restore();
-        done();
-      });
-    });
-  });
-
-  describe('newrelic', function () {
-    before(function (done) {
-      process.env.NEW_RELIC_LICENSE_KEY = true;
-      sinon.stub(global, 'require')
-      sinon.stub(app.server, 'start').yields();
-      done();
-    });
-
-    after(function (done) {
-      delete process.env.NEW_RELIC_LICENSE_KEY;
-      global.require.restore();
-      app.server.start.restore();
-      done();
-    });
-
-    it('should require newrelic', function (done) {
-      app.start(function () {
-        sinon.assert.calledOnce(global.require);
-        sinon.assert.calledWith(global.require, 'newrelic');
         done();
       });
     });
