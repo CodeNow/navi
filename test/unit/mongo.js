@@ -98,9 +98,14 @@ describe('lib/models/mongodb', function () {
     });
 
     describe('no LRU cache', function () {
-
-      before(function (done) {
+      beforeEach(function (done) {
         delete process.env.ENABLE_LRU_CACHE;
+        sinon.stub(mongo, '_getCachedResults').returns(undefined);
+        done();
+      });
+
+      afterEach(function (done) {
+        mongo._getCachedResults.restore();
         done();
       });
 
@@ -194,11 +199,237 @@ describe('lib/models/mongodb', function () {
     }); // no LRU cache
 
     describe('LRU cache', function () {
-      it('should use LRU cache if no', function (done) {
+      var cachedData;
+      var naviEntryFixture;
+      beforeEach(function (done) {
+
+        naviEntryFixture = put({}, naviEntryFixtures);
+        delete naviEntryFixture.refererNaviEntry;
+
+        cachedData = [naviEntryFixture];
+        sinon.stub(mongo, '_getCachedResults').returns(cachedData);
+        sinon.stub(mongo, '_cacheResults');
         done();
+      });
+
+      afterEach(function (done) {
+        mongo._getCachedResults.restore();
+        mongo._cacheResults.restore();
+        done();
+      });
+
+      it('should not re-cache cached data', function (done) {
+        mongo.fetchNaviEntry('elastic-url-staging.runnableapp.com', null, function (err) {
+          expect(err).to.be.null();
+          sinon.assert.calledOnce(mongo._getCachedResults);
+          sinon.assert.calledWith(mongo._getCachedResults,
+                                  'elastic-url-staging.runnableapp.com', null);
+          sinon.assert.notCalled(mongo._cacheResults); // Don't re-cache already cached results
+          sinon.assert.notCalled(mongo._naviEntriesCollection.find)
+          done();
+        });
+      });
+
+      it('should cache if data not already cached', function (done) {
+
+        mongo._getCachedResults.returns(undefined);
+        mongo._naviEntriesCollection.find.returns({
+          toArray: sinon.stub().yieldsAsync(null, cachedData)
+        });
+
+        mongo.fetchNaviEntry('elastic-url-staging.runnableapp.com', null, function (err) {
+          expect(err).to.be.null();
+          sinon.assert.calledOnce(mongo._getCachedResults);
+          sinon.assert.calledWith(mongo._getCachedResults,
+                                  'elastic-url-staging.runnableapp.com', null);
+          sinon.assert.calledOnce(mongo._cacheResults); // Don't re-cache already cached results
+          sinon.assert.calledOnce(mongo._naviEntriesCollection.find)
+          done();
+        });
       });
     }); // LRU cache
   }); // Mongo.prototype.fetchNaviEntry
+
+  describe('Mongo.prototype._getCachedResults', function () {
+    var mockElasticUrl;
+    var mockRefererElasticUrl;
+
+    beforeEach(function (done) {
+      mockElasticUrl = 'api-cached.runnableapp.com';
+      mockRefererElasticUrl = 'frontend-cached.runnableapp.com';
+      process.env.ENABLE_LRU_CACHE = true;
+      done();
+    });
+
+    afterEach(function (done) {
+      delete process.env.ENABLE_LRU_CACHE;
+      done();
+    });
+
+    it('should return undefined if !process.env.ENABLE_LRU_CACHE', function (done) {
+      delete process.env.ENABLE_LRU_CACHE;
+      var result = mongo._getCachedResults(mockElasticUrl);
+      expect(result).to.be.undefined();
+      done();
+    });
+
+    describe('no referer', function () {
+      var naviEntryFixture;
+
+      beforeEach(function (done) {
+        naviEntryFixture = put({}, naviEntryFixtures);
+        delete naviEntryFixture.refererNaviEntry;
+
+        sinon.stub(cache, 'get');
+        done();
+      });
+
+      afterEach(function (done) {
+        cache.get.restore();
+        done();
+      });
+
+      it('should return undefined if cache does not exist', function (done) {
+        cache.get.returns(undefined);
+        var result = mongo._getCachedResults(mockElasticUrl, null);
+        expect(result).to.be.undefined();
+        sinon.assert.calledTwice(cache.get);
+
+        var firstCall = cache.get.getCall(0);
+        var secondCall = cache.get.getCall(1);
+
+        sinon.assert.calledWith(firstCall, mockElasticUrl);
+        sinon.assert.calledWith(secondCall, null);
+        done();
+      });
+
+      it('should return cache if cache exists', function (done) {
+
+        cache.get.onFirstCall().returns(naviEntryFixture);
+        cache.get.onSecondCall().returns(undefined);
+
+        var result = mongo._getCachedResults(mockElasticUrl, null);
+
+        expect(result).to.be.an.array();
+        expect(result[0]).to.equal(naviEntryFixture)
+
+        sinon.assert.calledTwice(cache.get);
+        var firstCall = cache.get.getCall(0);
+        var secondCall = cache.get.getCall(1);
+
+        sinon.assert.calledWith(firstCall, mockElasticUrl);
+        sinon.assert.calledWith(secondCall, null);
+
+        done();
+      });
+    });
+
+    describe('referer', function () {
+      var naviEntryFixture;
+      var refererNaviEntryFixture;
+
+      beforeEach(function (done) {
+        naviEntryFixture = put({}, naviEntryFixtures);
+        refererNaviEntryFixture = naviEntryFixture.refererNaviEntry;
+        delete naviEntryFixture.refererNaviEntry;
+
+        sinon.stub(cache, 'get');
+        done();
+      });
+
+      afterEach(function (done) {
+        cache.get.restore();
+        done();
+      });
+
+      it('should return undefined if cache for first object does not exist', function (done) {
+        cache.get.onFirstCall().returns(naviEntryFixture);
+        cache.get.onSecondCall().returns(undefined);
+        var result = mongo._getCachedResults(mockElasticUrl, mockRefererElasticUrl);
+        expect(result).to.be.undefined();
+
+        sinon.assert.calledTwice(cache.get);
+        var firstCall = cache.get.getCall(0);
+        var secondCall = cache.get.getCall(1);
+
+        sinon.assert.calledWith(firstCall, mockElasticUrl);
+        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        done();
+      });
+
+      it('should return undefined if cache for second object does not exist', function (done) {
+        cache.get.onFirstCall().returns(undefined);
+        cache.get.onSecondCall().returns(refererNaviEntryFixture);
+        var result = mongo._getCachedResults(mockElasticUrl, mockRefererElasticUrl);
+        expect(result).to.be.undefined();
+
+        sinon.assert.calledTwice(cache.get);
+        var firstCall = cache.get.getCall(0);
+        var secondCall = cache.get.getCall(1);
+
+        sinon.assert.calledWith(firstCall, mockElasticUrl);
+        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        done();
+      });
+
+      it('should return cached data if cache exists for both naviEntries', function (done) {
+        cache.get.onFirstCall().returns(naviEntryFixture);
+        cache.get.onSecondCall().returns(refererNaviEntryFixture);
+        var result = mongo._getCachedResults(mockElasticUrl, mockRefererElasticUrl);
+        expect(result).to.be.an.array();
+        expect(result[0]).to.equal(naviEntryFixture);
+        expect(result[1]).to.equal(refererNaviEntryFixture);
+
+        sinon.assert.calledTwice(cache.get);
+        var firstCall = cache.get.getCall(0);
+        var secondCall = cache.get.getCall(1);
+
+        sinon.assert.calledWith(firstCall, mockElasticUrl);
+        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        done();
+      });
+    });
+  }); // end Mongo.prototype._getCachedResults
+
+  describe('Mongo.prototype._cacheResults', function () {
+    var naviEntryFixture;
+
+    beforeEach(function (done) {
+      process.env.ENABLE_LRU_CACHE = true;
+      naviEntryFixture = put({}, naviEntryFixtures);
+      sinon.stub(cache, 'set')
+      done();
+    });
+
+    afterEach(function (done) {
+      delete process.env.ENABLE_LRU_CACHE;
+      cache.set.restore();
+      done();
+    });
+
+    it('should handle naviEntry document with refererEntry property', function (done) {
+      var elasticUrl = naviEntryFixture.elasticUrl;
+      var refererElasticUrl = naviEntryFixture.refererNaviEntry.elasticUrl;
+
+      mongo._cacheResults(naviEntryFixture);
+      sinon.assert.calledTwice(cache.set);
+      var firstCall = cache.set.getCall(0);
+      var secondCall = cache.set.getCall(1);
+      sinon.assert.calledWith(firstCall, refererElasticUrl, sinon.match.object);
+      sinon.assert.calledWith(secondCall, elasticUrl, sinon.match.object);
+      done();
+    });
+
+    it('should handle naviEntry document without refererEntry property', function (done) {
+      var elasticUrl = naviEntryFixture.elasticUrl;
+      delete naviEntryFixture.refererNaviEntry;
+
+      mongo._cacheResults(naviEntryFixture);
+      sinon.assert.calledOnce(cache.set);
+      sinon.assert.calledWith(cache.set, elasticUrl, sinon.match.object);
+      done();
+    });
+  }); // end Mongo.prototype._cacheResults
 
   describe('Mongo.prototype.setUserMapping', function () {
     it('should update a navientries document with a new user-mapping', function (done) {
