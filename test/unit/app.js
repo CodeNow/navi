@@ -1,12 +1,17 @@
 'use strict';
 
+var Code = require('code');
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var expect = require('code').expect;
 var sinon = require('sinon');
+
+var lab = exports.lab = Lab.script();
+
+var after = lab.after;
+var before = lab.before;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var expect = Code.expect;
+var it = lab.test;
 
 var App = require('../../lib/app.js');
 
@@ -33,6 +38,7 @@ describe('app.js unit test', function () {
       });
     });
   });
+
   describe('stop', function () {
     it('should stop all services', function(done) {
       var datadog = require('../../lib/models/datadog.js');
@@ -47,6 +53,30 @@ describe('app.js unit test', function () {
 
         datadog.monitorStop.restore();
         app.server.stop.restore();
+        done();
+      });
+    });
+  });
+
+  describe('newrelic', function () {
+    before(function (done) {
+      process.env.NEW_RELIC_LICENSE_KEY = true;
+      sinon.stub(global, 'require')
+      sinon.stub(app.server, 'start').yields();
+      done();
+    });
+
+    after(function (done) {
+      delete process.env.NEW_RELIC_LICENSE_KEY;
+      global.require.restore();
+      app.server.start.restore();
+      done();
+    });
+
+    it('should require newrelic', function (done) {
+      app.start(function () {
+        sinon.assert.calledOnce(global.require);
+        sinon.assert.calledWith(global.require, 'newrelic');
         done();
       });
     });
