@@ -1,12 +1,17 @@
 'use strict';
 
+var Code = require('code');
 var Lab = require('lab');
-var lab = exports.lab = Lab.script();
-var describe = lab.describe;
-var it = lab.test;
-var beforeEach = lab.beforeEach;
-var expect = require('code').expect;
 var sinon = require('sinon');
+
+var lab = exports.lab = Lab.script();
+
+var afterEach = lab.afterEach;
+var before = lab.before;
+var beforeEach = lab.beforeEach;
+var describe = lab.describe;
+var expect = Code.expect;
+var it = lab.test;
 
 var App = require('../../lib/app.js');
 
@@ -33,6 +38,7 @@ describe('app.js unit test', function () {
       });
     });
   });
+
   describe('stop', function () {
     it('should stop all services', function(done) {
       var datadog = require('../../lib/models/datadog.js');
