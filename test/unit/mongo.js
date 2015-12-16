@@ -6,6 +6,7 @@
 require('loadenv.js');
 
 var Lab = require('lab');
+var clone = require('101/clone');
 var expect = require('code').expect;
 var keypather = require('keypather')();
 var mongodb = require('mongodb');
@@ -81,23 +82,26 @@ describe('lib/models/mongodb', function () {
   });
 
   describe('Mongo.prototype.fetchNaviEntry', function () {
+    var mongoError = new Error('mongo error');
 
     beforeEach(function (done) {
       sinon.stub(cache, 'set');
       keypather.set(mongo, '_naviEntriesCollection.find', function () {});
       sinon.stub(mongo._naviEntriesCollection, 'find').returns({
-        toArray: sinon.stub().yieldsAsync(new Error('mongo error'))
+        toArray: sinon.stub().yieldsAsync(mongoError)
       });
+      sinon.stub(mongo, '_fetchNaviEntryHandleCacheOrMongo').yields();
       done();
     });
 
     afterEach(function (done) {
       cache.set.restore();
       mongo._naviEntriesCollection.find.restore();
+      mongo._fetchNaviEntryHandleCacheOrMongo.restore();
       done();
     });
 
-    describe('no LRU cache', function () {
+    describe('no LRU cache |', function () {
       beforeEach(function (done) {
         delete process.env.ENABLE_LRU_CACHE;
         sinon.stub(mongo, '_getCachedResults').returns(undefined);
@@ -110,9 +114,20 @@ describe('lib/models/mongodb', function () {
       });
 
       it('should callback mongo error', function (done) {
+        mongo._fetchNaviEntryHandleCacheOrMongo.yields(mongoError);
         mongo.fetchNaviEntry('api-staging-codenow.runnableapp.com', null, function (err) {
+          expect(err).to.equal(mongoError);
+
+          sinon.assert.calledOnce(mongo._getCachedResults);
+
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
-          expect(err.message).to.equal('mongo error');
+          sinon.assert.calledWith(mongo._naviEntriesCollection.find, sinon.match.object);
+
+          sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
+          sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
+            true, mongoError, undefined, 'api-staging-codenow.runnableapp.com',
+            sinon.match.func);
+
           done();
         });
       });
@@ -121,17 +136,31 @@ describe('lib/models/mongodb', function () {
         var naviEntriesDocument = {};
         var elasticUrl = 'api-staging-codenow.runnableapp.com';
 
+        var mongoResponse = [naviEntriesDocument];
+        var fetchNaviEntryHandleCacheOrMongoResponse = {};
+
         mongo._naviEntriesCollection.find.returns({
-          toArray: sinon.stub().yieldsAsync(null, [naviEntriesDocument])
+          toArray: sinon.stub().yieldsAsync(null, mongoResponse)
         });
 
+        mongo._fetchNaviEntryHandleCacheOrMongo
+          .yields(null, fetchNaviEntryHandleCacheOrMongoResponse);
+
         mongo.fetchNaviEntry(elasticUrl, null, function (err, response) {
+          expect(err).to.be.null();
+
+          sinon.assert.calledOnce(mongo._getCachedResults);
+
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-                                  sinon.match.has('elasticUrl', elasticUrl));
+            sinon.match.has('elasticUrl', elasticUrl));
 
-          expect(response).to.equal(naviEntriesDocument);
-          expect(err).to.be.null();
+          sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
+          sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
+            true, null, mongoResponse, 'api-staging-codenow.runnableapp.com',
+            sinon.match.func);
+
+          expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
           done();
         });
       });
@@ -145,17 +174,32 @@ describe('lib/models/mongodb', function () {
         var naviEntriesDocumentReferer = {
           elasticUrl: refererUrl
         };
+        var mongoResponse = [naviEntriesDocument, naviEntriesDocumentReferer];
+        var fetchNaviEntryHandleCacheOrMongoResponse = {};
+
         mongo._naviEntriesCollection.find.returns({
-          toArray: sinon.stub().yieldsAsync(null, [naviEntriesDocument, naviEntriesDocumentReferer])
+          toArray: sinon.stub().yieldsAsync(null, mongoResponse)
         });
+
+        mongo._fetchNaviEntryHandleCacheOrMongo
+          .yields(null, fetchNaviEntryHandleCacheOrMongoResponse);
+
         mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
+          expect(err).to.be.null();
+
+          sinon.assert.calledOnce(mongo._getCachedResults);
+
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-                                  sinon.match.has('$or', sinon.match.array));
+            sinon.match.has('$or', sinon.match.array));
 
-          expect(response).to.equal(naviEntriesDocument);
-          expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
-          expect(err).to.be.null();
+          sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
+          sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
+            true, null, mongoResponse, 'api-staging-codenow.runnableapp.com',
+            sinon.match.func);
+
+          expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
+
           done();
         });
       });
@@ -170,80 +214,64 @@ describe('lib/models/mongodb', function () {
         var naviEntriesDocumentReferer = {
           elasticUrl: refererUrl
         };
+
+        var mongoResponse = [naviEntriesDocument, naviEntriesDocumentReferer].reverse();
+        var fetchNaviEntryHandleCacheOrMongoResponse = {};
+
         mongo._naviEntriesCollection.find.returns({
-          toArray: sinon.stub().yieldsAsync(null,
-            [naviEntriesDocument, naviEntriesDocumentReferer].reverse())
+          toArray: sinon.stub().yieldsAsync(null, mongoResponse)
         });
+
+        mongo._fetchNaviEntryHandleCacheOrMongo
+          .yields(null, fetchNaviEntryHandleCacheOrMongoResponse);
+
         mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err, response) {
+          expect(err).to.be.null();
+
+          sinon.assert.calledOnce(mongo._getCachedResults);
+
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-                                  sinon.match.has('$or', sinon.match.array));
-          expect(response).to.equal(naviEntriesDocument);
-          expect(response.refererNaviEntry).to.equal(naviEntriesDocumentReferer);
-          expect(err).to.be.null();
-          done();
-        });
-      });
+            sinon.match.has('$or', sinon.match.array));
 
-      it('should callback with error if no navientries found', function (done) {
-        var elasticUrl = 'api-staging-codenow.runnableapp.com';
-        var refererUrl = 'frontend-staging-codenow.runnableapp.com';
-        mongo._naviEntriesCollection.find.returns({
-          toArray: sinon.stub().yieldsAsync(null, [])
-        });
-        mongo.fetchNaviEntry(elasticUrl, refererUrl, function (err) {
-          expect(err.message).to.equal('internal server error');
+          expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
           done();
         });
       });
     }); // no LRU cache
 
-    describe('LRU cache', function () {
+    describe('LRU cache |', function () {
       var cachedData;
       var naviEntryFixture;
       beforeEach(function (done) {
-
-        naviEntryFixture = put({}, naviEntryFixtures);
+        naviEntryFixture = clone(naviEntryFixtures);
         delete naviEntryFixture.refererNaviEntry;
-
         cachedData = [naviEntryFixture];
+
         sinon.stub(mongo, '_getCachedResults').returns(cachedData);
-        sinon.stub(mongo, '_cacheResults');
+        mongo._fetchNaviEntryHandleCacheOrMongo.yields(null);
+
         done();
       });
 
       afterEach(function (done) {
         mongo._getCachedResults.restore();
-        mongo._cacheResults.restore();
         done();
       });
 
       it('should not re-cache cached data', function (done) {
         mongo.fetchNaviEntry('elastic-url-staging.runnableapp.com', null, function (err) {
           expect(err).to.be.null();
+
           sinon.assert.calledOnce(mongo._getCachedResults);
           sinon.assert.calledWith(mongo._getCachedResults,
-                                  'elastic-url-staging.runnableapp.com', null);
-          sinon.assert.notCalled(mongo._cacheResults); // Don't re-cache already cached results
+            'elastic-url-staging.runnableapp.com', null);
+
           sinon.assert.notCalled(mongo._naviEntriesCollection.find)
-          done();
-        });
-      });
 
-      it('should cache if data not already cached', function (done) {
-
-        mongo._getCachedResults.returns(undefined);
-        mongo._naviEntriesCollection.find.returns({
-          toArray: sinon.stub().yieldsAsync(null, cachedData)
-        });
-
-        mongo.fetchNaviEntry('elastic-url-staging.runnableapp.com', null, function (err) {
-          expect(err).to.be.null();
-          sinon.assert.calledOnce(mongo._getCachedResults);
-          sinon.assert.calledWith(mongo._getCachedResults,
-                                  'elastic-url-staging.runnableapp.com', null);
-          sinon.assert.calledOnce(mongo._cacheResults); // Don't re-cache already cached results
-          sinon.assert.calledOnce(mongo._naviEntriesCollection.find)
+          sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
+          sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
+            false, null, cachedData, 'elastic-url-staging.runnableapp.com', sinon.match.func);
           done();
         });
       });
