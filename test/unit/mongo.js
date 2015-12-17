@@ -323,11 +323,8 @@ describe('lib/models/mongodb', function () {
         expect(result).to.be.undefined();
         sinon.assert.calledTwice(cache.get);
 
-        var firstCall = cache.get.getCall(0);
-        var secondCall = cache.get.getCall(1);
-
-        sinon.assert.calledWith(firstCall, mockElasticUrl);
-        sinon.assert.calledWith(secondCall, null);
+        sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
+        sinon.assert.calledWith(cache.get.secondCall, null);
         done();
       });
 
@@ -342,11 +339,9 @@ describe('lib/models/mongodb', function () {
         expect(result[0]).to.equal(naviEntryFixture)
 
         sinon.assert.calledTwice(cache.get);
-        var firstCall = cache.get.getCall(0);
-        var secondCall = cache.get.getCall(1);
 
-        sinon.assert.calledWith(firstCall, mockElasticUrl);
-        sinon.assert.calledWith(secondCall, null);
+        sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
+        sinon.assert.calledWith(cache.get.secondCall, null);
 
         done();
       });
@@ -377,11 +372,9 @@ describe('lib/models/mongodb', function () {
         expect(result).to.be.undefined();
 
         sinon.assert.calledTwice(cache.get);
-        var firstCall = cache.get.getCall(0);
-        var secondCall = cache.get.getCall(1);
 
-        sinon.assert.calledWith(firstCall, mockElasticUrl);
-        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
+        sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
       });
 
@@ -392,11 +385,9 @@ describe('lib/models/mongodb', function () {
         expect(result).to.be.undefined();
 
         sinon.assert.calledTwice(cache.get);
-        var firstCall = cache.get.getCall(0);
-        var secondCall = cache.get.getCall(1);
 
-        sinon.assert.calledWith(firstCall, mockElasticUrl);
-        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
+        sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
       });
 
@@ -409,11 +400,9 @@ describe('lib/models/mongodb', function () {
         expect(result[1]).to.equal(refererNaviEntryFixture);
 
         sinon.assert.calledTwice(cache.get);
-        var firstCall = cache.get.getCall(0);
-        var secondCall = cache.get.getCall(1);
 
-        sinon.assert.calledWith(firstCall, mockElasticUrl);
-        sinon.assert.calledWith(secondCall, mockRefererElasticUrl);
+        sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
+        sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
       });
     });
@@ -441,10 +430,8 @@ describe('lib/models/mongodb', function () {
 
       mongo._cacheResults(naviEntryFixture);
       sinon.assert.calledTwice(cache.set);
-      var firstCall = cache.set.getCall(0);
-      var secondCall = cache.set.getCall(1);
-      sinon.assert.calledWith(firstCall, refererElasticUrl, sinon.match.object);
-      sinon.assert.calledWith(secondCall, elasticUrl, sinon.match.object);
+      sinon.assert.calledWith(cache.get.firstCall, refererElasticUrl, sinon.match.object);
+      sinon.assert.calledWith(cache.get.secondCall, elasticUrl, sinon.match.object);
       done();
     });
 
