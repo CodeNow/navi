@@ -14,7 +14,7 @@ var put = require('101/put');
 var sinon = require('sinon');
 
 var cache = require('cache');
-var workerNaviCacheInvalidated = require('workers/navi.cache.invalidated');
+var workerRoutingCacheInvalidated = require('workers/routing.cache.invalidated');
 
 var lab = exports.lab = Lab.script();
 
@@ -38,7 +38,7 @@ describe('lib/workers/navi.cache.invalidated', function () {
   });
 
   it('should throw if missing required data', function (done) {
-    workerNaviCacheInvalidated({})
+    workerRoutingCacheInvalidated({})
       .then(function () {
         throw new Error('should have thrown');
       })
@@ -50,7 +50,7 @@ describe('lib/workers/navi.cache.invalidated', function () {
   });
 
   it('should dispose cached navi-entry document', function (done) {
-    workerNaviCacheInvalidated({
+    workerRoutingCacheInvalidated({
       elasticUrl: 'elastic-url-staging.runnableapp.com'
     })
       .then(function () {
