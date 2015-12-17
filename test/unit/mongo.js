@@ -367,7 +367,8 @@ describe('lib/models/mongodb', function () {
         done();
       });
 
-      it('should return undefined if cache for first object does not exist', function (done) {
+      it('should return undefined if cache for refererNaviEntry object does not exist',
+      function (done) {
         cache.get.onFirstCall().returns(naviEntryFixture);
         cache.get.onSecondCall().returns(undefined);
         var result = mongo._getCachedResults(mockElasticUrl, mockRefererElasticUrl);
@@ -381,7 +382,8 @@ describe('lib/models/mongodb', function () {
         done();
       });
 
-      it('should return undefined if cache for second object does not exist', function (done) {
+      it('should return undefined if cache for elasticUrl object does not exist',
+      function (done) {
         cache.get.onFirstCall().returns(undefined);
         cache.get.onSecondCall().returns(refererNaviEntryFixture);
         var result = mongo._getCachedResults(mockElasticUrl, mockRefererElasticUrl);
@@ -429,24 +431,27 @@ describe('lib/models/mongodb', function () {
       done();
     });
 
-    it('should handle naviEntry document with refererEntry property', function (done) {
+    it('should properly cache naviEntry document with refererEntry property', function (done) {
       var elasticUrl = naviEntryFixture.elasticUrl;
       var refererElasticUrl = naviEntryFixture.refererNaviEntry.elasticUrl;
 
       mongo._cacheResults(naviEntryFixture);
       sinon.assert.calledTwice(cache.set);
-      sinon.assert.calledWith(cache.get.firstCall, refererElasticUrl, sinon.match.object);
-      sinon.assert.calledWith(cache.get.secondCall, elasticUrl, sinon.match.object);
+      sinon.assert.calledWith(cache.set.firstCall, refererElasticUrl,
+        sinon.match.has('elasticUrl', 'frontend-staging-codenow.runnableapp.com'));
+      sinon.assert.calledWith(cache.set.secondCall, elasticUrl,
+        sinon.match.has('elasticUrl', 'api-staging-codenow.runnableapp.com'));
       done();
     });
 
-    it('should handle naviEntry document without refererEntry property', function (done) {
+    it('should properly cache naviEntry document without refererEntry property', function (done) {
       var elasticUrl = naviEntryFixture.elasticUrl;
       delete naviEntryFixture.refererNaviEntry;
 
       mongo._cacheResults(naviEntryFixture);
       sinon.assert.calledOnce(cache.set);
-      sinon.assert.calledWith(cache.set, elasticUrl, sinon.match.object);
+      sinon.assert.calledWith(cache.set, elasticUrl,
+        sinon.match.has('elasticUrl', 'api-staging-codenow.runnableapp.com'));
       done();
     });
   }); // end Mongo.prototype._cacheResults
