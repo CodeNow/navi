@@ -323,6 +323,7 @@ describe('lib/models/mongodb', function () {
         expect(result).to.be.undefined();
         sinon.assert.calledTwice(cache.get);
 
+        // Cache check for elasticUrl and refererElasticUrl
         sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
         sinon.assert.calledWith(cache.get.secondCall, null);
         done();
@@ -340,6 +341,7 @@ describe('lib/models/mongodb', function () {
 
         sinon.assert.calledTwice(cache.get);
 
+        // Cache check for elasticUrl and refererElasticUrl
         sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
         sinon.assert.calledWith(cache.get.secondCall, null);
 
@@ -373,6 +375,7 @@ describe('lib/models/mongodb', function () {
 
         sinon.assert.calledTwice(cache.get);
 
+        // Cache check for elasticUrl and refererElasticUrl
         sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
         sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
@@ -386,6 +389,7 @@ describe('lib/models/mongodb', function () {
 
         sinon.assert.calledTwice(cache.get);
 
+        // Cache check for elasticUrl and refererElasticUrl
         sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
         sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
@@ -401,6 +405,7 @@ describe('lib/models/mongodb', function () {
 
         sinon.assert.calledTwice(cache.get);
 
+        // Cache check for elasticUrl and refererElasticUrl
         sinon.assert.calledWith(cache.get.firstCall, mockElasticUrl);
         sinon.assert.calledWith(cache.get.secondCall, mockRefererElasticUrl);
         done();
