@@ -330,7 +330,6 @@ describe('lib/models/mongodb', function () {
       });
 
       it('should return cache if cache exists', function (done) {
-
         cache.get.onFirstCall().returns(naviEntryFixture);
         cache.get.onSecondCall().returns(undefined);
 
