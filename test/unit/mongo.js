@@ -81,7 +81,7 @@ describe('lib/models/mongodb', function () {
     });
   });
 
-  describe('Mongo.prototype.fetchNaviEntry', function () {
+  describe('Mongo.prototype.fetchNaviEntry |', function () {
     var mongoError = new Error('mongo error');
 
     beforeEach(function (done) {
@@ -278,7 +278,7 @@ describe('lib/models/mongodb', function () {
     }); // LRU cache
   }); // Mongo.prototype.fetchNaviEntry
 
-  describe('Mongo.prototype._getCachedResults', function () {
+  describe('Mongo.prototype._getCachedResults |', function () {
     var mockElasticUrl;
     var mockRefererElasticUrl;
 
@@ -305,7 +305,7 @@ describe('lib/models/mongodb', function () {
       var naviEntryFixture;
 
       beforeEach(function (done) {
-        naviEntryFixture = put({}, naviEntryFixtures);
+        naviEntryFixture = clone(naviEntryFixtures);
         delete naviEntryFixture.refererNaviEntry;
 
         sinon.stub(cache, 'get');
@@ -525,6 +525,109 @@ describe('lib/models/mongodb', function () {
       var result = mongo.constructor.findAssociationShortHashByElasticUrl(associations, 'C');
       expect(result).to.equal(undefined);
       done();
+    });
+  });
+
+  describe('Mongo.prototype._fetchNaviEntryHandleCacheOrMongo |', function () {
+    var naviEntryFixture;
+    var refererNaviEntryFixture;
+    var elasticUrl = 'api-staging-codenow.runnableapp.com';
+
+    beforeEach(function (done) {
+      naviEntryFixture = clone(naviEntryFixtures);
+      refererNaviEntryFixture = naviEntryFixture.refererNaviEntry;
+      delete naviEntryFixture.refererNaviEntry;
+
+      sinon.stub(mongo, '_cacheResults').returns(undefined);
+      done();
+    });
+
+    afterEach(function (done) {
+      mongo._cacheResults.restore();
+      done();
+    });
+
+    it('should callback with error if passed an err', function (done) {
+      var error = new Error('mongo error');
+      var mongoResponse = undefined;
+      mongo._fetchNaviEntryHandleCacheOrMongo(false, error, mongoResponse, elasticUrl,
+      function (err) {
+        expect(err).to.equal(error);
+        sinon.assert.notCalled(mongo._cacheResults);
+        done();
+      });
+    });
+
+    it('should yield naviEntry without refererNaviEntry prop if response length is 1',
+    function (done) {
+      var mongoResponse = [naviEntryFixture];
+      mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
+      function (err, naviEntry) {
+        expect(err).to.be.null();
+
+        sinon.assert.calledOnce(mongo._cacheResults);
+        sinon.assert.calledWith(mongo._cacheResults, naviEntryFixture);
+
+        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry.refererNaviEntry).to.be.undefined();
+        done();
+      })
+    });
+
+    it('should yield naviEntry without refererNaviEntry prop if response length is 2',
+    function (done) {
+      var mongoResponse = [naviEntryFixture, refererNaviEntryFixture];
+      mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
+      function (err, naviEntry) {
+        expect(err).to.be.null();
+
+        sinon.assert.calledOnce(mongo._cacheResults);
+        sinon.assert.calledWith(mongo._cacheResults, naviEntryFixture);
+
+        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry.refererNaviEntry).to.equal(refererNaviEntryFixture);
+        done();
+      })
+    });
+
+    it('should yield naviEntry without refererNaviEntry prop if response length is 2 (rev order)',
+    function (done) {
+      var mongoResponse = [naviEntryFixture, refererNaviEntryFixture].reverse();
+      mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
+      function (err, naviEntry) {
+        expect(err).to.be.null();
+
+        sinon.assert.calledOnce(mongo._cacheResults);
+        sinon.assert.calledWith(mongo._cacheResults, naviEntryFixture);
+
+        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry.refererNaviEntry).to.equal(refererNaviEntryFixture);
+        done();
+      })
+    });
+
+    it('should not cache if first argument (shouldCacheResults) is false', function (done) {
+      var mongoResponse = [naviEntryFixture, refererNaviEntryFixture];
+      mongo._fetchNaviEntryHandleCacheOrMongo(false, null, mongoResponse, elasticUrl,
+      function (err, naviEntry) {
+        expect(err).to.be.null();
+
+        sinon.assert.notCalled(mongo._cacheResults);
+
+        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry.refererNaviEntry).to.equal(refererNaviEntryFixture);
+        done();
+      })
+    });
+    it('should yield error if response length is 0', function (done) {
+      var mongoResponse = [];
+      mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
+      function (err, naviEntry) {
+        expect(err.message).to.equal('internal server error');
+        expect(naviEntry).to.be.undefined();
+        sinon.assert.notCalled(mongo._cacheResults);
+        done();
+      })
     });
   });
 });
