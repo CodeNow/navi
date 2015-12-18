@@ -1,5 +1,5 @@
 /**
- * @module test/unit/workers/routing.cache.invalidated
+ * @module test/unit/workers/navi.cache.invalidated
  */
 'use strict';
 
@@ -7,10 +7,7 @@ require('loadenv.js');
 
 var Lab = require('lab');
 var expect = require('code').expect;
-var keypather = require('keypather')();
-var mongodb = require('mongodb');
 var ponos = require('ponos');
-var put = require('101/put');
 var sinon = require('sinon');
 
 var cache = require('cache');
