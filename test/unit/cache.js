@@ -6,11 +6,6 @@
 require('loadenv.js');
 
 var Lab = require('lab');
-var expect = require('code').expect;
-var keypather = require('keypather')();
-var mongodb = require('mongodb');
-var ponos = require('ponos');
-var put = require('101/put');
 var sinon = require('sinon');
 
 var cache = require('cache');
@@ -18,7 +13,6 @@ var cache = require('cache');
 var lab = exports.lab = Lab.script();
 
 var afterEach = lab.afterEach;
-var before = lab.before;
 var beforeEach = lab.beforeEach;
 var describe = lab.describe;
 var it = lab.test;
