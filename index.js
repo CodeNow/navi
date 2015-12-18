@@ -11,6 +11,7 @@ if (process.env.NEWRELIC_KEY) {
 
 var ClusterManager = require('cluster-man');
 var numCPUs = require('os').cpus().length;
+var rollbar = require('rollbar');
 
 var App = require('app');
 var WorkerServer = require('models/worker-server');
@@ -45,16 +46,23 @@ var manager = new ClusterManager({
   killOnError: false,
   beforeExit: function (err, done) {
     if (err) {
-      log.error({ err: err }, 'manager.beforeExit error');
+      rollbar.handleErrorWithPayloadData(err, {level: 'fatal'}, null, function () {
+        log.error({ err: err }, 'manager.beforeExit error');
+        closeWorkerServer();
+      })
     } else {
       log.info('manager.beforeExit');
+      closeWorkerServer();
     }
-    WorkerServer.stop(function (err) {
-      if (err) {
-        log.error({ err: err }, 'manager.beforeExit WorkerServer stop error');
-      }
-      done();
-    });
+
+    function closeWorkerServer () {
+      WorkerServer.stop(function (err) {
+        if (err) {
+          log.error({ err: err }, 'manager.beforeExit WorkerServer stop error');
+        }
+        done();
+      });
+    }
   }
 });
 
