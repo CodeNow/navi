@@ -1,5 +1,5 @@
 /**
- * @module test/unit/workers/navi.cache.invalidated
+ * @module test/unit/workers/routing.cache.invalidated
  */
 'use strict';
 
@@ -46,7 +46,8 @@ describe('lib/workers/navi.cache.invalidated', function () {
         sinon.assert.notCalled(cache.del);
         expect(err).to.be.instanceOf(TaskFatalError);
         done();
-      });
+      })
+      .catch(done);
   });
 
   it('should dispose cached navi-entry document', function (done) {
