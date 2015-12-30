@@ -11,7 +11,7 @@
   },
   "scripts": {
     "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
-    "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks test/functional/api.js",
+    "test": "NODE_PATH=./lib lab -c -t 100 -v --leaks",
     "test-watch": "nodemon --exec npm run test"
   },
   "repository": {
@@ -30,7 +30,7 @@
   "dependencies": {
     "101": "^1.2.0",
     "async": "^1.4.2",
-    "bluebird": "^3.1.1",
+    "bluebird": "^3.0.6",
     "boom": "^2.6.1",
     "bunyan": "^1.4.0",
     "callback-count": "^0.2.0",
@@ -52,7 +52,6 @@
     "mongodb": "^2.0.47",
     "newrelic": "^1.22.2",
     "node-dogstatsd": "0.0.6",
-    "node-scientist": "^1.0.1",
     "node-uuid": "^1.4.3",
     "ponos": "^1.1.1",
     "querystring": "^0.2.0",
