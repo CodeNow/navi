@@ -58,7 +58,7 @@
     "redis": "^2.0.0",
     "response-stream": "0.0.0",
     "rollbar": "^0.5.8",
-    "runnable-hermes": "git+https://git@github.com/Runnable/hermes.git#68267e35fcb0b42104078f31b8af7a0ee4619047",
+    "runnable-hermes": "git+https://git@github.com/Runnable/hermes.git#2f128819bdd003c6e2d5614eeee4a03813b5f762",
     "through2": "^2.0.0",
     "user-agent-is-browser": "^0.1.0",
     "uuid": "^2.0.1"
