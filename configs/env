@@ -1,4 +1,3 @@
-CLUSTER=10
 COOKIE_NAME=runnable.navi.sid
 COOKIE_SECRET=iamasecret
 DATADOG_HOST=localhost
