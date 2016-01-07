@@ -42,7 +42,7 @@ var manager = new ClusterManager({
   master: function () {
     log.info('app.start master');
   },
-  numWorkers: process.env.CLUSTER_WORKERS || numCPUs,
+  numWorkers: (process.env.ENABLE_CLUSTERING) ? process.env.NUM_CLUSTER_WORKERS || numCPUs,
   killOnError: false,
   beforeExit: function (err, done) {
     if (err) {
