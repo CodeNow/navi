@@ -60,7 +60,8 @@
     "rollbar": "^0.5.8",
     "runnable-hermes": "^6.4.0",
     "through2": "^2.0.0",
-    "user-agent-is-browser": "^0.1.0"
+    "user-agent-is-browser": "^0.1.0",
+    "uuid": "^2.0.1"
   },
   "devDependencies": {
     "code": "^1.5.0",
