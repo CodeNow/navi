@@ -39,9 +39,8 @@ describe('lib/workers/navi.cache.invalidated', function () {
       .then(function () {
         throw new Error('should have thrown');
       })
-      .catch(function (err) {
+      .catch(TaskFatalError, function (err) {
         sinon.assert.notCalled(cache.del);
-        expect(err).to.be.instanceOf(TaskFatalError);
         done();
       })
       .catch(done);
