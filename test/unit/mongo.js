@@ -10,6 +10,7 @@ var clone = require('101/clone');
 var expect = require('code').expect;
 var keypather = require('keypather')();
 var mongodb = require('mongodb');
+var omit = require('101/omit');
 var put = require('101/put');
 var sinon = require('sinon');
 
@@ -244,8 +245,7 @@ describe('lib/models/mongodb', function () {
       var cachedData;
       var naviEntryFixture;
       beforeEach(function (done) {
-        naviEntryFixture = clone(naviEntryFixtures);
-        delete naviEntryFixture.refererNaviEntry;
+        naviEntryFixture = omit(naviEntryFixture, ['refererNaviEntry'])
         cachedData = [naviEntryFixture];
 
         sinon.stub(mongo, '_getCachedResults').returns(cachedData);
