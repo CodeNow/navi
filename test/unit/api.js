@@ -18,6 +18,7 @@ var mongo = require('models/mongo');
 var naviEntriesFixtures = require('../fixture/navi-entries');
 var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
 var redis = require('models/redis');
+var errorPage = require('models/error-page.js');
 
 var afterEach = lab.afterEach;
 var beforeEach = lab.beforeEach;
@@ -223,11 +224,13 @@ describe('api.js unit test', function () {
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
       sinon.stub(api, '_getDestinationProxyUrl');
+      sinon.stub(errorPage, 'generateErrorUrl').returns('TestErrorHost')
       done();
     });
 
     afterEach(function (done) {
       api._getDestinationProxyUrl.restore();
+      errorPage.generateErrorUrl.restore()
       done();
     });
 
@@ -246,8 +249,12 @@ describe('api.js unit test', function () {
         branch: 'master'
       }, '55555', reqUrl, req, function (err) {
         expect(err).to.be.undefined();
-        expect(req.targetHost).to.equal('http://localhost:55551?type=not_running&elasticUrl='+
-                                        reqUrl+'&shortHash=55555');
+        expect(req.targetHost).to.equal('TestErrorHost');
+        sinon.assert.calledOnce(errorPage.generateErrorUrl);
+        sinon.assert.calledWith(errorPage.generateErrorUrl, 'not_running', {
+          elasticUrl: reqUrl,
+          shortHash: '55555'
+        })
         done();
       });
     });
@@ -262,6 +269,24 @@ describe('api.js unit test', function () {
       }, '55555', reqUrl, req, function (err) {
         expect(err).to.be.undefined();
         expect(req.targetHost).to.equal('http://0.0.0.0:600');
+        done();
+      });
+    });
+
+    it('should redirect to the dock_removed error page if the dock is removed', function (done) {
+      var req = {};
+      var reqUrl = 'api-staging-codenow.runnableapp.com';
+      api._processTargetInstance({
+        branch: 'master',
+        dockRemoved: true
+      }, '55555', reqUrl, req, function (err) {
+        expect(err).to.be.undefined();
+        expect(req.targetHost).to.equal('TestErrorHost');
+        sinon.assert.calledOnce(errorPage.generateErrorUrl);
+        sinon.assert.calledWith(errorPage.generateErrorUrl, 'dock_removed', {
+          elasticUrl: reqUrl,
+          shortHash: '55555'
+        })
         done();
       });
     });
