@@ -81,7 +81,7 @@ describe('lib/models/mongodb', function () {
     });
   });
 
-  describe('Mongo.prototype.fetchNaviEntry |', function () {
+  describe('Mongo.prototype.fetchNaviEntry', function () {
     var mongoError = new Error('mongo error');
 
     beforeEach(function (done) {
@@ -101,7 +101,7 @@ describe('lib/models/mongodb', function () {
       done();
     });
 
-    describe('no LRU cache |', function () {
+    describe('no LRU cache', function () {
       beforeEach(function (done) {
         delete process.env.ENABLE_LRU_CACHE;
         sinon.stub(mongo, '_getCachedResults').returns(undefined);
@@ -240,7 +240,7 @@ describe('lib/models/mongodb', function () {
       });
     }); // no LRU cache
 
-    describe('LRU cache |', function () {
+    describe('LRU cache', function () {
       var cachedData;
       var naviEntryFixture;
       beforeEach(function (done) {
@@ -278,7 +278,7 @@ describe('lib/models/mongodb', function () {
     }); // LRU cache
   }); // Mongo.prototype.fetchNaviEntry
 
-  describe('Mongo.prototype._getCachedResults |', function () {
+  describe('Mongo.prototype._getCachedResults', function () {
     var mockElasticUrl;
     var mockRefererElasticUrl;
 
@@ -524,7 +524,7 @@ describe('lib/models/mongodb', function () {
     });
   });
 
-  describe('Mongo.prototype._fetchNaviEntryHandleCacheOrMongo |', function () {
+  describe('Mongo.prototype._fetchNaviEntryHandleCacheOrMongo', function () {
     var naviEntryFixture;
     var refererNaviEntryFixture;
     var elasticUrl = 'api-staging-codenow.runnableapp.com';
