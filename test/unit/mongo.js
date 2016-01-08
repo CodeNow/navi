@@ -267,8 +267,10 @@ describe('lib/models/mongodb', function () {
           sinon.assert.calledWith(mongo._getCachedResults,
             'elastic-url-staging.runnableapp.com', null);
 
-          sinon.assert.notCalled(mongo._naviEntriesCollection.find)
+          // Cached data found, make sure database query wasn't run
+          sinon.assert.notCalled(mongo._naviEntriesCollection.find);
 
+          // Either invoked sync with cachedData, or async with mongo data. Sync in this test.
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
             false, null, cachedData, 'elastic-url-staging.runnableapp.com', sinon.match.func);
