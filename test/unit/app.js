@@ -23,9 +23,7 @@ describe('app.js unit test', function () {
   });
   describe('start', function () {
     it('should start all services', function(done) {
-
       sinon.stub(app.server, 'start').yields();
-
       app.start(function(err) {
         expect(err).to.not.exist();
         expect(app.server.start.calledOnce).to.be.true();
@@ -37,9 +35,7 @@ describe('app.js unit test', function () {
 
   describe('stop', function () {
     it('should stop all services', function(done) {
-
       sinon.stub(app.server, 'stop').yields();
-
       app.stop(function(err) {
         expect(err).to.not.exist();
         expect(app.server.stop.calledOnce).to.be.true();

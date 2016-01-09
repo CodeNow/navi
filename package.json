@@ -50,6 +50,7 @@
     "methods": "^1.1.1",
     "middleware-flow": "^0.8.0",
     "mongodb": "^2.0.47",
+    "monitor-dog": "^1.4.1",
     "newrelic": "^1.24.0",
     "node-dogstatsd": "0.0.6",
     "node-uuid": "^1.4.3",
