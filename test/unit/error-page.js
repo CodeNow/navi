@@ -65,6 +65,19 @@ describe('error-page.js unit test', function () {
       done();
     });
 
+    it('should generate error url for dock_removed error', function (done) {
+      var proxyUrl = errorPage.generateErrorUrl('dock_removed', {
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: '555'
+      });
+      expect(proxyUrl).to
+        .equal(
+          'http://localhost:55551?'+
+          'type=dock_removed&elasticUrl=api-staging-codenow.runnableapp.com'+
+          '&shortHash=555');
+      done();
+    });
+
     it('should throw if invalid error', function (done) {
       function throws () {
         errorPage.generateErrorUrl('skjfasghasdg', {
