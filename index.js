@@ -5,7 +5,7 @@
 require('loadenv.js');
 
 // leave this newrelic require up here!
-if (process.env.NEWRELIC_KEY) {
+if (process.env.NEW_RELIC_LICENSE_KEY) {
   require('newrelic');
 }
 
