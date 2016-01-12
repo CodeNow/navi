@@ -9,37 +9,60 @@ if (process.env.NEWRELIC_KEY) {
   require('newrelic');
 }
 
-var App = require('./lib/app.js');
 var ClusterManager = require('cluster-man');
-var log = require('middlewares/logger')(__filename).log;
 var numCPUs = require('os').cpus().length;
+var rollbar = require('rollbar');
+
+var App = require('app');
+var WorkerServer = require('models/worker-server');
+var log = require('middlewares/logger')(__filename).log;
 
 var manager = new ClusterManager({
   worker: function () {
     var app = new App();
-    app.start(function (err) {
+    WorkerServer.listen(function (err) {
       if (err) {
         log.error({
           err: err
-        }, 'app.start error');
+        }, 'WorkerServer.listen error');
         throw err;
-      } else {
-        log.info('app.start success');
       }
+      app.start(function (err) {
+        if (err) {
+          log.error({
+            err: err
+          }, 'app.start error');
+          throw err;
+        } else {
+          log.info('app.start success');
+        }
+      });
     });
   },
   master: function () {
     log.info('app.start master');
   },
-  numWorkers: process.env.CLUSTER_WORKERS || numCPUs,
+  numWorkers: (process.env.ENABLE_CLUSTERING) ? (process.env.NUM_CLUSTER_WORKERS || numCPUs) : 1,
   killOnError: false,
   beforeExit: function (err, done) {
     if (err) {
-      log.error({ err: err }, 'manager.beforeExit error');
+      rollbar.handleErrorWithPayloadData(err, {level: 'fatal'}, null, function () {
+        log.error({ err: err }, 'manager.beforeExit error');
+        closeWorkerServer();
+      })
     } else {
       log.info('manager.beforeExit');
+      closeWorkerServer();
     }
-    done();
+
+    function closeWorkerServer () {
+      WorkerServer.stop(function (err) {
+        if (err) {
+          log.error({ err: err }, 'manager.beforeExit WorkerServer stop error');
+        }
+        done();
+      });
+    }
   }
 });
 
