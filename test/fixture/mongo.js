@@ -10,6 +10,7 @@ var naviEntriesFixtures = require('./navi-entries');
 var dbSeedData = put({}, naviEntriesFixtures);
 
 var refNaviEntry = dbSeedData.refererNaviEntry;
+var whitelistedNaviEntry = dbSeedData.whitelistedNaviEntry;
 delete dbSeedData.refererNaviEntry;
 
 module.exports.seed = function (done) {
@@ -17,7 +18,8 @@ module.exports.seed = function (done) {
     if (err) { return done(err); }
     db.collection('navientries').insertMany([
       dbSeedData,
-      refNaviEntry
+      refNaviEntry,
+      whitelistedNaviEntry
     ], function (err, res) {
       if (err) { return done(err); }
       done();

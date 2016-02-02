@@ -36,7 +36,7 @@ describe('api.js unit test', function () {
     it('should return true if user is in whitelistedUsers list', function (done) {
       var req = {
         session: {
-          userId: 467885,
+          userId: 2469588,
           userGithubOrgs: [467885]
         }
       };
@@ -631,6 +631,58 @@ describe('api.js unit test', function () {
             api.getTargetHost(req, {}, function () {});
           });
         });
+
+        describe('ipWhitelist check', function () {
+          var naviResult;
+          beforeEach(function (done) {
+            naviResult = {
+              toJSON: function () {},
+              elasticUrl: 'api-staging-codenow.runnableapp.com',
+              directUrls: {},
+              ipWhitelist: {
+                enabled: true
+              },
+              ownerGithubId: 958313
+            };
+            sinon.stub(api, '_getUrlFromRequest', function () {
+              return 'http://0.0.0.0:80';
+            });
+            sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+              // ownerGithub === 495765
+              cb(null, [naviRedisEntriesFixture.elastic]);
+            });
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, naviResult);
+            });
+            done();
+          });
+          afterEach(function (done) {
+            api._getUrlFromRequest.restore();
+            redis.lrange.restore();
+            mongo.fetchNaviEntry.restore();
+            done();
+          });
+
+          it('should ignore whitelist and proxy to master instance', function (done) {
+            var base = 'repo-staging-codenow.runnableapp.com';
+            var req = {
+              method: 'get',
+              isBrowser: true,
+              session: {
+                userGithubOrgs: [495765, 958313],
+                userId: 495765
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            api.getTargetHost(req, {}, function (err) {
+              expect(err.isBoom).to.equal(true);
+              expect(err.output.payload.statusCode).to.equal(404);
+              done();
+            });
+          });
+        });
       });
 
       describe('is not browser', function () {
@@ -642,9 +694,6 @@ describe('api.js unit test', function () {
             // ownerGithub === 495765
             cb(null, [naviRedisEntriesFixture.elastic]);
           });
-          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-            cb(null, naviEntriesFixtures);
-          });
           done();
         });
         afterEach(function (done) {
@@ -653,54 +702,110 @@ describe('api.js unit test', function () {
           mongo.fetchNaviEntry.restore();
           done();
         });
-
-        /*
-         * Currently, hipache only forwards requests to navi if the requests are to valid containers
-         * on actually exposed ports. These tests will have to be implemented if we decide to remove
-         * hipache in the future and have Navi handle proxying to custom error pages.
-        it('should proxy to error page if target does not exist', function (done) {
-          done();
-        });
-        it('should proxy to error page if port is not exposed by target', function (done) {
-          done();
-        });
-        */
-
-        it('should proxy to error page if target does not belong to users github orgs',
-        function (done) {
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [19495, 93722, 958321, 958313],
-              userId: 958321
+        describe('ipWhitelist check', function () {
+          var naviResult = {
+            toJSON: function () {},
+            elasticUrl: 'api-staging-codenow.runnableapp.com',
+            directUrls: {
+              'e4rov2': {
+                branch: 'master',
+                masterPod: true,
+                dockerHost: '0.0.0.0',
+                ports: {
+                  '80': 39940,
+                  '8080': 23453
+                },
+                running: true,
+                dependencies: []
+              },
             },
-            headers: {
-              host: ''
-            }
+            ipWhitelist: {
+              enabled: false
+            },
+            ownerGithubId: 958313
           };
-          api.getTargetHost(req, {}, function () {
+          beforeEach(function (done) {
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, naviResult);
+            });
             done();
+          });
+          it('should ignore whitelist and proxy to master instance', function (done) {
+            var base = 'api-staging-codenow.runnableapp.com';
+            var req = {
+              method: 'get',
+              isBrowser: true,
+              session: {
+                userGithubOrgs: [495765, 958313],
+                userId: 495765
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+              done();
+            });
           });
         });
 
-        it('should proxy to master instance', function (done) {
-          var base = 'repo-staging-codenow.runnableapp.com';
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [495765, 958313],
-              userId: 495765
-            },
-            headers: {
-              host: base + ':80'
-            }
-          };
-          api.getTargetHost(req, {}, function (err) {
-            expect(err).to.be.undefined();
-            expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+        describe('proxying', function () {
+          beforeEach(function (done) {
+            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+              cb(null, naviEntriesFixtures);
+            });
             done();
+          });
+          /*
+           * Currently, hipache only forwards requests to navi if the requests are to valid containers
+           * on actually exposed ports. These tests will have to be implemented if we decide to remove
+           * hipache in the future and have Navi handle proxying to custom error pages.
+           it('should proxy to error page if target does not exist', function (done) {
+           done();
+           });
+           it('should proxy to error page if port is not exposed by target', function (done) {
+           done();
+           });
+           */
+
+          it('should proxy to error page if target does not belong to users github orgs',
+            function (done) {
+              var req = {
+                method: 'get',
+                isBrowser: false,
+                session: {
+                  userGithubOrgs: [19495, 93722, 958321, 958313],
+                  userId: 958321
+                },
+                headers: {
+                  host: ''
+                }
+              };
+              api.getTargetHost(req, {}, function () {
+                done();
+              });
+            });
+
+          it('should proxy to master instance', function (done) {
+            var base = 'repo-staging-codenow.runnableapp.com';
+            var req = {
+              method: 'get',
+              isBrowser: false,
+              session: {
+                userGithubOrgs: [495765, 958313],
+                userId: 495765
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+              done();
+            });
           });
         });
       });

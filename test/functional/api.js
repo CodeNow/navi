@@ -232,6 +232,27 @@ describe('functional test: proxy to instance container', function () {
         });
       });
 
+      it('should reject connection when the ipWhitelist is enabled', function (done) {
+        /**
+         * No user-mapping, should proxy to master
+         */
+        var host = 'whitelist-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent,
+            host: host,
+            referer: 'google.com'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
+          done();
+        });
+      });
+
       it('should ignore non-runnable referer and proxy to user mapping or master', function (done) {
         /**
          * No user-mapping, should proxy to master
