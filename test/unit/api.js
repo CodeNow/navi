@@ -940,6 +940,48 @@ describe('api.js unit test', function () {
         });
       });
     });
+    describe('direct url unauthenticated incoming request', function () {
+      var base = '44444-repo-staging-codenow.runnableapp.com';
+      var req;
+      beforeEach(function (done) {
+        req = {
+          // no origin or referer
+          method: 'get',
+          isBrowser: true,
+          session: {
+            userGithubOrgs: [495765, 847390], // Instance owner not in here
+            userId: 847390
+          },
+          headers: {
+            host: base + ':80'
+          }
+        };
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return 'http://0.0.0.0:80';
+        });
+        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+          // ownerGithub === 495765
+          cb(null, [naviRedisEntriesFixture.direct]);
+        });
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures);
+        });
+        done();
+      });
+      afterEach(function (done) {
+        api._getUrlFromRequest.restore();
+        redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
+        done();
+      });
+      it('should error and reject the request', function (done) {
+        api.getTargetHost(req, {}, function (err) {
+          expect(err.isBoom).to.equal(true);
+          expect(err.output.payload.statusCode).to.equal(404);
+          done();
+        });
+      });
+    });
   });
 });
 
