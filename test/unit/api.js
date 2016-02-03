@@ -346,20 +346,26 @@ describe('api.js unit test', function () {
     });
 
     describe('target owner not member of authenticated users orgs', function () {
+      var getUrlFromRequestResponse = 'http://0.0.0.0:80';
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest').returns('');
+        sinon.stub(api, '_getUrlFromRequest').returns(getUrlFromRequestResponse);
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           // ownerGithub === 495765
           cb(null, [naviRedisEntriesFixture.elastic]);
         });
         done();
       });
+      var base = 'whitelist-staging-codenow.runnableapp.com';
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
         redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
         done();
       });
-      it('should next an error object', function (done) {
+      it('should reject when the whitelist is enabled', function (done) {
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures.whitelistedNaviEntry);
+        });
         var req = {
           method: 'get',
           isBrowser: true,
@@ -367,11 +373,34 @@ describe('api.js unit test', function () {
             userGithubOrgs: [19495, 93722, 958321],
             userId: 19495
           },
-          headers: {}
+          headers: {
+            host: base + ':80'
+          }
         };
         api.getTargetHost(req, {}, function (err) {
           expect(err.isBoom).to.equal(true);
           expect(err.output.payload.statusCode).to.equal(404);
+          done();
+        });
+      });
+      it('should allow when the whitelist is disabled', function (done) {
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures);
+        });
+        var req = {
+          method: 'get',
+          isBrowser: true,
+          session: {
+            userGithubOrgs: [19495, 93722, 958321],
+            userId: 19495
+          },
+          headers: {
+            host: base + ':80'
+          }
+        };
+        api.getTargetHost(req, {}, function (err) {
+          expect(err).to.be.undefined();
+          expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
           done();
         });
       });
@@ -638,7 +667,22 @@ describe('api.js unit test', function () {
             naviResult = {
               toJSON: function () {},
               elasticUrl: 'api-staging-codenow.runnableapp.com',
-              directUrls: {},
+              directUrls: {
+                'aaaaa1': {
+                  branch: 'master',
+                    masterPod: true,
+                    dockerHost: '0.0.0.0',
+                    ports: {
+                    '80': 39940,
+                      '8080': 23453
+                  },
+                  running: true,
+                    dependencies: [{
+                    elasticUrl: 'api-staging-codenow.runnableapp.com',
+                    shortHash: 'e4v7ve'
+                  }]
+                }
+              },
               ipWhitelist: {
                 enabled: true
               },
@@ -663,13 +707,33 @@ describe('api.js unit test', function () {
             done();
           });
 
-          it('should ignore whitelist and proxy to master instance', function (done) {
+          it('should allow authed users when the whitelist.enabled is true', function (done) {
             var base = 'repo-staging-codenow.runnableapp.com';
             var req = {
               method: 'get',
               isBrowser: true,
               session: {
                 userGithubOrgs: [495765, 958313],
+                userId: 495765
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+              done();
+            });
+          });
+
+          it('should block unauthed users when whitelist.enabled is true', function (done) {
+            var base = 'repo-staging-codenow.runnableapp.com';
+            var req = {
+              method: 'get',
+              isBrowser: true,
+              session: {
+                userGithubOrgs: [495765], // Instance's owner is not in here
                 userId: 495765
               },
               headers: {
@@ -720,7 +784,7 @@ describe('api.js unit test', function () {
               },
             },
             ipWhitelist: {
-              enabled: false
+              enabled: true
             },
             ownerGithubId: 958313
           };
@@ -730,11 +794,30 @@ describe('api.js unit test', function () {
             });
             done();
           });
+          it('should ignore ipWhitelisting and unauthentication and proxy to master instance', function (done) {
+            var base = 'api-staging-codenow.runnableapp.com';
+            var req = {
+              method: 'get',
+              isBrowser: false,
+              session: {
+                userGithubOrgs: [495765], // Instance's owner is not in here
+                userId: 495765
+              },
+              headers: {
+                host: base + ':80'
+              }
+            };
+            api.getTargetHost(req, {}, function (err) {
+              expect(err).to.be.undefined();
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
+              done();
+            });
+          });
           it('should ignore whitelist and proxy to master instance', function (done) {
             var base = 'api-staging-codenow.runnableapp.com';
             var req = {
               method: 'get',
-              isBrowser: true,
+              isBrowser: false,
               session: {
                 userGithubOrgs: [495765, 958313],
                 userId: 495765
