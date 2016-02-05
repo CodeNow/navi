@@ -95,7 +95,7 @@ describe('functional test: proxy to instance container', function () {
 
   describe('browser', function () {
     describe('unathenticated', function () {
-      it('should proxy to detention', function (done) {
+      it('should bypass auth and proxy directly to master instance', function (done) {
         var host = 'api-staging-codenow.runnableapp.com';
         request({
           followRedirect: false,
@@ -105,12 +105,24 @@ describe('functional test: proxy to instance container', function () {
           },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
-          expect(res.body).to.equal(
-            'ididerror;api-staging-codenow.runnableapp.com/?type=signin&redirectUrl=http%3A%2F%2F'+
-            'api.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26redirect%3Dhttp%3A%2F%2Fapi-'+
-            'staging-codenow.runnableapp.com%3A80');
           expect(res.statusCode).to.equal(200);
-          expect(res.headers.location).to.be.undefined();
+          expect(res.body).to.equal(testResponse+';'+host+'/');
+          done();
+        });
+      });
+      it('should bypass auth and proxy directly to the elastic instance', function (done) {
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          headers: {
+            host: host,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          expect(res.statusCode).to.equal(200);
+          expect(res.body).to.equal(testResponseFeatureBranch+';'+elasticUrl+'/');
           done();
         });
       });
