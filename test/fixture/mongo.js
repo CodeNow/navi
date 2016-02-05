@@ -12,6 +12,7 @@ var dbSeedData = put({}, naviEntriesFixtures);
 var refNaviEntry = dbSeedData.refererNaviEntry;
 var whitelistedNaviEntry = dbSeedData.whitelistedNaviEntry;
 delete dbSeedData.refererNaviEntry;
+delete dbSeedData.whitelistedNaviEntry;
 
 module.exports.seed = function (done) {
   mongoClient.connect(process.env.MONGO, function (err, db) {
