@@ -95,102 +95,133 @@ describe('functional test: proxy to instance container', function () {
 
   describe('browser', function () {
     describe('unathenticated', function () {
-      it('should proxy to detention', function (done) {
-        var host = 'api-staging-codenow.runnableapp.com';
-        request({
-          followRedirect: false,
-          headers: {
-            host: host,
-            'User-Agent': chromeUserAgent
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          expect(res.body).to.equal(
-            'ididerror;api-staging-codenow.runnableapp.com/?type=signin&redirectUrl=http%3A%2F%2F'+
-            'api.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26redirect%3Dhttp%3A%2F%2Fapi-'+
-            'staging-codenow.runnableapp.com%3A80');
-          expect(res.statusCode).to.equal(200);
-          expect(res.headers.location).to.be.undefined();
-          done();
-        });
-      });
 
-      it('should proxy to detention if shared token/key does not exist in redis', function (done) {
-        request({
-          followRedirect: false,
-          headers: {
-            'user-agent' : chromeUserAgent
-          },
-          qs: {
-            runnableappAccessToken: 'doesnotexist'
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.body).to.equal(
-            'ididerror;localhost:51234/?runnableappAccessToken=doesnotexist?type=signin&'+
-            'redirectUrl=http%3A%2F%2Fapi.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26'+
-            'redirect%3Dhttp%3A%2F%2Flocalhost%3A51234');
-          expect(res.statusCode).to.equal(200);
-          expect(res.headers.location).to.be.undefined();
-          done();
-        });
-      });
-
-      it('should proxy to detention if token\'s apiSessionRedisKey redis value does not contain '+
-         'an authenticated session', function(done) {
-        redis.rpush('validAccessToken', JSON.stringify({}), function (err) {
-          if (err) { return done(err); }
+      describe('whitelist off', function () {
+        it('should allow the traffic', function (done) {
+          var host = 'api-staging-codenow.runnableapp.com';
           request({
             followRedirect: false,
             headers: {
-              'user-agent' : chromeUserAgent
+              host: host,
+              'User-Agent': chromeUserAgent
             },
-            qs: {
-              runnableappAccessToken: 'validAccessToken'
-            },
-            url: 'http://localhost:'+process.env.HTTP_PORT
+            url: 'http://localhost:' + process.env.HTTP_PORT
           }, function (err, res) {
-            if (err) { return done(err); }
-            redis.lpop('validAccessToken', function (err, result) {
-              if (err) { return done(err); }
-              expect(result).to.be.null(); // Validate navi popped value out of redis
-              expect(res.statusCode).to.equal(200);
-              //expect(res.headers.location).to.be.undefined();
-              done();
-            });
+            expect(res.statusCode).to.equal(200);
+            console.log('body', res.body);
+            expect(res.body).to.equal(testResponse + ';api-staging-codenow.runnableapp.com/');
+            done();
           });
         });
       });
 
-      describe('with auth attempted before', function() {
-        var j = request.jar();
-        beforeEach(function(done) {
+      describe('whitelist on', function () {
+        it('should proxy to detention', function (done) {
+          var host = 'whitelist-staging-codenow.runnableapp.com';
           request({
             followRedirect: false,
-            jar: j,
             headers: {
-              'user-agent' : chromeUserAgent
+              host: host,
+              'User-Agent': chromeUserAgent
             },
-            url: 'http://localhost:'+process.env.HTTP_PORT
-          }, done);
-        });
-        it('should proxy to error login page with force if second time', function (done) {
-          request({
-            jar: j,
-            headers: {
-              'user-agent' : chromeUserAgent
-            },
-            url: 'http://localhost:'+process.env.HTTP_PORT
-          }, function (err, res, body) {
-            if (err) { return done(err); }
+            url: 'http://localhost:' + process.env.HTTP_PORT
+          }, function (err, res) {
+            expect(res.body).to.equal(
+              'ididerror;api-staging-codenow.runnableapp.com/?type=signin&redirectUrl=http%3A%2F%2F' +
+              'api.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26redirect%3Dhttp%3A%2F%2Fapi-' +
+              'staging-codenow.runnableapp.com%3A80');
             expect(res.statusCode).to.equal(200);
-            var testTest = body.split(';')[0];
-            var targetInfo = url.parse(body.split(';')[1]);
-            expect(testTest).to.equal(testErrorText);
-            var query = querystring.parse(targetInfo.query);
-            expect(query.type).to.equal('signin');
+            expect(res.headers.location).to.be.undefined();
             done();
+          });
+        });
+        it('should proxy to detention if shared token/key does not exist in redis', function (done) {
+          request({
+            followRedirect: false,
+            headers: {
+              'user-agent': chromeUserAgent
+            },
+            qs: {
+              runnableappAccessToken: 'doesnotexist'
+            },
+            url: 'http://localhost:' + process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) {
+              return done(err);
+            }
+            expect(res.body).to.equal(
+              'ididerror;localhost:51234/?runnableappAccessToken=doesnotexist?type=signin&' +
+              'redirectUrl=http%3A%2F%2Fapi.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26' +
+              'redirect%3Dhttp%3A%2F%2Flocalhost%3A51234');
+            expect(res.statusCode).to.equal(200);
+            expect(res.headers.location).to.be.undefined();
+            done();
+          });
+        });
+
+        it('should proxy to detention if token\'s apiSessionRedisKey redis value does not contain ' +
+          'an authenticated session', function (done) {
+          redis.rpush('validAccessToken', JSON.stringify({}), function (err) {
+            if (err) {
+              return done(err);
+            }
+            request({
+              followRedirect: false,
+              headers: {
+                'user-agent': chromeUserAgent
+              },
+              qs: {
+                runnableappAccessToken: 'validAccessToken'
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) {
+                return done(err);
+              }
+              redis.lpop('validAccessToken', function (err, result) {
+                if (err) {
+                  return done(err);
+                }
+                expect(result).to.be.null(); // Validate navi popped value out of redis
+                expect(res.statusCode).to.equal(200);
+                //expect(res.headers.location).to.be.undefined();
+                done();
+              });
+            });
+          });
+        });
+
+        describe('with auth attempted before', function () {
+          var j = request.jar();
+          beforeEach(function (done) {
+            request({
+              followRedirect: false,
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, done);
+          });
+          it('should proxy to error login page with force if second time', function (done) {
+            request({
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res, body) {
+              if (err) {
+                return done(err);
+              }
+              expect(res.statusCode).to.equal(200);
+              var testTest = body.split(';')[0];
+              var targetInfo = url.parse(body.split(';')[1]);
+              expect(testTest).to.equal(testErrorText);
+              var query = querystring.parse(targetInfo.query);
+              expect(query.type).to.equal('signin');
+              done();
+            });
           });
         });
       });
@@ -228,6 +259,27 @@ describe('functional test: proxy to instance container', function () {
           },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function () {
+          done();
+        });
+      });
+
+      it('should reject connection when the ipWhitelist is enabled', function (done) {
+        /**
+         * No user-mapping, should proxy to master
+         */
+        var host = 'whitelist-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            'user-agent' : chromeUserAgent,
+            host: host,
+            referer: 'google.com'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
           done();
         });
       });

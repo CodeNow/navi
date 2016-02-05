@@ -15,6 +15,8 @@ module.exports.seed = function (done) {
   var count = callbackCount(done);
   redis.rpush('frontend:80.api-staging-codenow.runnableapp.com', seedData, count.inc().next);
   redis.rpush('frontend:8080.api-staging-codenow.runnableapp.com', seedData, count.inc().next);
+  redis.rpush('frontend:80.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
+  redis.rpush('frontend:8080.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
   Object.keys(naviEntriesFixtures.directUrls).forEach(function (shortHash) {
     redis.rpush(
       'frontend:80.'+shortHash+'-api-staging-codenow.runnableapp.com',
@@ -29,6 +31,8 @@ module.exports.clean = function (done) {
   var count = callbackCount(done);
   redis.del('frontend:80.api-staging-codenow.runnableapp.com', count.inc().next);
   redis.del('frontend:8080.api-staging-codenow.runnableapp.com', count.inc().next);
+  redis.del('frontend:80.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
+  redis.del('frontend:8080.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
   Object.keys(naviEntriesFixtures.directUrls).forEach(function (shortHash) {
     redis.del(
       'frontend:80.'+shortHash+'-api-staging-codenow.runnableapp.com', count.inc().next);

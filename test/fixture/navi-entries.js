@@ -71,6 +71,34 @@ var refererNaviEntry = {
   ownerGithubId: 958313
 };
 
+var whitelistedNaviEntry = {
+  toJSON: function () {},
+  elasticUrl: 'whitelist-staging-codenow.runnableapp.com',
+  directUrls: {
+    'aaaaa1': {
+      branch: 'master',
+      masterPod: true,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39940,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: 'e4v7ve'
+      }]
+    }
+  },
+  userMappings: {
+    '847390': 'bbbbb2'
+  },
+  ipWhitelist: {
+    enabled: true
+  },
+  ownerGithubId: 958313
+};
+
 module.exports = {
   toJSON: function () {},
   elasticUrl: 'api-staging-codenow.runnableapp.com',
@@ -125,5 +153,6 @@ module.exports = {
   },
   ownerGithubId: 958313,
   // This property only set by mongo model if req has a referer
-  refererNaviEntry: refererNaviEntry
+  refererNaviEntry: refererNaviEntry,
+  whitelistedNaviEntry: whitelistedNaviEntry
 };
