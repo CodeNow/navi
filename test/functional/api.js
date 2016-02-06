@@ -146,6 +146,23 @@ describe('functional test: proxy to instance container', function () {
           });
         });
       });
+      it('should block access when instance is whitelisted', function (done) {
+        var host = 'whitelist-staging-codenow.runnableapp.com';
+        var elasticUrl = 'whitelist-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            host: host,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(500);
+          done();
+        });
+      });
 
       describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
         var previousDisableAuthEnv;

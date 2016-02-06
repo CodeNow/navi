@@ -153,8 +153,20 @@ describe('lib/models/mongodb', function () {
           sinon.assert.calledOnce(mongo._getCachedResults);
 
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
+
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-            sinon.match.has('elasticUrl', elasticUrl));
+            sinon.match.has('$and', sinon.match.array)
+          );
+          expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
+            $and: [{
+              $or: [
+                { 'ipWhitelist.enabled': false },
+                { 'ipWhitelist.enabled': { $exists: false } }
+              ]
+            }, {
+              elasticUrl: elasticUrl
+            }]
+          });
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -192,7 +204,21 @@ describe('lib/models/mongodb', function () {
 
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-            sinon.match.has('$or', sinon.match.array));
+            sinon.match.has('$and', sinon.match.array)
+          );
+          expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
+            $and: [{
+              $or: [
+                { 'ipWhitelist.enabled': false },
+                { 'ipWhitelist.enabled': { $exists: false } }
+              ]
+            }, {
+              $or: [
+                { elasticUrl: elasticUrl},
+                { elasticUrl: refererUrl}
+              ]
+            }]
+          });
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -233,8 +259,21 @@ describe('lib/models/mongodb', function () {
 
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find,
-            sinon.match.has('$or', sinon.match.array));
-
+            sinon.match.has('$and', sinon.match.array)
+          );
+          expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
+            $and: [{
+              $or: [
+                { 'ipWhitelist.enabled': false },
+                { 'ipWhitelist.enabled': { $exists: false } }
+              ]
+            }, {
+              $or: [
+                { elasticUrl: elasticUrl},
+                { elasticUrl: refererUrl}
+              ]
+            }]
+          });
           expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
           done();
         });
