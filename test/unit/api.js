@@ -44,17 +44,38 @@ describe('api.js unit test', function () {
       expect(result).to.equal(true);
       done();
     });
-
-    it('should return false if user is NOT in whitelistedUsers list', function (done) {
-      var req = {
-        session: {
-          userId: 46788511111,
-          userGithubOrgs: [46788511111]
-        }
-      };
-      var result = api._isUserAuthorized(req, 9999);
-      expect(result).to.equal(false);
-      done();
+    describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+      it('should return true no matter what', function (done) {
+        var req = {
+          session: {}
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
+        done();
+      });
+    });
+    describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+      var previousDisableAuthEnv;
+      beforeEach(function (done) {
+        previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
+        process.env.PUBLIC_ALLOWS_UNAUTH = false;
+        done();
+      });
+      afterEach(function (done) {
+        process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+        done();
+      });
+      it('should return false if user is NOT in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 46788511111,
+            userGithubOrgs: [46788511111]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(false);
+        done();
+      });
     });
   });
 
@@ -192,34 +213,55 @@ describe('api.js unit test', function () {
       done();
     });
   });
-
   describe('api._shouldBypassAuth', function () {
-    it('should return true if options request', function (done) {
-      var result = api._shouldBypassAuth({
-        method: 'options'
+    describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+      it('should return true no matter what', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: true,
+          method: 'get'
+        });
+        expect(result).to.equal(true);
+        done();
       });
-      expect(result).to.equal(true);
-      done();
     });
+    describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+      var previousDisableAuthEnv;
+      beforeEach(function (done) {
+        previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
+        process.env.PUBLIC_ALLOWS_UNAUTH = false;
+        done();
+      });
+      afterEach(function (done) {
+        process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+        done();
+      });
+      it('should return true if options request', function (done) {
+        var result = api._shouldBypassAuth({
+          method: 'options'
+        });
+        expect(result).to.equal(true);
+        done();
+      });
 
-    it('should return true if !isBrowser request', function (done) {
-      var result = api._shouldBypassAuth({
-        isBrowser: false,
-        method: 'get'
+      it('should return true if !isBrowser request', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: false,
+          method: 'get'
+        });
+        expect(result).to.equal(true);
+        done();
       });
-      expect(result).to.equal(true);
-      done();
-    });
 
-    it('should return false if should not bypass', function (done) {
-      var result = api._shouldBypassAuth({
-        isBrowser: true,
-        method: 'get'
+      it('should return false if should not bypass', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: true,
+          method: 'get'
+        });
+        expect(result).to.equal(false);
+        done();
       });
-      expect(result).to.equal(false);
-      done();
     });
-  });
+  })
 
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
@@ -346,17 +388,24 @@ describe('api.js unit test', function () {
     });
 
     describe('target owner not member of authenticated users orgs', function () {
+      var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest').returns('');
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return 'http://' + base + ':80';
+        });
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           // ownerGithub === 495765
           cb(null, [naviRedisEntriesFixture.elastic]);
+        });
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures);
         });
         done();
       });
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
         redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
         done();
       });
       it('should next an error object', function (done) {
@@ -367,11 +416,15 @@ describe('api.js unit test', function () {
             userGithubOrgs: [19495, 93722, 958321],
             userId: 19495
           },
-          headers: {}
+          headers: {
+            origin: 'http://frontend-staging-codenow.runnableapp.com',
+            host: base + ':80'
+          }
         };
         api.getTargetHost(req, {}, function (err) {
-          expect(err.isBoom).to.equal(true);
-          expect(err.output.payload.statusCode).to.equal(404);
+          expect(err).to.be.undefined();
+          // feature-branch1 of API
+          expect(req.targetHost).to.equal('http://0.0.0.2:39942');
           done();
         });
       });
