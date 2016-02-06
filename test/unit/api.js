@@ -76,6 +76,17 @@ describe('api.js unit test', function () {
         expect(result).to.equal(false);
         done();
       });
+      it('should return true if user is in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 1085792,
+            userGithubOrgs: [1085792]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
+        done();
+      });
     });
   });
 
@@ -156,6 +167,32 @@ describe('api.js unit test', function () {
         done();
       });
     });
+
+    it('should route to unathenticated helper if redis session data indicates user is unauth',
+      function (done) {
+        sinon.stub(api, '_shouldBypassAuth', function () { return false; });
+        sinon.stub(redis, 'get', function (key, cb) {
+          expect(key).to.equal('redis-session-key');
+          cb(null, JSON.stringify({
+            passport: {
+              user: {}
+            }
+          }));
+        });
+        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+          next();
+        });
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
+          expect(api._shouldBypassAuth.callCount).to.equal(1);
+          expect(redis.get.callCount).to.equal(1);
+          expect(api._handleUnauthenticated.callCount).to.equal(0);
+          api._shouldBypassAuth.restore();
+          api._handleUnauthenticated.restore();
+          redis.get.restore();
+          done();
+        });
+      });
   });
 
   describe('api._getUrlFromRequest', function () {
@@ -408,24 +445,57 @@ describe('api.js unit test', function () {
         mongo.fetchNaviEntry.restore();
         done();
       });
-      it('should next an error object', function (done) {
-        var req = {
-          method: 'get',
-          isBrowser: true,
-          session: {
-            userGithubOrgs: [19495, 93722, 958321],
-            userId: 19495
-          },
-          headers: {
-            origin: 'http://frontend-staging-codenow.runnableapp.com',
-            host: base + ':80'
-          }
-        };
-        api.getTargetHost(req, {}, function (err) {
-          expect(err).to.be.undefined();
-          // feature-branch1 of API
-          expect(req.targetHost).to.equal('http://0.0.0.2:39942');
+      describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+        it('should next and not care about the auth', function (done) {
+          var req = {
+            method: 'get',
+            isBrowser: true,
+            session: {
+              userGithubOrgs: [19495, 93722, 958321],
+              userId: 19495
+            },
+            headers: {
+              origin: 'http://frontend-staging-codenow.runnableapp.com',
+              host: base + ':80'
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err).to.be.undefined();
+            // feature-branch1 of API
+            expect(req.targetHost).to.equal('http://0.0.0.2:39942');
+            done();
+          });
+        });
+      });
+      describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+        var previousDisableAuthEnv;
+        beforeEach(function (done) {
+          previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
+          process.env.PUBLIC_ALLOWS_UNAUTH = false;
           done();
+        });
+        afterEach(function (done) {
+          process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+          done();
+        });
+        it('should next an error object', function (done) {
+          var req = {
+            method: 'get',
+            isBrowser: true,
+            session: {
+              userGithubOrgs: [19495, 93722, 958321],
+              userId: 19495
+            },
+            headers: {
+              origin: 'http://frontend-staging-codenow.runnableapp.com',
+              host: base + ':80'
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err.isBoom).to.equal(true);
+            expect(err.output.payload.statusCode).to.equal(404);
+            done();
+          });
         });
       });
     });
