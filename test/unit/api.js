@@ -44,7 +44,7 @@ describe('api.js unit test', function () {
       expect(result).to.equal(true);
       done();
     });
-    describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
       it('should return true no matter what', function (done) {
         var req = {
           session: {}
@@ -54,15 +54,15 @@ describe('api.js unit test', function () {
         done();
       });
     });
-    describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
       var previousDisableAuthEnv;
       beforeEach(function (done) {
-        previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
-        process.env.PUBLIC_ALLOWS_UNAUTH = false;
+        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
         done();
       });
       afterEach(function (done) {
-        process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
         done();
       });
       it('should return false if user is NOT in whitelistedUsers list', function (done) {
@@ -251,7 +251,7 @@ describe('api.js unit test', function () {
     });
   });
   describe('api._shouldBypassAuth', function () {
-    describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
       it('should return true no matter what', function (done) {
         var result = api._shouldBypassAuth({
           isBrowser: true,
@@ -261,15 +261,15 @@ describe('api.js unit test', function () {
         done();
       });
     });
-    describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
       var previousDisableAuthEnv;
       beforeEach(function (done) {
-        previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
-        process.env.PUBLIC_ALLOWS_UNAUTH = false;
+        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
         done();
       });
       afterEach(function (done) {
-        process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
         done();
       });
       it('should return true if options request', function (done) {
@@ -445,7 +445,7 @@ describe('api.js unit test', function () {
         mongo.fetchNaviEntry.restore();
         done();
       });
-      describe('PUBLIC_ALLOWS_UNAUTH set to true ', function () {
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
         it('should next and not care about the auth', function (done) {
           var req = {
             method: 'get',
@@ -467,15 +467,15 @@ describe('api.js unit test', function () {
           });
         });
       });
-      describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
         var previousDisableAuthEnv;
         beforeEach(function (done) {
-          previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
-          process.env.PUBLIC_ALLOWS_UNAUTH = false;
+          previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
           done();
         });
         afterEach(function (done) {
-          process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
           done();
         });
         it('should next an error object', function (done) {

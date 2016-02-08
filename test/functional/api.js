@@ -218,15 +218,15 @@ describe('functional test: proxy to instance container', function () {
         });
       });
 
-      describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
         var previousDisableAuthEnv;
         beforeEach(function (done) {
-          previousDisableAuthEnv = process.env.PUBLIC_ALLOWS_UNAUTH;
-          process.env.PUBLIC_ALLOWS_UNAUTH = false;
+          previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
           done();
         });
         afterEach(function (done) {
-          process.env.PUBLIC_ALLOWS_UNAUTH = previousDisableAuthEnv;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
           done();
         });
         it('should proxy to detention if shared token/key does not exist in redis', function (done) {
