@@ -163,6 +163,60 @@ describe('functional test: proxy to instance container', function () {
           done();
         });
       });
+      it('should use the referer navi entry for navigation', function (done) {
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        var frontHost = 'bbbbb2-frontend-staging-codenow.runnableapp.com';
+        var frontElasticUrl = 'frontend-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            host: frontHost,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) {
+            return done(err);
+          }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.equal('http://' + frontElasticUrl + ':80');
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              host: host,
+              'User-Agent': chromeUserAgent,
+              referer: 'http://frontend-staging-codenow.runnableapp.com'
+            },
+            url: 'http://localhost:' + process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) {
+              return done(err);
+            }
+            expect(res.statusCode).to.equal(307);
+            expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
+            request({
+              followRedirect: false,
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent,
+                host: elasticUrl,
+                referer: 'http://frontend-staging-codenow.runnableapp.com'
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) {
+                return done(err);
+              }
+              expect(res.statusCode).to.equal(200);
+              expect(res.body).to.equal(testResponseFeatureBranch + ';' + elasticUrl + '/');
+              done();
+            });
+          });
+        });
+      });
 
       describe('PUBLIC_ALLOWS_UNAUTH set to false ', function () {
         var previousDisableAuthEnv;
@@ -230,6 +284,7 @@ describe('functional test: proxy to instance container', function () {
             });
           });
         });
+
         describe('with auth attempted before', function() {
           var j = request.jar();
           beforeEach(function(done) {
