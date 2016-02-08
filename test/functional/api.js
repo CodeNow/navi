@@ -146,6 +146,38 @@ describe('functional test: proxy to instance container', function () {
           });
         });
       });
+      it('should bypass auth and redirect to the elastic instance', function (done) {
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            host: host,
+            'User-Agent': chromeUserAgent,
+            referer: 'frontend-staging-codenow.runnableapp.com'
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) { return done(err); }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              'user-agent' : chromeUserAgent,
+              host: elasticUrl
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) { return done(err); }
+            expect(res.statusCode).to.equal(200);
+            expect(res.body).to.equal(testResponseFeatureBranch+';'+elasticUrl+'/');
+            done();
+          });
+        });
+      });
       it('should block access when instance is whitelisted', function (done) {
         var host = 'whitelist-staging-codenow.runnableapp.com';
         var elasticUrl = 'whitelist-staging-codenow.runnableapp.com';
