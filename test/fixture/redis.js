@@ -23,6 +23,14 @@ module.exports.seed = function (done) {
       'frontend:8080.'+shortHash+'-api-staging-codenow.runnableapp.com',
       naviRedisEntriesFixtures.direct, count.inc().next);
   });
+  Object.keys(naviEntriesFixtures.refererNaviEntry.directUrls).forEach(function (shortHash) {
+    redis.rpush(
+      'frontend:80.'+shortHash+'-frontend-staging-codenow.runnableapp.com',
+      naviRedisEntriesFixtures.direct, count.inc().next);
+    redis.rpush(
+      'frontend:8080.'+shortHash+'-frontend-staging-codenow.runnableapp.com',
+      naviRedisEntriesFixtures.direct, count.inc().next);
+  });
 };
 
 module.exports.clean = function (done) {
@@ -34,5 +42,11 @@ module.exports.clean = function (done) {
       'frontend:80.'+shortHash+'-api-staging-codenow.runnableapp.com', count.inc().next);
     redis.del(
       'frontend:8080.'+shortHash+'-api-staging-codenow.runnableapp.com', count.inc().next);
+  });
+  Object.keys(naviEntriesFixtures.refererNaviEntry.directUrls).forEach(function (shortHash) {
+    redis.del(
+      'frontend:80.'+shortHash+'-frontend-staging-codenow.runnableapp.com', count.inc().next);
+    redis.del(
+      'frontend:8080.'+shortHash+'-frontend-staging-codenow.runnableapp.com', count.inc().next);
   });
 };

@@ -146,38 +146,6 @@ describe('functional test: proxy to instance container', function () {
           });
         });
       });
-      it('should bypass auth and redirect to the elastic instance', function (done) {
-        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
-        var elasticUrl = 'api-staging-codenow.runnableapp.com';
-        request({
-          followRedirect: false,
-          jar: j,
-          headers: {
-            host: host,
-            'User-Agent': chromeUserAgent,
-            referer: 'frontend-staging-codenow.runnableapp.com'
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(307);
-          expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
-          request({
-            followRedirect: false,
-            jar: j,
-            headers: {
-              'user-agent' : chromeUserAgent,
-              host: elasticUrl
-            },
-            url: 'http://localhost:'+process.env.HTTP_PORT
-          }, function (err, res) {
-            if (err) { return done(err); }
-            expect(res.statusCode).to.equal(200);
-            expect(res.body).to.equal(testResponseFeatureBranch+';'+elasticUrl+'/');
-            done();
-          });
-        });
-      });
       it('should block access when instance is whitelisted', function (done) {
         var host = 'whitelist-staging-codenow.runnableapp.com';
         var elasticUrl = 'whitelist-staging-codenow.runnableapp.com';
@@ -331,6 +299,60 @@ describe('functional test: proxy to instance container', function () {
           done();
         });
       });
+      it('should use the referer navi entry for navigation', function (done) {
+        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+        var elasticUrl = 'api-staging-codenow.runnableapp.com';
+        var frontHost = 'bbbbb2-frontend-staging-codenow.runnableapp.com';
+        var frontElasticUrl = 'frontend-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          jar: j,
+          headers: {
+            host: frontHost,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          if (err) {
+            return done(err);
+          }
+          expect(res.statusCode).to.equal(307);
+          expect(res.headers.location).to.equal('http://' + frontElasticUrl + ':80');
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              host: host,
+              'User-Agent': chromeUserAgent,
+              referer: 'http://frontend-staging-codenow.runnableapp.com'
+            },
+            url: 'http://localhost:' + process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) {
+              return done(err);
+            }
+            expect(res.statusCode).to.equal(307);
+            expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
+            request({
+              followRedirect: false,
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent,
+                host: elasticUrl,
+                referer: 'http://frontend-staging-codenow.runnableapp.com'
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) {
+                return done(err);
+              }
+              expect(res.statusCode).to.equal(200);
+              expect(res.body).to.equal(testResponseFeatureBranch + ';' + elasticUrl + '/');
+              done();
+            });
+          });
+        });
+      });
 
       it('should ignore non-runnable referer and proxy to user mapping or master', function (done) {
         /**
@@ -343,7 +365,7 @@ describe('functional test: proxy to instance container', function () {
           headers: {
             'user-agent' : chromeUserAgent,
             host: host,
-            referer: 'google.com'
+            referer: 'http://www.google.com'
           },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
@@ -366,7 +388,7 @@ describe('functional test: proxy to instance container', function () {
           headers: {
             'user-agent' : chromeUserAgent,
             host: host,
-            referer: 'google.com'
+            referer: 'http://www.google.com'
           },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
