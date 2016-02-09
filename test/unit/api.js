@@ -57,8 +57,8 @@ describe('api.js unit test', function () {
       it('should return true if user is in whitelistedUsers list', function (done) {
         var req = {
           session: {
-            userId: 467885,
-            userGithubOrgs: [467885]
+            userId: 1085792,
+            userGithubOrgs: [1085792]
           }
         };
         var result = api._isUserAuthorized(req, 9999);
@@ -839,7 +839,8 @@ describe('api.js unit test', function () {
           isBrowser: true,
           session: {
             userGithubOrgs: [495765, 847390, 958313],
-            userId: 847390
+            userId: 847390,
+            save: sinon.spy()
           },
           headers: {
             host: base + ':80'
