@@ -155,6 +155,7 @@ describe('proxy.js unit test', function () {
     it('should proxy if target exist', function(done) {
       var testRes = {
         writeHead: noop,
+        set: sinon.spy(),
         redirect: function (code, url) {
           expect(code).to.equal(307);
           expect(url).to.equal(testHost);

@@ -8,6 +8,7 @@ var Lab = require('lab');
 var expect = require('code').expect;
 var put = require('101/put');
 var sinon = require('sinon');
+var noop = require('101/noop');
 
 var lab = exports.lab = Lab.script();
 
@@ -33,28 +34,60 @@ describe('api.js unit test', function () {
   });
 
   describe('api._isUserAuthorized', function () {
-    it('should return true if user is in whitelistedUsers list', function (done) {
-      var req = {
-        session: {
-          userId: 467885,
-          userGithubOrgs: [467885]
-        }
-      };
-      var result = api._isUserAuthorized(req, 9999);
-      expect(result).to.equal(true);
-      done();
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
+      it('should return true no matter what', function (done) {
+        var req = {
+          session: {}
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
+        done();
+      });
     });
-
-    it('should return false if user is NOT in whitelistedUsers list', function (done) {
-      var req = {
-        session: {
-          userId: 46788511111,
-          userGithubOrgs: [46788511111]
-        }
-      };
-      var result = api._isUserAuthorized(req, 9999);
-      expect(result).to.equal(false);
-      done();
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
+      var previousDisableAuthEnv;
+      beforeEach(function (done) {
+        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
+        done();
+      });
+      afterEach(function (done) {
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
+        done();
+      });
+      it('should return true if user is in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 1085792,
+            userGithubOrgs: [1085792]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
+        done();
+      });
+      it('should return false if user is NOT in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 46788511111,
+            userGithubOrgs: [46788511111]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(false);
+        done();
+      });
+      it('should return true if user is in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 1085792,
+            userGithubOrgs: [1085792]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
+        done();
+      });
     });
   });
 
@@ -135,6 +168,32 @@ describe('api.js unit test', function () {
         done();
       });
     });
+
+    it('should route to unathenticated helper if redis session data indicates user is unauth',
+      function (done) {
+        sinon.stub(api, '_shouldBypassAuth', function () { return false; });
+        sinon.stub(redis, 'get', function (key, cb) {
+          expect(key).to.equal('redis-session-key');
+          cb(null, JSON.stringify({
+            passport: {
+              user: {}
+            }
+          }));
+        });
+        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
+          next();
+        });
+        api.checkIfLoggedIn(req, {}, function (err) {
+          expect(err).to.be.undefined();
+          expect(api._shouldBypassAuth.callCount).to.equal(1);
+          expect(redis.get.callCount).to.equal(1);
+          expect(api._handleUnauthenticated.callCount).to.equal(0);
+          api._shouldBypassAuth.restore();
+          api._handleUnauthenticated.restore();
+          redis.get.restore();
+          done();
+        });
+      });
   });
 
   describe('api._getUrlFromRequest', function () {
@@ -192,34 +251,55 @@ describe('api.js unit test', function () {
       done();
     });
   });
-
   describe('api._shouldBypassAuth', function () {
-    it('should return true if options request', function (done) {
-      var result = api._shouldBypassAuth({
-        method: 'options'
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
+      it('should return true no matter what', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: true,
+          method: 'get'
+        });
+        expect(result).to.equal(true);
+        done();
       });
-      expect(result).to.equal(true);
-      done();
     });
+    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
+      var previousDisableAuthEnv;
+      beforeEach(function (done) {
+        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
+        done();
+      });
+      afterEach(function (done) {
+        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
+        done();
+      });
+      it('should return true if options request', function (done) {
+        var result = api._shouldBypassAuth({
+          method: 'options'
+        });
+        expect(result).to.equal(true);
+        done();
+      });
 
-    it('should return true if !isBrowser request', function (done) {
-      var result = api._shouldBypassAuth({
-        isBrowser: false,
-        method: 'get'
+      it('should return true if !isBrowser request', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: false,
+          method: 'get'
+        });
+        expect(result).to.equal(true);
+        done();
       });
-      expect(result).to.equal(true);
-      done();
-    });
 
-    it('should return false if should not bypass', function (done) {
-      var result = api._shouldBypassAuth({
-        isBrowser: true,
-        method: 'get'
+      it('should return false if should not bypass', function (done) {
+        var result = api._shouldBypassAuth({
+          isBrowser: true,
+          method: 'get'
+        });
+        expect(result).to.equal(false);
+        done();
       });
-      expect(result).to.equal(false);
-      done();
     });
-  });
+  })
 
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
@@ -346,33 +426,77 @@ describe('api.js unit test', function () {
     });
 
     describe('target owner not member of authenticated users orgs', function () {
+      var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest').returns('');
+        sinon.stub(api, '_getUrlFromRequest', function () {
+          return 'http://' + base + ':80';
+        });
         sinon.stub(redis, 'lrange', function (key, i, n, cb) {
           // ownerGithub === 495765
           cb(null, [naviRedisEntriesFixture.elastic]);
+        });
+        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+          cb(null, naviEntriesFixtures);
         });
         done();
       });
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
         redis.lrange.restore();
+        mongo.fetchNaviEntry.restore();
         done();
       });
-      it('should next an error object', function (done) {
-        var req = {
-          method: 'get',
-          isBrowser: true,
-          session: {
-            userGithubOrgs: [19495, 93722, 958321],
-            userId: 19495
-          },
-          headers: {}
-        };
-        api.getTargetHost(req, {}, function (err) {
-          expect(err.isBoom).to.equal(true);
-          expect(err.output.payload.statusCode).to.equal(404);
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
+        it('should next and not care about the auth', function (done) {
+          var req = {
+            method: 'get',
+            isBrowser: true,
+            session: {
+              userGithubOrgs: [19495, 93722, 958321],
+              userId: 19495
+            },
+            headers: {
+              origin: 'http://frontend-staging-codenow.runnableapp.com',
+              host: base + ':80'
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err).to.be.undefined();
+            // feature-branch1 of API
+            expect(req.targetHost).to.equal('http://0.0.0.2:39942');
+            done();
+          });
+        });
+      });
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
+        var previousDisableAuthEnv;
+        beforeEach(function (done) {
+          previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
           done();
+        });
+        afterEach(function (done) {
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
+          done();
+        });
+        it('should next an error object', function (done) {
+          var req = {
+            method: 'get',
+            isBrowser: true,
+            session: {
+              userGithubOrgs: [19495, 93722, 958321],
+              userId: 19495
+            },
+            headers: {
+              origin: 'http://frontend-staging-codenow.runnableapp.com',
+              host: base + ':80'
+            }
+          };
+          api.getTargetHost(req, {}, function (err) {
+            expect(err.isBoom).to.equal(true);
+            expect(err.output.payload.statusCode).to.equal(404);
+            done();
+          });
         });
       });
     });
@@ -426,7 +550,8 @@ describe('api.js unit test', function () {
               isBrowser: true,
               session: {
                 userGithubOrgs: [495765, 847390, 958313],
-                userId: 847390
+                userId: 847390,
+                save: sinon.stub().yieldsAsync()
               },
               headers: {
                 origin: 'http://frontend-staging-codenow.runnableapp.com',
@@ -454,6 +579,9 @@ describe('api.js unit test', function () {
             api._getUrlFromRequest.restore();
             redis.lrange.restore();
             mongo.fetchNaviEntry.restore();
+            if (mongo.constructor.findMasterPodBranch.restore) {
+              mongo.constructor.findMasterPodBranch.restore();
+            }
             if (api._processTargetInstance.restore) {
               api._processTargetInstance.restore();
             }
@@ -469,19 +597,8 @@ describe('api.js unit test', function () {
             req.headers.origin = 'http://'+base;
             api.getTargetHost(req, {}, function (err) {
               expect(err).to.be.undefined();
-              // feature-branch1 of API
-              expect(req.targetHost).to.equal('http://0.0.0.0:39941');
-              done();
-            });
-          });
-
-          it('should proxy to instance mapped by referer naviEntry association', function (done) {
-            api._processTargetInstance.restore();
-            mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              // feature-branch1 of API
-              expect(req.targetHost).to.equal('http://0.0.0.0:39941');
+              // master branch of API
+              expect(req.targetHost).to.equal('http://0.0.0.0:39940');
               done();
             });
           });
@@ -543,9 +660,7 @@ describe('api.js unit test', function () {
             function (done) {
 
             sinon.stub(mongo.constructor, 'findMasterPodBranch');
-            mongo.constructor.findMasterPodBranch.onFirstCall().returns({});
-            mongo.constructor.findMasterPodBranch.onSecondCall().returns(undefined);
-            mongo.constructor.findMasterPodBranch.onSecondCall().returns({
+            mongo.constructor.findMasterPodBranch.returns({
               directUrlObj: {
                 masterPod: true
               }
@@ -561,78 +676,7 @@ describe('api.js unit test', function () {
             });
           });
         });
-
-        describe('no referer', function () {
-          var base = 'repo-staging-codenow.runnableapp.com';
-          var req;
-          beforeEach(function (done) {
-            req = {
-              // no origin or referer
-              method: 'get',
-              isBrowser: true,
-              session: {
-                userGithubOrgs: [495765, 847390, 958313],
-                userId: 847390
-              },
-              headers: {
-                host: base + ':80'
-              }
-            };
-            sinon.stub(api, '_getUrlFromRequest', function () {
-              return 'http://0.0.0.0:80';
-            });
-            sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-              // ownerGithub === 495765
-              cb(null, [naviRedisEntriesFixture.elastic]);
-            });
-            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-              cb(null, naviEntriesFixtures);
-            });
-            done();
-          });
-          afterEach(function (done) {
-            api._getUrlFromRequest.restore();
-            redis.lrange.restore();
-            mongo.fetchNaviEntry.restore();
-            done();
-          });
-
-          it('should proxy to instance mapped by current user user-mapping', function (done) {
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              expect(req.targetHost).to.equal('http://0.0.0.0:39941');
-              done();
-            });
-          });
-
-          it('should proxy to master instance if no user mapping for current user',
-          function (done) {
-            req.session.userId = 555; // no user mapping for this user exists
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              expect(req.targetHost).to.equal('http://0.0.0.0:39940');
-              done();
-            });
-          });
-
-          it('should use masterPod instance if document has no user-mappings',
-          function (done) {
-            sinon.stub(api, '_processTargetInstance', function (targetNaviEntryInstance) {
-              expect(targetNaviEntryInstance.masterPod).to.equal(true);
-              api._processTargetInstance.restore();
-              done();
-            });
-            var copy = put({}, naviEntriesFixtures);
-            delete copy.userMappings;
-            mongo.fetchNaviEntry.restore();
-            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-              cb(null, copy);
-            });
-            api.getTargetHost(req, {}, function () {});
-          });
-        });
       });
-
       describe('is not browser', function () {
         beforeEach(function (done) {
           sinon.stub(api, '_getUrlFromRequest', function () {
@@ -673,7 +717,8 @@ describe('api.js unit test', function () {
             isBrowser: true,
             session: {
               userGithubOrgs: [19495, 93722, 958321, 958313],
-              userId: 958321
+              userId: 958321,
+              save: sinon.stub.yieldsAsync()
             },
             headers: {
               host: ''
@@ -691,7 +736,8 @@ describe('api.js unit test', function () {
             isBrowser: true,
             session: {
               userGithubOrgs: [495765, 958313],
-              userId: 495765
+              userId: 495765,
+              save: sinon.stub().yieldsAsync()
             },
             headers: {
               host: base + ':80'
@@ -704,53 +750,97 @@ describe('api.js unit test', function () {
           });
         });
       });
-    });
-
-    describe('direct url incoming request', function () {
-      var base = '44444-repo-staging-codenow.runnableapp.com';
-      var req;
-      beforeEach(function (done) {
-        req = {
-          // no origin or referer
-          method: 'get',
-          isBrowser: true,
-          session: {
-            userGithubOrgs: [495765, 847390, 958313],
-            userId: 847390
+      describe('!targetNaviEntryInstance', function () {
+        var req;
+        var testInstance = {};
+        var naviEntry = {
+          toJSON: function () {},
+          elasticUrl: 'api-staging-codenow.runnableapp.com',
+          directUrls: {
+            'asdasd': {
+              dependencies: [],
+              masterPod: true
+            }
           },
-          headers: {
-            host: base + ':80'
+          userMappings: {},
+          dependencies: [],
+          ownerGithubId: 958313,
+          refererNaviEntry: {
+            toJSON: function () {},
+            elasticUrl: 'api-staging-codenow.runnableapp.com',
+            directUrls: {
+              'asdasd': {
+                dependencies: [],
+                masterPod: true
+              }
+            },
+            userMappings: {},
+            dependencies: [],
+            ownerGithubId: 958313
           }
         };
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return 'http://0.0.0.0:80';
-        });
-        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-          // ownerGithub === 495765
-          cb(null, [naviRedisEntriesFixture.direct]);
-        });
-        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-          cb(null, naviEntriesFixtures);
-        });
-        done();
-      });
-      afterEach(function (done) {
-        api._getUrlFromRequest.restore();
-        redis.lrange.restore();
-        mongo.fetchNaviEntry.restore();
-        done();
-      });
-      it('should next with error if mongo error', function (done) {
-        sinon.stub(mongo, 'setUserMapping', function (elasticUrl, userId, shortHash, cb) {
-          expect(userId).to.equal(847390);
-          mongo.setUserMapping.restore();
-          cb(new Error('mongo error'));
-        });
-        api.getTargetHost(req, {}, function (err) {
-          expect(err.message).to.equal('mongo error');
+        var base = 'api-staging-codenow.runnableapp.com';
+        beforeEach(function (done) {
+          req = {
+            method: 'get',
+            isBrowser: true,
+            session: {
+              userGithubOrgs: [495765, 847390, 958313],
+              userId: 847390,
+              save: sinon.stub().yieldsAsync(),
+              directShortHash: {
+                'api-staging-codenow.runnableapp.com': 'asdasd'
+              }
+            },
+            headers: {
+              referer: 'http://frontend-staging-codenow.runnableapp.com',
+              origin: 'http://frontend-staging-codenow.runnableapp.com',
+              host: base + ':80'
+            }
+          };
+          sinon.stub(api, '_getUrlFromRequest', function () {
+            return 'http://0.0.0.0:80';
+          });
+          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
+            // ownerGithub === 495765
+            cb(null, [naviRedisEntriesFixture.elastic]);
+          });
+          sinon.stub(api, '_processTargetInstance').yields();
+          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
+            cb(null, naviEntry);
+          });
+
+          sinon.stub(mongo.constructor, 'findMasterPodBranch').returns({
+            directUrlObj: testInstance,
+            directUrlShortHash: '111'
+          });
+          sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl').returns('222')
           done();
         });
-      });
+        afterEach(function (done) {
+          api._getUrlFromRequest.restore();
+          redis.lrange.restore();
+          mongo.fetchNaviEntry.restore();
+          api._processTargetInstance.restore();
+          mongo.constructor.findMasterPodBranch.restore();
+          mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+          done();
+        });
+
+        it('should default to masterPod instance if no associations/dns-mappings defined',
+          function (done) {
+            api.getTargetHost(req, {}, function () {
+              sinon.assert.calledWith(api._processTargetInstance,
+                sinon.match(testInstance),
+                '111',
+                'http://0.0.0.0:80',
+                sinon.match(req),
+                sinon.match.func
+              );
+              done();
+            });
+          });
+        });
     });
   });
 });

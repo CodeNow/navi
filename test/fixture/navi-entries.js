@@ -4,6 +4,18 @@
  */
 'use strict';
 
+var whitelistedNaviEntry = {
+  toJSON: function () {},
+  elasticUrl: 'whitelist-staging-codenow.runnableapp.com',
+  directUrls: {},
+  userMappings: {
+    '847390': 'f8k3v2'
+  },
+  ipWhitelist: {
+    enabled: true
+  },
+  ownerGithubId: 958313
+};
 var refererNaviEntry = {
   toJSON: function () {},
   elasticUrl: 'frontend-staging-codenow.runnableapp.com',
@@ -125,5 +137,6 @@ module.exports = {
   },
   ownerGithubId: 958313,
   // This property only set by mongo model if req has a referer
-  refererNaviEntry: refererNaviEntry
+  refererNaviEntry: refererNaviEntry,
+  whitelistedNaviEntry: whitelistedNaviEntry
 };
