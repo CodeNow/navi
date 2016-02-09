@@ -409,86 +409,102 @@ describe('functional test: proxy to instance container', function () {
         });
       });
 
-      it('should ignore non-runnable referer and proxy to user mapping or master', function (done) {
-        /**
-         * No user-mapping, should proxy to master
-         */
-        var host = 'api-staging-codenow.runnableapp.com';
-        request({
-          followRedirect: false,
-          jar: j,
-          headers: {
-            'user-agent' : chromeUserAgent,
-            host: host,
-            referer: 'http://www.google.com'
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(200);
-          expect(res.body).to.equal(testResponse+';'+host+'/');
+      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
+        var previousDisableAuthEnv;
+        beforeEach(function (done) {
+          previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
           done();
         });
-      });
-
-      it('set user-mapping and redirect to elastic', function (done) {
-        /**
-         * No user-mapping, should proxy to master
-         */
-        var host = 'f8k3v2-api-staging-codenow.runnableapp.com:8080';
-        var elasticUrl = 'api-staging-codenow.runnableapp.com';
-        request({
-          followRedirect: false,
-          jar: j,
-          headers: {
-            'user-agent' : chromeUserAgent,
-            host: host,
-            referer: 'http://www.google.com'
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(307);
-          expect(res.headers.location).to.equal('http://'+elasticUrl+':8080');
-          mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
-            expect(err).to.be.null();
-            expect(result.userMappings[userId]).to.equal('f8k3v2');
-            done();
-          });
+        afterEach(function (done) {
+          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
+          done();
         });
-      });
-
-      it('set user-mapping and redirect to elastic and proxy to mapped container', function (done) {
-        /**
-         * No user-mapping, should proxy to master
-         */
-        var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
-        var elasticUrl = 'api-staging-codenow.runnableapp.com';
-        request({
-          followRedirect: false,
-          jar: j,
-          headers: {
-            'user-agent' : chromeUserAgent,
-            host: host
-          },
-          url: 'http://localhost:'+process.env.HTTP_PORT
-        }, function (err, res) {
-          if (err) { return done(err); }
-          expect(res.statusCode).to.equal(307);
-          expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
+        it('should ignore non-runnable referer and proxy to user mapping or master', function (done) {
+          /**
+           * No user-mapping, should proxy to master
+           */
+          var host = 'api-staging-codenow.runnableapp.com';
           request({
             followRedirect: false,
             jar: j,
             headers: {
               'user-agent' : chromeUserAgent,
-              host: elasticUrl
+              host: host,
+              referer: 'http://www.google.com'
             },
             url: 'http://localhost:'+process.env.HTTP_PORT
           }, function (err, res) {
             if (err) { return done(err); }
             expect(res.statusCode).to.equal(200);
-            expect(res.body).to.equal(testResponseFeatureBranch+';'+elasticUrl+'/');
+            expect(res.body).to.equal(testResponse+';'+host+'/');
             done();
+          });
+        });
+
+        it('set user-mapping and redirect to elastic', function (done) {
+          /**
+           * No user-mapping, should proxy to master
+           */
+          var host = 'f8k3v2-api-staging-codenow.runnableapp.com:8080';
+          var elasticUrl = 'api-staging-codenow.runnableapp.com';
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              'user-agent' : chromeUserAgent,
+              host: host,
+              referer: 'http://www.google.com'
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) { return done(err); }
+            expect(res.statusCode).to.equal(307);
+            expect(res.headers.location).to.equal('http://'+elasticUrl+':8080');
+            mongo.fetchNaviEntry(elasticUrl, null, function (err, result) {
+              expect(err).to.be.null();
+              expect(result.userMappings[userId]).to.equal('f8k3v2');
+              done();
+            });
+          });
+        });
+
+        it('set user-mapping and redirect to elastic and proxy to mapped container', function (done) {
+          /**
+           * No user-mapping, should proxy to master
+           */
+          var host = 'f8k3v2-api-staging-codenow.runnableapp.com';
+          var elasticUrl = 'api-staging-codenow.runnableapp.com';
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              'user-agent': chromeUserAgent,
+              host: host
+            },
+            url: 'http://localhost:' + process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) {
+              return done(err);
+            }
+            expect(res.statusCode).to.equal(307);
+            expect(res.headers.location).to.equal('http://' + elasticUrl + ':80');
+            request({
+              followRedirect: false,
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent,
+                host: elasticUrl
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) {
+                return done(err);
+              }
+              expect(res.statusCode).to.equal(200);
+              expect(res.body).to.equal(testResponseFeatureBranch + ';' + elasticUrl + '/');
+              done();
+            });
           });
         });
       });

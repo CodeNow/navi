@@ -33,17 +33,6 @@ describe('api.js unit test', function () {
   });
 
   describe('api._isUserAuthorized', function () {
-    it('should return true if user is in whitelistedUsers list', function (done) {
-      var req = {
-        session: {
-          userId: 467885,
-          userGithubOrgs: [467885]
-        }
-      };
-      var result = api._isUserAuthorized(req, 9999);
-      expect(result).to.equal(true);
-      done();
-    });
     describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
       it('should return true no matter what', function (done) {
         var req = {
@@ -63,6 +52,17 @@ describe('api.js unit test', function () {
       });
       afterEach(function (done) {
         process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
+        done();
+      });
+      it('should return true if user is in whitelistedUsers list', function (done) {
+        var req = {
+          session: {
+            userId: 467885,
+            userGithubOrgs: [467885]
+          }
+        };
+        var result = api._isUserAuthorized(req, 9999);
+        expect(result).to.equal(true);
         done();
       });
       it('should return false if user is NOT in whitelistedUsers list', function (done) {
