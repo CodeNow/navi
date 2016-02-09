@@ -100,6 +100,20 @@ describe('functional test: proxy to instance container', function () {
         j = request.jar();
         done();
       });
+      it('should get blocked by a whitelisted instance', function (done) {
+        var host = 'whitelist-staging-codenow.runnableapp.com';
+        request({
+          followRedirect: false,
+          headers: {
+            host: host,
+            'User-Agent': chromeUserAgent
+          },
+          url: 'http://localhost:'+process.env.HTTP_PORT
+        }, function (err, res) {
+          expect(res.statusCode).to.equal(404);
+          done();
+        });
+      });
       it('should bypass auth and proxy directly to master instance', function (done) {
         var host = 'api-staging-codenow.runnableapp.com';
         request({
