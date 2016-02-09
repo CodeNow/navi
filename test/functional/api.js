@@ -173,7 +173,7 @@ describe('functional test: proxy to instance container', function () {
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
           if (err) { return done(err); }
-          expect(res.statusCode).to.equal(500);
+          expect(res.statusCode).to.equal(404);
           done();
         });
       });
