@@ -160,8 +160,8 @@ describe('lib/models/mongodb', function () {
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
               $or: [
-                { 'ipWhitelist.enabled': false },
-                { 'ipWhitelist.enabled': { $exists: false } }
+                { 'ipWhitelist': { $exists: false } },
+                { 'ipWhitelist.enabled': false }
               ]
             }, {
               elasticUrl: elasticUrl
@@ -209,8 +209,8 @@ describe('lib/models/mongodb', function () {
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
               $or: [
-                { 'ipWhitelist.enabled': false },
-                { 'ipWhitelist.enabled': { $exists: false } }
+                { 'ipWhitelist': { $exists: false } },
+                { 'ipWhitelist.enabled': false }
               ]
             }, {
               $or: [
@@ -264,8 +264,8 @@ describe('lib/models/mongodb', function () {
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
               $or: [
-                { 'ipWhitelist.enabled': false },
-                { 'ipWhitelist.enabled': { $exists: false } }
+                { 'ipWhitelist': { $exists: false } },
+                { 'ipWhitelist.enabled': false }
               ]
             }, {
               $or: [
@@ -660,7 +660,7 @@ describe('lib/models/mongodb', function () {
       var mongoResponse = [];
       mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
       function (err, naviEntry) {
-        expect(err.message).to.equal('internal server error');
+        expect(err.message).to.equal('Not Found');
         expect(naviEntry).to.be.undefined();
         sinon.assert.notCalled(mongo._cacheResults);
         done();
