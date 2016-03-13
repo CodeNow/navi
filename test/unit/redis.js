@@ -50,7 +50,7 @@ describe('redis client', function () {
     });
 
     it('should have tls options', function (done) {
-      client = require('models/redis');
+      require('models/redis');
       sinon.assert.calledWithExactly(
         fs.readFileSync,
         'foo',
