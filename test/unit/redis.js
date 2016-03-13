@@ -20,7 +20,7 @@ var redisPath = require('path').join(__dirname, '../../lib/models/redis.js');
 
 describe('redis client', function () {
   beforeEach(function (done) {
-    delete require[redisPath];
+    delete require.cache[redisPath];
     var readFileSync = fs.readFileSync;
     sinon.stub(fs, 'readFileSync', function (name, encoding) {
       if (name === 'foo') { return 'bar'; }
@@ -50,7 +50,7 @@ describe('redis client', function () {
     });
 
     it('should have tls options', function (done) {
-      require('models/redis');
+      var client = require('models/redis');
       sinon.assert.calledWithExactly(
         fs.readFileSync,
         'foo',
@@ -70,5 +70,18 @@ describe('redis client', function () {
       );
       done();
     });
+  });
+
+  it('should create a client', function (done) {
+    var client = require('models/redis');
+    sinon.assert.calledWith(
+      redis.createClient,
+      {
+        host: process.env.REDIS_IPADDRESS,
+        port: process.env.REDIS_PORT,
+        connect_timeout: 5000
+      }
+    );
+    done();
   });
 });
