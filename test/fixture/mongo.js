@@ -9,19 +9,14 @@ var put = require('101/put');
 var naviEntriesFixtures = require('./navi-entries');
 var dbSeedData = put({}, naviEntriesFixtures);
 
-var refNaviEntry = dbSeedData.refererNaviEntry;
-var whitelistedNaviEntry = dbSeedData.whitelistedNaviEntry;
-delete dbSeedData.refererNaviEntry;
-delete dbSeedData.whitelistedNaviEntry;
-
 module.exports.seed = function (done) {
   mongoClient.connect(process.env.MONGO, function (err, db) {
     if (err) { return done(err); }
-    db.collection('navientries').insertMany([
-      dbSeedData,
-      refNaviEntry,
-      whitelistedNaviEntry
-    ], function (err, res) {
+    var mySeed = [];
+    Object.keys(dbSeedData).forEach(function (key) {
+      mySeed.push(dbSeedData[key]);
+    });
+    db.collection('navientries').insertMany(mySeed, function (err) {
       if (err) { return done(err); }
       done();
     });

@@ -9,9 +9,11 @@ var expect = require('code').expect;
 var querystring = require('querystring');
 var request = require('request');
 var url = require('url');
+var callbackCount = require('callback-count');
 
 var App = require('../../lib/app.js');
 var TestServer = require('../fixture/test-server.js');
+var naviEntries = require('../fixture/navi-entries');
 var mongo = require('models/mongo');
 var fixtureMongo = require('../fixture/mongo');
 var fixtureRedis = require('../fixture/redis');
@@ -43,45 +45,32 @@ describe('functional test: proxy to instance container', function () {
     app.stop(done);
   });
 
-  // branch: 'master',
-  // e4rov2-api-staging-codenow.runnableapp.com
-  var masterServer;
-  var masterServerText = 'I am api master';
+  var serversByID
   before(function (done) {
-    masterServer = TestServer.create(39940, '0.0.0.0', masterServerText, done);
+    var count = callbackCount(done);
+    serversByID = {};
+    Object.keys(naviEntries.api.directUrls).forEach(function (id) {
+      var entry = naviEntries.api.directUrls[id];
+      serversByID[id] = TestServer.create(entry.ports['80'], '0.0.0.0', 'I am server ' + id, count.inc().next);
+    });
+    Object.keys(naviEntries.apiRedirectDisabled.directUrls).forEach(function (id) {
+      var entry = naviEntries.apiRedirectDisabled.directUrls[id];
+      serversByID[id] = TestServer.create(entry.ports['80'], '0.0.0.0', 'I am server ' + id,  count.inc().next);
+    });
   });
   after(function (done) {
-    masterServer.close(done);
+    var count = callbackCount(done);
+    Object.keys(serversByID).forEach(function (id) {
+      serversByID[id].close(count.inc().next);
+    })
   });
 
-  // branch: 'feature-branch1',
-  // f8k3v2-api-staging-codenow.runnableapp.com
-  var featureServer;
-  var featureServerText = 'I am api feature branch 1';
-  before(function (done) {
-    featureServer = TestServer.create(39941, '0.0.0.0', featureServerText, done);
-  });
-  after(function (done) {
-    featureServer.close(done);
-  });
-
-  // branch: 'feature-branch2',
-  // e4v7ve-api-staging-codenow.runnableapp.com
-  var featureServer2;
-  var featureServer2Text = 'I am api feature branch 2';
-  before(function (done) {
-    featureServer2 = TestServer.create(39942, '0.0.0.0', featureServer2Text, done);
-  });
-  after(function (done) {
-    featureServer2.close(done);
-  });
-
-
-  var directUrl = 'f8k3v2-api-staging-codenow.runnableapp.com';
-  var elasticUrl = 'api-staging-codenow.runnableapp.com';
+  var directUrl = 'f8k3v2-' + naviEntries.api.elasticUrl;
+  var elasticUrl = naviEntries.api.elasticUrl;
+  var noRedirectElasticUrl = naviEntries.apiRedirectDisabled.elasticUrl;
+  var noRedirectDirectUrl = 'rukw3w-' + naviEntries.apiRedirectDisabled.elasticUrl;
 
   var elasticSourceWithDependencyMapping = 'http://frontend-staging-codenow.runnableapp.com';
-  var elasticSouceWithoutDependencies = 'whitelist-staging-codenow.runnableapp.com';
 
   function makeRequest (url, isBrowser, referrer, cb) {
     var requestParams = {
@@ -122,7 +111,7 @@ describe('functional test: proxy to instance container', function () {
     });
     it('should Look up Connections and proxy to the Connections container', function (done) {
       expect(response.statusCode).to.equal(200);
-      expect(response.body).to.contain(featureServer2Text);
+      expect(response.body).to.contain('e4v7ve');
       done();
     })
   })
@@ -141,7 +130,7 @@ describe('functional test: proxy to instance container', function () {
     // This test fails. It's low priority though
     // it('should Proxy to the requested container', function (done) {
     //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain(featureServerText);
+    //   expect(response.body).to.contain('f8k3v2');
     //   done();
     // })
   })
@@ -160,7 +149,7 @@ describe('functional test: proxy to instance container', function () {
     // This test fails. It's low priority though
     // it('should Look up Connections and proxy to the Connections container', function (done) {
     //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain(featureServer2Text);
+    //   expect(response.body).to.contain('f8k3v2');
     //   done();
     // })
   })
@@ -179,14 +168,14 @@ describe('functional test: proxy to instance container', function () {
     // This test fails. It's low priority though
     // it('should Proxy to the requested container', function (done) {
     //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain(featureServerText);
+    //   expect(response.body).to.contain('f8k3v2');
     //   done();
     // })
   })
   describe('Url:Elastic, IsBrowser:True, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(elasticUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectElasticUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -196,14 +185,14 @@ describe('functional test: proxy to instance container', function () {
     })
     it('should Look up Connections and proxy to the Connections container', function (done) {
       expect(response.statusCode).to.equal(200);
-      expect(response.body).to.contain(featureServer2Text);
+      expect(response.body).to.contain('r4v7ve');
       done();
     })
   })
   describe('Url:Direct, IsBrowser:True, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(directUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectDirectUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -211,12 +200,16 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to the requested container');
+    it('should Proxy to the requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('rukw3w');
+      done();
+    });
   })
   describe('Url:Elastic, IsBrowser:False, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(elasticUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectElasticUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -224,12 +217,16 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Look up Connections and proxy to the Connections container');
+    it('should Look up Connections and proxy to the Connections container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('r4v7ve');
+      done();
+    });
   })
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(directUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectDirectUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -237,7 +234,11 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to the requested container');
+    it('should Proxy to the requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('rukw3w');
+      done();
+    });
   })
   describe('Url:Elastic, IsBrowser:True, RedirectEnabled:True, Referrer:False', function () {
     var response;
@@ -252,7 +253,7 @@ describe('functional test: proxy to instance container', function () {
     })
     it('should Look up user mappings and proxy to the mapped container', function (done) {
       expect(response.statusCode).to.equal(200);
-      expect(response.body).to.contain(masterServerText);
+      expect(response.body).to.contain('e4rov2');
       done();
     })
   })
@@ -285,7 +286,7 @@ describe('functional test: proxy to instance container', function () {
     })
     it('should Proxy to master branch container', function (done) {
       expect(response.statusCode).to.equal(200);
-      expect(response.body).to.contain(masterServerText);
+      expect(response.body).to.contain('e4rov2');
       done();
     })
   })
@@ -302,14 +303,14 @@ describe('functional test: proxy to instance container', function () {
     })
     it('should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
-      expect(response.body).to.contain(featureServerText);
+      expect(response.body).to.contain('f8k3v2');
       done();
     })
   })
   describe('Url:Elastic, IsBrowser:True, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(elasticUrl, true, null, function (err, res) {
+      makeRequest(noRedirectElasticUrl, true, null, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -317,12 +318,16 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to master branch container');
+    it('should Proxy to master branch container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('r4rov2');
+      done();
+    });
   })
   describe('Url:Direct, IsBrowser:True, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(directUrl, true, null, function (err, res) {
+      makeRequest(noRedirectDirectUrl, true, null, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -330,12 +335,16 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to requested container')
+    it('should Proxy to requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('rukw3w');
+      done();
+    });
   })
   describe('Url:Elastic, IsBrowser:False, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(elasticUrl, true, null, function (err, res) {
+      makeRequest(noRedirectElasticUrl, true, null, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -343,12 +352,16 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to master branch container')
+    it('should Proxy to master branch container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('r4rov2');
+      done();
+    });
   })
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(directUrl, true, null, function (err, res) {
+      makeRequest(noRedirectDirectUrl, true, null, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -356,6 +369,10 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to requested container')
+    it('should Proxy to requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('rukw3w');
+      done();
+    });
   })
 });

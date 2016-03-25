@@ -5,7 +5,6 @@
 'use strict';
 
 var whitelistedNaviEntry = {
-  toJSON: function () {},
   elasticUrl: 'whitelist-staging-codenow.runnableapp.com',
   directUrls: {},
   userMappings: {
@@ -17,7 +16,7 @@ var whitelistedNaviEntry = {
   ownerGithubId: 958313
 };
 var refererNaviEntry = {
-  toJSON: function () {},
+  redirectEnabled: true,
   elasticUrl: 'frontend-staging-codenow.runnableapp.com',
   directUrls: {
     'aaaaa1': {
@@ -32,6 +31,9 @@ var refererNaviEntry = {
       dependencies: [{
         elasticUrl: 'api-staging-codenow.runnableapp.com',
         shortHash: 'e4v7ve'
+      }, {
+        elasticUrl: 'no-redirect-api-staging-codenow.runnableapp.com',
+        shortHash: 'r4v7ve'
       }]
     },
     'bbbbb2': {
@@ -72,8 +74,8 @@ var refererNaviEntry = {
       },
       running: false,
       dependencies: [{
-        elasticUrl: 'api-staging-codenow.runnableapp.com',
-        shortHash: 'f8k3v2'
+        elasticUrl: 'no-redirect-api-staging-codenow.runnableapp.com',
+        shortHash: 'rukw3w'
       }]
     },
   },
@@ -83,8 +85,7 @@ var refererNaviEntry = {
   ownerGithubId: 958313
 };
 
-module.exports = {
-  toJSON: function () {},
+var api = {
   elasticUrl: 'api-staging-codenow.runnableapp.com',
   directUrls: {
     'e4rov2': {
@@ -135,8 +136,70 @@ module.exports = {
   userMappings: {
     '847390': 'f8k3v2'
   },
-  ownerGithubId: 958313,
+  ownerGithubId: 958313
+};
+
+
+var apiRedirectDisabled = {
+  redirectEnabled: false,
+  elasticUrl: 'no-redirect-api-staging-codenow.runnableapp.com',
+  directUrls: {
+    'r4rov2': {
+      branch: 'no-redirect-master',
+      masterPod: true,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39960,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: []
+    },
+    'r8k3v2': {
+      branch: 'no-redirect-feature-branch1',
+      masterPod: false,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39961,
+        '8080': 23423
+      },
+      running: true,
+      dependencies: []
+    },
+    'r4v7ve': {
+      branch: 'no-redirect-feature-branch2',
+      masterPod: false,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39962,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: []
+    },
+    'rukw3w': {
+      branch: 'no-redirect-feature-branch3',
+      masterPod: false,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39963,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: []
+    },
+  },
+  userMappings: {
+    '847390': 'r8k3v2'
+  },
+  ownerGithubId: 958313
+};
+
+
+module.exports = {
   // This property only set by mongo model if req has a referer
   refererNaviEntry: refererNaviEntry,
-  whitelistedNaviEntry: whitelistedNaviEntry
+  whitelistedNaviEntry: whitelistedNaviEntry,
+  api: api,
+  apiRedirectDisabled: apiRedirectDisabled
 };
