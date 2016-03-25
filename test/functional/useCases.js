@@ -156,7 +156,7 @@ describe('functional test: proxy to instance container', function () {
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:True, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(directUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(directUrl, false, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -209,7 +209,7 @@ describe('functional test: proxy to instance container', function () {
   describe('Url:Elastic, IsBrowser:False, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(noRedirectElasticUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectElasticUrl, false, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -226,7 +226,7 @@ describe('functional test: proxy to instance container', function () {
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(noRedirectDirectUrl, true, elasticSourceWithDependencyMapping, function (err, res) {
+      makeRequest(noRedirectDirectUrl, false, elasticSourceWithDependencyMapping, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -344,7 +344,7 @@ describe('functional test: proxy to instance container', function () {
   describe('Url:Elastic, IsBrowser:False, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(noRedirectElasticUrl, true, null, function (err, res) {
+      makeRequest(noRedirectElasticUrl, false, null, function (err, res) {
         if (err) {
           return done(err)
         }
@@ -361,7 +361,7 @@ describe('functional test: proxy to instance container', function () {
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:False, Referrer:False', function () {
     var response;
     beforeEach(function (done) {
-      makeRequest(noRedirectDirectUrl, true, null, function (err, res) {
+      makeRequest(noRedirectDirectUrl, false, null, function (err, res) {
         if (err) {
           return done(err)
         }
