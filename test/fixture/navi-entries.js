@@ -86,6 +86,7 @@ var refererNaviEntry = {
 };
 
 var api = {
+  redirectEnabled: true,
   elasticUrl: 'api-staging-codenow.runnableapp.com',
   directUrls: {
     'e4rov2': {
