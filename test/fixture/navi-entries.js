@@ -25,7 +25,7 @@ var refererNaviEntry = {
       masterPod: true,
       dockerHost: '0.0.0.0',
       ports: {
-        '80': 39940,
+        '80': 39944,
         '8080': 23453
       },
       running: true,
@@ -39,7 +39,7 @@ var refererNaviEntry = {
       masterPod: false,
       dockerHost: '0.0.0.1',
       ports: {
-        '80': 39941,
+        '80': 39945,
         '8080': 23423
       },
       running: true,
@@ -53,7 +53,7 @@ var refererNaviEntry = {
       masterPod: false,
       dockerHost: '0.0.0.2',
       ports: {
-        '80': 39942,
+        '80': 39946,
         '8080': 23453
       },
       running: true,
@@ -67,7 +67,7 @@ var refererNaviEntry = {
       masterPod: false,
       dockerHost: '0.0.0.3',
       ports: {
-        '80': 39943,
+        '80': 39947,
         '8080': 23453
       },
       running: false,
@@ -112,7 +112,7 @@ module.exports = {
     'e4v7ve': {
       branch: 'feature-branch2',
       masterPod: false,
-      dockerHost: '0.0.0.2',
+      dockerHost: '0.0.0.0',
       ports: {
         '80': 39942,
         '8080': 23453
@@ -123,7 +123,7 @@ module.exports = {
     'fukw3w': {
       branch: 'feature-branch3',
       masterPod: false,
-      dockerHost: '0.0.0.3',
+      dockerHost: '0.0.0.0',
       ports: {
         '80': 39943,
         '8080': 23453

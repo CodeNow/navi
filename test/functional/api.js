@@ -258,9 +258,9 @@ describe('functional test: proxy to instance container', function () {
               return done(err);
             }
             expect(res.body).to.equal(
-              'ididerror;localhost:51234/?runnableappAccessToken=doesnotexist?type=signin&' +
+              'ididerror;localhost:3009/?runnableappAccessToken=doesnotexist?type=signin&' +
               'redirectUrl=http%3A%2F%2Fapi.runnable.io%2Fauth%2Fgithub%3FrequiresToken%3Dyes%26' +
-              'redirect%3Dhttp%3A%2F%2Flocalhost%3A51234');
+              'redirect%3Dhttp%3A%2F%2Flocalhost%3A3009');
             expect(res.statusCode).to.equal(200);
             expect(res.headers.location).to.be.undefined();
             done();

@@ -31,6 +31,11 @@ module.exports.seed = function (done) {
 module.exports.clean = function (done) {
   mongoClient.connect(process.env.MONGO, function (err, db) {
     if (err) { return done(err); }
-    db.collection('navientries').drop(done);
+    db.collection('navientries').drop(function (err) {
+      if (err && err.message !== 'ns not found') {
+        return done(err)
+      }
+      done()
+    });
   });
 };
