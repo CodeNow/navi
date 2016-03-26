@@ -366,481 +366,135 @@ describe('api.js unit test', function () {
         sinon.assert.calledWith(errorPage.generateErrorUrl, 'dock_removed', {
           elasticUrl: reqUrl,
           shortHash: '55555'
-        })
+        });
         done();
       });
     });
   });
 
   describe('api.getTargetHost', function () {
-    describe('redis error', function () {
-      beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return '';
-        });
-        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-          cb(new Error('redis error'));
-        });
-        done();
-      });
-      afterEach(function (done) {
-        api._getUrlFromRequest.restore();
-        redis.lrange.restore();
-        done();
-      });
-      it('should next error', function (done) {
-        var req = {
-          headers: {}
-        };
-        api.getTargetHost(req, {}, function (err) {
-          expect(err.message).to.equal('redis error');
-          done();
-        });
-      });
-    });
-
-    describe('redis url entry parse error', function () {
-      beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return '';
-        });
-        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-          cb(null, ['not valid JSON string']);
-        });
-        done();
-      });
-      afterEach(function (done) {
-        api._getUrlFromRequest.restore();
-        redis.lrange.restore();
-        done();
-      });
-      it('should next error', function (done) {
-        var req = {
-          headers: {}
-        };
-        api.getTargetHost(req, {}, function (err) {
-          expect(err).to.be.an.instanceOf(SyntaxError);
-          done();
-        });
-      });
-    });
-
     describe('target owner not member of authenticated users orgs', function () {
       var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
-        sinon.stub(api, '_getUrlFromRequest', function () {
-          return 'http://' + base + ':80';
-        });
-        sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-          // ownerGithub === 495765
-          cb(null, [naviRedisEntriesFixture.elastic]);
-        });
-        sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-          cb(null, naviEntriesFixtures);
-        });
+        sinon.stub(api, '_getUrlFromRequest');
+        sinon.stub(api, '_shouldBypassAuth');
+        sinon.stub(api, '_isUserAuthorized');
+        sinon.stub(api, '_getTargetHostElastic');
+        sinon.stub(api, '_processTargetInstance');
         done();
       });
+
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
-        redis.lrange.restore();
-        mongo.fetchNaviEntry.restore();
+        api._shouldBypassAuth.restore();
+        api._isUserAuthorized.restore();
+        api._getTargetHostElastic.restore();
+        api._processTargetInstance.restore();
         done();
       });
-      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
-        it('should next and not care about the auth', function (done) {
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [19495, 93722, 958321],
-              userId: 19495
-            },
-            headers: {
-              origin: 'http://frontend-staging-codenow.runnableapp.com',
-              host: base + ':80'
-            }
-          };
-          api.getTargetHost(req, {}, function (err) {
-            expect(err).to.be.undefined();
-            // feature-branch1 of API
-            expect(req.targetHost).to.equal('http://0.0.0.2:39942');
-            done();
-          });
-        });
-      });
-      describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
-        var previousDisableAuthEnv;
-        beforeEach(function (done) {
-          previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
-          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
-          done();
-        });
-        afterEach(function (done) {
-          process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
-          done();
-        });
-        it('should next an error object', function (done) {
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [19495, 93722, 958321],
-              userId: 19495
-            },
-            headers: {
-              origin: 'http://frontend-staging-codenow.runnableapp.com',
-              host: base + ':80'
-            }
-          };
-          api.getTargetHost(req, {}, function (err) {
-            expect(err.isBoom).to.equal(true);
-            expect(err.output.payload.statusCode).to.equal(404);
-            done();
-          });
-        });
-      });
-    });
 
-    describe('elastic url incoming request', function () {
-      describe('mongo fetchNaviEntry error', function () {
-        beforeEach(function (done) {
-          sinon.stub(api, '_getUrlFromRequest', function () {
-            return '';
-          });
-          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-            // ownerGithub === 495765
-            cb(null, [naviRedisEntriesFixture.elastic]);
-          });
-          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-            cb(new Error('mongo error'));
-          });
-          done();
-        });
-        afterEach(function (done) {
-          api._getUrlFromRequest.restore();
-          redis.lrange.restore();
-          mongo.fetchNaviEntry.restore();
-          done();
-        });
-        it('should next error', function (done) {
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [495765, 958313],
-              userId: 958313
-            },
-            headers: {}
-          };
-          api.getTargetHost(req, {}, function (err) {
-            expect(err.message).to.equal('mongo error');
-            done();
-          });
-        });
-      });
-
-      describe('is browser', function () {
-        describe('referer', function () {
-          var base = 'api-staging-codenow.runnableapp.com';
-          var req;
-
-          beforeEach(function (done) {
-            req = {
-              method: 'get',
-              isBrowser: true,
-              session: {
-                userGithubOrgs: [495765, 847390, 958313],
-                userId: 847390,
-                save: sinon.stub().yieldsAsync()
-              },
-              headers: {
-                origin: 'http://frontend-staging-codenow.runnableapp.com',
-                host: base + ':80'
-              }
-            };
-            sinon.stub(api, '_getUrlFromRequest', function () {
-              return 'http://' + base + ':80';
-            });
-            sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-              // ownerGithub === 495765
-              cb(null, [naviRedisEntriesFixture.elastic]);
-            });
-            sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-              cb(null, naviEntriesFixtures);
-            });
-
-            sinon.stub(api, '_processTargetInstance').yields();
-            sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl').returns(null);
-
-            done();
-          });
-
-          afterEach(function (done) {
-            api._getUrlFromRequest.restore();
-            redis.lrange.restore();
-            mongo.fetchNaviEntry.restore();
-            if (mongo.constructor.findMasterPodBranch.restore) {
-              mongo.constructor.findMasterPodBranch.restore();
-            }
-            if (api._processTargetInstance.restore) {
-              api._processTargetInstance.restore();
-            }
-            if (mongo.constructor.findAssociationShortHashByElasticUrl.restore) {
-              mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-            }
-            done();
-          });
-
-          it('should should ignore referer if same as requestUrl', function (done) {
-            api._processTargetInstance.restore();
-            mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-            req.headers.origin = 'http://'+base;
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              // master branch of API
-              expect(req.targetHost).to.equal('http://0.0.0.0:39940');
-              done();
-            });
-          });
-
-          it('should handle navientires document with no user-mappings', function (done) {
-            api._processTargetInstance.restore();
-            mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-
-            var restore = put({}, naviEntriesFixtures.refererNaviEntry);
-            delete naviEntriesFixtures.refererNaviEntry.userMappings;
-
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              expect(req.targetHost).to.equal('http://0.0.0.2:39942');
-              naviEntriesFixtures.refererNaviEntry = restore;
-              done();
-            });
-          });
-
-          it('should next with error if navientries document with no user-mappings and no '+
-             'masterpod', function (done) {
-
-            api._processTargetInstance.restore();
-            mongo.constructor.findAssociationShortHashByElasticUrl.restore();
-
-            var restore = put({}, naviEntriesFixtures.refererNaviEntry);
-            delete naviEntriesFixtures.refererNaviEntry.userMappings;
-            naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = false;
-
-            api.getTargetHost(req, {}, function (err) {
-              expect(err.message).to.equal('Not Found');
-              naviEntriesFixtures.refererNaviEntry.userMappings = restore;
-              naviEntriesFixtures.refererNaviEntry.directUrls.aaaaa1.masterPod = true;
-
-              naviEntriesFixtures.refererNaviEntry = restore;
-
-              done();
-            });
-          });
-
-          it('should default to masterPod if !instanceShortHash', function (done) {
-            var mockNaviEntry = {};
-
-            sinon.stub(mongo.constructor, 'findMasterPodBranch').returns({
-              directUrlObj: mockNaviEntry,
-              directUrlShortHash: 'FFFF'
-            });
-
-            api.getTargetHost(req, {}, function (err) {
-              expect(err).to.be.undefined();
-              sinon.assert.calledWith(api._processTargetInstance, mockNaviEntry);
-              expect(mongo.constructor.findAssociationShortHashByElasticUrl.callCount).to.equal(1);
-              mongo.constructor.findMasterPodBranch.restore();
-              done();
-            });
-          });
-
-          it('should default to masterPod instance if no associations/dns-mappings defined',
-            function (done) {
-
-            sinon.stub(mongo.constructor, 'findMasterPodBranch');
-            mongo.constructor.findMasterPodBranch.returns({
-              directUrlObj: {
-                masterPod: true
-              }
-            });
-
-            api.getTargetHost(req, {}, function () {
-              sinon.assert.calledWith(api._processTargetInstance, sinon.match({
-                masterPod: true
-              }));
-              sinon.assert.calledWith(api._processTargetInstance)
-              mongo.constructor.findMasterPodBranch.restore();
-              done();
-            });
-          });
-        });
-      });
-      describe('is not browser', function () {
-        beforeEach(function (done) {
-          sinon.stub(api, '_getUrlFromRequest', function () {
-            return 'http://0.0.0.0:80';
-          });
-          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-            // ownerGithub === 495765
-            cb(null, [naviRedisEntriesFixture.elastic]);
-          });
-          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-            cb(null, naviEntriesFixtures);
-          });
-          done();
-        });
-        afterEach(function (done) {
-          api._getUrlFromRequest.restore();
-          redis.lrange.restore();
-          mongo.fetchNaviEntry.restore();
-          done();
-        });
-
-        /*
-         * Currently, hipache only forwards requests to navi if the requests are to valid containers
-         * on actually exposed ports. These tests will have to be implemented if we decide to remove
-         * hipache in the future and have Navi handle proxying to custom error pages.
-        it('should proxy to error page if target does not exist', function (done) {
-          done();
-        });
-        it('should proxy to error page if port is not exposed by target', function (done) {
-          done();
-        });
-        */
-
-        it('should proxy to error page if target does not belong to users github orgs',
-        function (done) {
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [19495, 93722, 958321, 958313],
-              userId: 958321,
-              save: sinon.stub.yieldsAsync()
-            },
-            headers: {
-              host: ''
-            }
-          };
-          api.getTargetHost(req, {}, function () {
-            done();
-          });
-        });
-
-        it('should proxy to master instance', function (done) {
-          var base = 'repo-staging-codenow.runnableapp.com';
-          var req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [495765, 958313],
-              userId: 495765,
-              save: sinon.stub().yieldsAsync()
-            },
-            headers: {
-              host: base + ':80'
-            }
-          };
-          api.getTargetHost(req, {}, function (err) {
-            expect(err).to.be.undefined();
-            expect(req.targetHost).to.equal('http://0.0.0.0:39940'); // host and port of master
-            done();
-          });
-        });
-      });
-      describe('!targetNaviEntryInstance', function () {
-        var req;
-        var testInstance = {};
-        var naviEntry = {
-          toJSON: function () {},
-          elasticUrl: 'api-staging-codenow.runnableapp.com',
-          directUrls: {
-            'asdasd': {
-              dependencies: [],
-              masterPod: true
-            }
+      it('should next 404 error', function (done) {
+        var req = {
+          method: 'get',
+          isBrowser: true,
+          session: {
+            userGithubOrgs: [19495, 93722, 958321],
+            userId: 19495
           },
-          userMappings: {},
-          dependencies: [],
-          ownerGithubId: 958313,
-          refererNaviEntry: {
-            toJSON: function () {},
-            elasticUrl: 'api-staging-codenow.runnableapp.com',
-            directUrls: {
-              'asdasd': {
-                dependencies: [],
-                masterPod: true
-              }
-            },
-            userMappings: {},
-            dependencies: [],
-            ownerGithubId: 958313
-          }
+          headers: {
+            origin: 'http://frontend-staging-codenow.runnableapp.com',
+            host: base + ':80'
+          },
+          hipacheEntry: naviRedisEntriesFixture.elastic,
+          naviEntry: naviEntriesFixtures.refererNaviEntry
         };
-        var base = 'api-staging-codenow.runnableapp.com';
-        beforeEach(function (done) {
-          req = {
-            method: 'get',
-            isBrowser: true,
-            session: {
-              userGithubOrgs: [495765, 847390, 958313],
-              userId: 847390,
-              save: sinon.stub().yieldsAsync(),
-              directShortHash: {
-                'api-staging-codenow.runnableapp.com': 'asdasd'
-              }
-            },
-            headers: {
-              referer: 'http://frontend-staging-codenow.runnableapp.com',
-              origin: 'http://frontend-staging-codenow.runnableapp.com',
-              host: base + ':80'
-            }
-          };
-          sinon.stub(api, '_getUrlFromRequest', function () {
-            return 'http://0.0.0.0:80';
-          });
-          sinon.stub(redis, 'lrange', function (key, i, n, cb) {
-            // ownerGithub === 495765
-            cb(null, [naviRedisEntriesFixture.elastic]);
-          });
-          sinon.stub(api, '_processTargetInstance').yields();
-          sinon.stub(mongo, 'fetchNaviEntry', function (reqUrl, refererUrl, cb) {
-            cb(null, naviEntry);
-          });
-
-          sinon.stub(mongo.constructor, 'findMasterPodBranch').returns({
-            directUrlObj: testInstance,
-            directUrlShortHash: '111'
-          });
-          sinon.stub(mongo.constructor, 'findAssociationShortHashByElasticUrl').returns('222')
+        api._getUrlFromRequest.returns('http://' + base + ':80');
+        api._shouldBypassAuth.returns(false);
+        api._isUserAuthorized.returns(false);
+        api.getTargetHost(req, {}, function (err) {
+          expect(err.output.statusCode).to.equal(404);
           done();
         });
-        afterEach(function (done) {
-          api._getUrlFromRequest.restore();
-          redis.lrange.restore();
-          mongo.fetchNaviEntry.restore();
-          api._processTargetInstance.restore();
-          mongo.constructor.findMasterPodBranch.restore();
-          mongo.constructor.findAssociationShortHashByElasticUrl.restore();
+      });
+
+      it('should call _getTargetHostElastic if elastic', function (done) {
+        var req = {
+          method: 'get',
+          isBrowser: true,
+          session: {
+            userGithubOrgs: [19495, 93722, 958321],
+            userId: 19495
+          },
+          headers: {
+            origin: 'http://frontend-staging-codenow.runnableapp.com',
+            host: base + ':80'
+          },
+          hipacheEntry: JSON.parse(naviRedisEntriesFixture.elastic),
+          naviEntry: naviEntriesFixtures.refererNaviEntry
+        };
+        api._getUrlFromRequest.returns('http://' + base + ':80');
+        api._shouldBypassAuth.returns(true);
+        api._isUserAuthorized.returns(true);
+        api._getTargetHostElastic.yieldsAsync();
+        api.getTargetHost(req, {}, function (err) {
+          if (err) { return done(err); }
+          sinon.assert.calledOnce(api._getTargetHostElastic);
           done();
         });
+      });
 
-        it('should default to masterPod instance if no associations/dns-mappings defined',
-          function (done) {
-            api.getTargetHost(req, {}, function () {
-              sinon.assert.calledWith(api._processTargetInstance,
-                sinon.match(testInstance),
-                '111',
-                'http://0.0.0.0:80',
-                sinon.match(req),
-                sinon.match.func
-              );
-              done();
-            });
-          });
+      it('should call _processTargetInstance if direct and not isBrowser', function (done) {
+        var req = {
+          method: 'get',
+          isBrowser: false,
+          session: {
+            userGithubOrgs: [19495, 93722, 958321],
+            userId: 19495
+          },
+          headers: {
+            origin: 'http://frontend-staging-codenow.runnableapp.com',
+            host: base + ':80'
+          },
+          hipacheEntry: naviRedisEntriesFixture.direct,
+          naviEntry: naviEntriesFixtures.refererNaviEntry
+        };
+        api._getUrlFromRequest.returns('http://' + base + ':80');
+        api._shouldBypassAuth.returns(true);
+        api._isUserAuthorized.returns(true);
+        api._processTargetInstance.yieldsAsync();
+        api.getTargetHost(req, {}, function (err) {
+          if (err) { return done(err); }
+          sinon.assert.calledOnce(api._processTargetInstance);
+          done();
         });
+      });
+
+      it('should save session', function (done) {
+        var req = {
+          method: 'get',
+          isBrowser: true ,
+          session: {
+            userGithubOrgs: [19495, 93722, 958321],
+            userId: 19495,
+            save: sinon.stub().yieldsAsync(),
+          },
+          headers: {
+            origin: 'http://frontend-staging-codenow.runnableapp.com',
+            host: base + ':80'
+          },
+          hipacheEntry: naviRedisEntriesFixture.direct,
+          naviEntry: naviEntriesFixtures.refererNaviEntry
+        };
+        api._getUrlFromRequest.returns('http://' + base + ':80');
+        api._shouldBypassAuth.returns(true);
+        api._isUserAuthorized.returns(true);
+
+        api.getTargetHost(req, {}, function (err) {
+          if (err) { return done(err); }
+          sinon.assert.calledOnce(req.session.save);
+          done();
+        });
+      });
     });
   });
 });
