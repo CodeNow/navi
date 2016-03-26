@@ -12,6 +12,7 @@ var sinon = require('sinon');
 var Server = require('models/server');
 var api = require('models/api');
 var redis = require('models/redis');
+var dataFetch = require('middlewares/data-fetch');
 
 var lab = exports.lab = Lab.script();
 
@@ -68,11 +69,13 @@ describe('server.js unit test', function () {
     var _handleUserWsRequest;
     beforeEach(function (done) {
       sinon.stub(proxyServer.session, 'handle');
+      sinon.stub(dataFetch, 'mw').yieldsAsync();
       _handleUserWsRequest = proxyServer._handleUserWsRequest();
       done();
     });
     afterEach(function (done) {
       proxyServer.session.handle.restore();
+      dataFetch.mw.restore();
       done();
     });
     describe('domain', function() {
@@ -131,6 +134,15 @@ describe('server.js unit test', function () {
           it('should destroy socket no target', function (done) {
             _handleUserWsRequest({}, {
               destroy: done
+            }, {});
+          });
+
+          it('should call dataFetch', function (done) {
+            _handleUserWsRequest({}, {
+              destroy: function () {
+                sinon.assert.calledOnce(dataFetch.mw);
+                done();
+              }
             }, {});
           });
         });
