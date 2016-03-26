@@ -189,6 +189,7 @@ describe('functional test: proxy to instance container', function () {
       done();
     })
   })
+
   describe('Url:Direct, IsBrowser:True, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
