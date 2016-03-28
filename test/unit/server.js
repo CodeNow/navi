@@ -69,13 +69,13 @@ describe('server.js unit test', function () {
     var _handleUserWsRequest;
     beforeEach(function (done) {
       sinon.stub(proxyServer.session, 'handle');
-      sinon.stub(dataFetch, 'mw').yieldsAsync();
+      sinon.stub(dataFetch, 'middleware').yieldsAsync();
       _handleUserWsRequest = proxyServer._handleUserWsRequest();
       done();
     });
     afterEach(function (done) {
       proxyServer.session.handle.restore();
-      dataFetch.mw.restore();
+      dataFetch.middleware.restore();
       done();
     });
     describe('domain', function() {
@@ -114,7 +114,7 @@ describe('server.js unit test', function () {
         it('should call dataFetch', function (done) {
           _handleUserWsRequest({}, {
             destroy: function () {
-              sinon.assert.calledOnce(dataFetch.mw);
+              sinon.assert.calledOnce(dataFetch.middleware);
               done();
             }
           }, {});

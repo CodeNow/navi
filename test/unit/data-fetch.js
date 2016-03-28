@@ -39,7 +39,7 @@ describe('data-fetch.js unit test', function() {
       };
       var testErr = new Error('test');
       redis.lrange.yieldsAsync(testErr);
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         expect(err).to.equal(testErr);
         done();
       });
@@ -50,7 +50,7 @@ describe('data-fetch.js unit test', function() {
         headers: {}
       };
       redis.lrange.yieldsAsync(null, ['not parseable']);
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         expect(err).to.be.instanceOf(Error);
         done();
       });
@@ -62,7 +62,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(redis.lrange);
         sinon.assert.calledWith(redis.lrange, 'frontend:4242.xyz-localhost', 0, 1);
@@ -77,7 +77,7 @@ describe('data-fetch.js unit test', function() {
       var testEntry = { test: true };
       redis.lrange.yieldsAsync(null, [JSON.stringify(testEntry)]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.hipacheEntry).to.deep.equal(testEntry);
         done();
@@ -91,7 +91,7 @@ describe('data-fetch.js unit test', function() {
       var testErr = new Error('test');
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync(testErr);
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         expect(err).to.equal(testErr);
         done();
       });
@@ -103,7 +103,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', undefined);
@@ -119,7 +119,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', 'otherhost');
@@ -135,7 +135,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', 'otherhost');
@@ -151,7 +151,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', undefined);
@@ -167,7 +167,7 @@ describe('data-fetch.js unit test', function() {
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({direct: true})]);
       mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'localhost', 'otherhost');
@@ -184,7 +184,7 @@ describe('data-fetch.js unit test', function() {
       var testEntry = { test: 'entry' };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync(null, testEntry);
-      dataFetch.mw(testReq, {}, function (err) {
+      dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.naviEntry).to.deep.equal(testEntry);
         done();
