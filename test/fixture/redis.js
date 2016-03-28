@@ -13,44 +13,32 @@ var seedData = naviRedisEntriesFixtures.elastic;
 
 module.exports.seed = function (done) {
   var count = callbackCount(done);
-  redis.rpush('frontend:80.api-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  redis.rpush('frontend:8080.api-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  redis.rpush('frontend:80.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  redis.rpush('frontend:8080.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  Object.keys(naviEntriesFixtures.directUrls).forEach(function (shortHash) {
-    redis.rpush(
-      'frontend:80.'+shortHash+'-api-staging-codenow.runnableapp.com',
-      naviRedisEntriesFixtures.direct, count.inc().next);
-    redis.rpush(
-      'frontend:8080.'+shortHash+'-api-staging-codenow.runnableapp.com',
-      naviRedisEntriesFixtures.direct, count.inc().next);
-  });
-  Object.keys(naviEntriesFixtures.refererNaviEntry.directUrls).forEach(function (shortHash) {
-    redis.rpush(
-      'frontend:80.'+shortHash+'-frontend-staging-codenow.runnableapp.com',
-      naviRedisEntriesFixtures.direct, count.inc().next);
-    redis.rpush(
-      'frontend:8080.'+shortHash+'-frontend-staging-codenow.runnableapp.com',
-      naviRedisEntriesFixtures.direct, count.inc().next);
+  Object.keys(naviEntriesFixtures).forEach(function (key) {
+    var entry = naviEntriesFixtures[key];
+    redis.rpush('frontend:80.' + entry.elasticUrl, seedData, count.inc().next);
+    redis.rpush('frontend:8080.' + entry.elasticUrl, seedData, count.inc().next);
+    Object.keys(entry.directUrls).forEach(function (shortHash) {
+      redis.rpush(
+        'frontend:80.' + shortHash + '-' + entry.elasticUrl,
+        naviRedisEntriesFixtures.direct, count.inc().next);
+      redis.rpush(
+        'frontend:8080.' + shortHash + '-' + entry.elasticUrl,
+        naviRedisEntriesFixtures.direct, count.inc().next);
+    });
   });
 };
 
 module.exports.clean = function (done) {
   var count = callbackCount(done);
-  redis.del('frontend:80.api-staging-codenow.runnableapp.com', count.inc().next);
-  redis.del('frontend:8080.api-staging-codenow.runnableapp.com', count.inc().next);
-  redis.del('frontend:80.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  redis.del('frontend:8080.whitelist-staging-codenow.runnableapp.com', seedData, count.inc().next);
-  Object.keys(naviEntriesFixtures.directUrls).forEach(function (shortHash) {
-    redis.del(
-      'frontend:80.'+shortHash+'-api-staging-codenow.runnableapp.com', count.inc().next);
-    redis.del(
-      'frontend:8080.'+shortHash+'-api-staging-codenow.runnableapp.com', count.inc().next);
-  });
-  Object.keys(naviEntriesFixtures.refererNaviEntry.directUrls).forEach(function (shortHash) {
-    redis.del(
-      'frontend:80.'+shortHash+'-frontend-staging-codenow.runnableapp.com', count.inc().next);
-    redis.del(
-      'frontend:8080.'+shortHash+'-frontend-staging-codenow.runnableapp.com', count.inc().next);
+  Object.keys(naviEntriesFixtures).forEach(function (key) {
+    var entry = naviEntriesFixtures[key];
+    redis.del('frontend:80.' + entry.elastic, count.inc().next);
+    redis.del('frontend:8080.' + entry.elastic, count.inc().next);
+    Object.keys(entry.directUrls).forEach(function (shortHash) {
+      redis.del(
+        'frontend:80.' + shortHash + '-' + entry.elasticUrl, count.inc().next);
+      redis.del(
+        'frontend:8080.' + shortHash + '-' + entry.elasticUrl, count.inc().next);
+    });
   });
 };

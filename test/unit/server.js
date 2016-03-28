@@ -12,6 +12,7 @@ var sinon = require('sinon');
 var Server = require('models/server');
 var api = require('models/api');
 var redis = require('models/redis');
+var dataFetch = require('middlewares/data-fetch');
 
 var lab = exports.lab = Lab.script();
 
@@ -68,11 +69,13 @@ describe('server.js unit test', function () {
     var _handleUserWsRequest;
     beforeEach(function (done) {
       sinon.stub(proxyServer.session, 'handle');
+      sinon.stub(dataFetch, 'middleware').yieldsAsync();
       _handleUserWsRequest = proxyServer._handleUserWsRequest();
       done();
     });
     afterEach(function (done) {
       proxyServer.session.handle.restore();
+      dataFetch.middleware.restore();
       done();
     });
     describe('domain', function() {
@@ -90,82 +93,64 @@ describe('server.js unit test', function () {
           cb();
         });
         done();
+        sinon.stub(api, 'getTargetHost');
       });
       afterEach(function (done) {
+        api.getTargetHost.restore();
         done();
       });
-      describe('not logged in', function() {
+
+      describe('found no target', function() {
         beforeEach(function(done) {
-          sinon.stub(api, 'checkIfLoggedIn', function (req, res, next) {
-            req.redirectUrl = 'something';
-            next();
-          });
+          api.getTargetHost.yields();
           done();
         });
-        afterEach(function (done) {
-          api.checkIfLoggedIn.restore();
+        it('should destroy socket no target', function (done) {
+          _handleUserWsRequest({}, {
+            destroy: done
+          }, {});
+        });
+
+        it('should call dataFetch', function (done) {
+          _handleUserWsRequest({}, {
+            destroy: function () {
+              sinon.assert.calledOnce(dataFetch.middleware);
+              done();
+            }
+          }, {});
+        });
+      });
+      describe('founding target created err', function() {
+        beforeEach(function(done) {
+          api.getTargetHost.yields('sky if falling down');
           done();
         });
-        it('should destroy socket', function(done) {
+        it('should destroy socket no target', function (done) {
           _handleUserWsRequest({}, {
             destroy: done
           }, {});
         });
       });
-      describe('logged in', function() {
+      describe('founding target returns', function() {
         beforeEach(function(done) {
-          sinon.stub(api, 'getTargetHost');
-          sinon.stub(api, 'checkIfLoggedIn').yields();
+          api.getTargetHost.yields();
           done();
         });
-        afterEach(function (done) {
-          api.getTargetHost.restore();
-          api.checkIfLoggedIn.restore();
-          done();
-        });
-        describe('found no target', function() {
-          beforeEach(function(done) {
-            api.getTargetHost.yields();
+        it('should call proxy', function (done) {
+          var testReq = {
+            headers: {}
+          };
+          testReq.headers['user-agent'] = chromeUserAgent;
+          var testSocket = 'smelly';
+          var testHead = 'small';
+          sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist', function (req, socket, head) {
+            expect(req).to.contain(testReq);
+            expect(socket).to.equal(testSocket);
+            expect(head).to.equal(testHead);
             done();
           });
-          it('should destroy socket no target', function (done) {
-            _handleUserWsRequest({}, {
-              destroy: done
-            }, {});
-          });
-        });
-        describe('founding target created err', function() {
-          beforeEach(function(done) {
-            api.getTargetHost.yields('sky if falling down');
-            done();
-          });
-          it('should destroy socket no target', function (done) {
-            _handleUserWsRequest({}, {
-              destroy: done
-            }, {});
-          });
-        });
-        describe('founding target returns', function() {
-          beforeEach(function(done) {
-            api.getTargetHost.yields();
-            done();
-          });
-          it('should call proxy', function (done) {
-            var testReq = {
-              headers: {}
-            };
-            testReq.headers['user-agent'] = chromeUserAgent;
-            var testSocket = 'smelly';
-            var testHead = 'small';
-            sinon.stub(proxyServer.proxy, 'proxyWsIfTargetHostExist', function (req, socket, head) {
-              expect(req).to.contain(testReq);
-              expect(socket).to.equal(testSocket);
-              expect(head).to.equal(testHead);
-              done();
-            });
 
-            _handleUserWsRequest(testReq, testSocket, testHead);
-          });
+          _handleUserWsRequest(testReq, testSocket, testHead);
         });
       });
     });

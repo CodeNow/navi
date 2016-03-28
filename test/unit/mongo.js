@@ -461,7 +461,7 @@ describe('lib/models/mongodb', function () {
     beforeEach(function (done) {
       process.env.ENABLE_LRU_CACHE = true;
       naviEntryFixture = put({}, naviEntryFixtures);
-      sinon.stub(cache, 'set')
+      sinon.stub(cache, 'set');
       done();
     });
 
@@ -478,9 +478,10 @@ describe('lib/models/mongodb', function () {
       mongo._cacheResults(naviEntryFixture);
       sinon.assert.calledTwice(cache.set);
       sinon.assert.calledWith(cache.set.firstCall, refererElasticUrl,
-        sinon.match.has('elasticUrl', 'frontend-staging-codenow.runnableapp.com'));
+        sinon.match(naviEntryFixture.refererNaviEntry));
+      delete naviEntryFixture.refererNaviEntry;
       sinon.assert.calledWith(cache.set.secondCall, elasticUrl,
-        sinon.match.has('elasticUrl', 'api-staging-codenow.runnableapp.com'));
+        sinon.match(naviEntryFixture));
       done();
     });
 
@@ -491,7 +492,7 @@ describe('lib/models/mongodb', function () {
       mongo._cacheResults(naviEntryFixture);
       sinon.assert.calledOnce(cache.set);
       sinon.assert.calledWith(cache.set, elasticUrl,
-        sinon.match.has('elasticUrl', 'api-staging-codenow.runnableapp.com'));
+        sinon.match(naviEntryFixture));
       done();
     });
   }); // end Mongo.prototype._cacheResults
@@ -518,7 +519,7 @@ describe('lib/models/mongodb', function () {
 
   describe('Mongo.findMasterPodBranch', function () {
     it('should return directUrls object that has masterPod:true property/value', function (done) {
-      var copy = put({}, naviEntryFixtures);
+      var copy = put({}, naviEntryFixtures).api;
       copy.directUrls.e4rov2.masterPod = false;
       copy.directUrls.e4v7ve.masterPod = true;
       var findResult = mongo.constructor.findMasterPodBranch(copy);
@@ -613,15 +614,15 @@ describe('lib/models/mongodb', function () {
 
     it('should yield naviEntry without refererNaviEntry prop if response length is 2',
     function (done) {
-      var mongoResponse = [naviEntryFixture, refererNaviEntryFixture];
+      var mongoResponse = [naviEntryFixture.api, refererNaviEntryFixture];
       mongo._fetchNaviEntryHandleCacheOrMongo(true, null, mongoResponse, elasticUrl,
       function (err, naviEntry) {
         expect(err).to.be.null();
 
         sinon.assert.calledOnce(mongo._cacheResults);
-        sinon.assert.calledWith(mongo._cacheResults, naviEntryFixture);
+        sinon.assert.calledWith(mongo._cacheResults, naviEntryFixture.api);
 
-        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry).to.equal(naviEntryFixture.api);
         expect(naviEntry.refererNaviEntry).to.equal(refererNaviEntryFixture);
         done();
       })
@@ -644,14 +645,14 @@ describe('lib/models/mongodb', function () {
     });
 
     it('should not cache if first argument (shouldCacheResults) is false', function (done) {
-      var mongoResponse = [naviEntryFixture, refererNaviEntryFixture];
+      var mongoResponse = [naviEntryFixture.api, refererNaviEntryFixture];
       mongo._fetchNaviEntryHandleCacheOrMongo(false, null, mongoResponse, elasticUrl,
       function (err, naviEntry) {
         expect(err).to.be.null();
 
         sinon.assert.notCalled(mongo._cacheResults);
 
-        expect(naviEntry).to.equal(naviEntryFixture);
+        expect(naviEntry).to.equal(naviEntryFixture.api);
         expect(naviEntry.refererNaviEntry).to.equal(refererNaviEntryFixture);
         done();
       })
