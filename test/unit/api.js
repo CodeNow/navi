@@ -33,169 +33,6 @@ describe('api.js unit test', function () {
     done();
   });
 
-  describe('api._isUserAuthorized', function () {
-    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
-      it('should return true no matter what', function (done) {
-        var req = {
-          session: {}
-        };
-        var result = api._isUserAuthorized(req, 9999);
-        expect(result).to.equal(true);
-        done();
-      });
-    });
-    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
-      var previousDisableAuthEnv;
-      beforeEach(function (done) {
-        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
-        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
-        done();
-      });
-      afterEach(function (done) {
-        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
-        done();
-      });
-      it('should return true if user is in whitelistedUsers list', function (done) {
-        var req = {
-          session: {
-            userId: 1085792,
-            userGithubOrgs: [1085792]
-          }
-        };
-        var result = api._isUserAuthorized(req, 9999);
-        expect(result).to.equal(true);
-        done();
-      });
-      it('should return false if user is NOT in whitelistedUsers list', function (done) {
-        var req = {
-          session: {
-            userId: 46788511111,
-            userGithubOrgs: [46788511111]
-          }
-        };
-        var result = api._isUserAuthorized(req, 9999);
-        expect(result).to.equal(false);
-        done();
-      });
-      it('should return true if user is in whitelistedUsers list', function (done) {
-        var req = {
-          session: {
-            userId: 1085792,
-            userGithubOrgs: [1085792]
-          }
-        };
-        var result = api._isUserAuthorized(req, 9999);
-        expect(result).to.equal(true);
-        done();
-      });
-    });
-  });
-
-  describe('api.checkIfLoggedIn', function () {
-    var req = {
-      session: {
-        authTried: false,
-        apiSessionRedisKey: 'redis-session-key',
-        userId: 555,
-        userGithubOrgs: [555]
-      },
-      method: 'get',
-    };
-    it('should next if should bypass auth', function (done) {
-      sinon.stub(api, '_shouldBypassAuth', function () { return true; });
-      api.checkIfLoggedIn(req, {}, function (err) {
-        expect(err).to.equal(undefined);
-        expect(api._shouldBypassAuth.callCount).to.equal(1);
-        api._shouldBypassAuth.restore();
-        done();
-      });
-    });
-
-    it('should next with error if redis.get returns error', function (done) {
-      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
-      sinon.stub(redis, 'get', function (key, cb) {
-        expect(key).to.equal('redis-session-key');
-        cb(new Error('redis error'));
-      });
-      api.checkIfLoggedIn(req, {}, function (err) {
-        expect(err.message).to.equal('redis error');
-        expect(api._shouldBypassAuth.callCount).to.equal(1);
-        expect(redis.get.callCount).to.equal(1);
-        api._shouldBypassAuth.restore();
-        redis.get.restore();
-        done();
-      });
-    });
-
-    it('should next with error if redis.get return data is invalid json', function (done) {
-      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
-      sinon.stub(redis, 'get', function (key, cb) {
-        expect(key).to.equal('redis-session-key');
-        cb(null, 'invalid-json');
-      });
-      api.checkIfLoggedIn(req, {}, function (err) {
-        expect(err).to.be.instanceOf(SyntaxError);
-        expect(api._shouldBypassAuth.callCount).to.equal(1);
-        expect(redis.get.callCount).to.equal(1);
-        api._shouldBypassAuth.restore();
-        redis.get.restore();
-        done();
-      });
-    });
-
-    it('should route to unathenticated helper if redis session data indicates user is unauth',
-    function (done) {
-      sinon.stub(api, '_shouldBypassAuth', function () { return false; });
-      sinon.stub(redis, 'get', function (key, cb) {
-        expect(key).to.equal('redis-session-key');
-        cb(null, JSON.stringify({
-          passport: {
-            // no user
-          }
-        }));
-      });
-      sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
-        next();
-      });
-      api.checkIfLoggedIn(req, {}, function (err) {
-        expect(err).to.be.undefined();
-        expect(api._shouldBypassAuth.callCount).to.equal(1);
-        expect(redis.get.callCount).to.equal(1);
-        expect(api._handleUnauthenticated.callCount).to.equal(1);
-        api._shouldBypassAuth.restore();
-        api._handleUnauthenticated.restore();
-        redis.get.restore();
-        done();
-      });
-    });
-
-    it('should route to unathenticated helper if redis session data indicates user is unauth',
-      function (done) {
-        sinon.stub(api, '_shouldBypassAuth', function () { return false; });
-        sinon.stub(redis, 'get', function (key, cb) {
-          expect(key).to.equal('redis-session-key');
-          cb(null, JSON.stringify({
-            passport: {
-              user: {}
-            }
-          }));
-        });
-        sinon.stub(api, '_handleUnauthenticated', function (req, res, next) {
-          next();
-        });
-        api.checkIfLoggedIn(req, {}, function (err) {
-          expect(err).to.be.undefined();
-          expect(api._shouldBypassAuth.callCount).to.equal(1);
-          expect(redis.get.callCount).to.equal(1);
-          expect(api._handleUnauthenticated.callCount).to.equal(0);
-          api._shouldBypassAuth.restore();
-          api._handleUnauthenticated.restore();
-          redis.get.restore();
-          done();
-        });
-      });
-  });
-
   describe('api._getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
@@ -251,55 +88,6 @@ describe('api.js unit test', function () {
       done();
     });
   });
-  describe('api._shouldBypassAuth', function () {
-    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to true ', function () {
-      it('should return true no matter what', function (done) {
-        var result = api._shouldBypassAuth({
-          isBrowser: true,
-          method: 'get'
-        });
-        expect(result).to.equal(true);
-        done();
-      });
-    });
-    describe('ALLOW_UNAUTHED_PUBLIC_REQUESTS set to false ', function () {
-      var previousDisableAuthEnv;
-      beforeEach(function (done) {
-        previousDisableAuthEnv = process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS;
-        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = false;
-        done();
-      });
-      afterEach(function (done) {
-        process.env.ALLOW_UNAUTHED_PUBLIC_REQUESTS = previousDisableAuthEnv;
-        done();
-      });
-      it('should return true if options request', function (done) {
-        var result = api._shouldBypassAuth({
-          method: 'options'
-        });
-        expect(result).to.equal(true);
-        done();
-      });
-
-      it('should return true if !isBrowser request', function (done) {
-        var result = api._shouldBypassAuth({
-          isBrowser: false,
-          method: 'get'
-        });
-        expect(result).to.equal(true);
-        done();
-      });
-
-      it('should return false if should not bypass', function (done) {
-        var result = api._shouldBypassAuth({
-          isBrowser: true,
-          method: 'get'
-        });
-        expect(result).to.equal(false);
-        done();
-      });
-    });
-  })
 
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
@@ -377,8 +165,6 @@ describe('api.js unit test', function () {
       var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
         sinon.stub(api, '_getUrlFromRequest');
-        sinon.stub(api, '_shouldBypassAuth');
-        sinon.stub(api, '_isUserAuthorized');
         sinon.stub(api, '_getTargetHostElastic');
         sinon.stub(api, '_processTargetInstance');
         done();
@@ -386,35 +172,9 @@ describe('api.js unit test', function () {
 
       afterEach(function (done) {
         api._getUrlFromRequest.restore();
-        api._shouldBypassAuth.restore();
-        api._isUserAuthorized.restore();
         api._getTargetHostElastic.restore();
         api._processTargetInstance.restore();
         done();
-      });
-
-      it('should next 404 error', function (done) {
-        var req = {
-          method: 'get',
-          isBrowser: true,
-          session: {
-            userGithubOrgs: [19495, 93722, 958321],
-            userId: 19495
-          },
-          headers: {
-            origin: 'http://frontend-staging-codenow.runnableapp.com',
-            host: base + ':80'
-          },
-          hipacheEntry: naviRedisEntriesFixture.elastic,
-          naviEntry: naviEntriesFixtures.refererNaviEntry
-        };
-        api._getUrlFromRequest.returns('http://' + base + ':80');
-        api._shouldBypassAuth.returns(false);
-        api._isUserAuthorized.returns(false);
-        api.getTargetHost(req, {}, function (err) {
-          expect(err.output.statusCode).to.equal(404);
-          done();
-        });
       });
 
       it('should call _getTargetHostElastic if elastic', function (done) {
@@ -433,8 +193,6 @@ describe('api.js unit test', function () {
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
         api._getUrlFromRequest.returns('http://' + base + ':80');
-        api._shouldBypassAuth.returns(true);
-        api._isUserAuthorized.returns(true);
         api._getTargetHostElastic.yieldsAsync();
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
@@ -459,8 +217,6 @@ describe('api.js unit test', function () {
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
         api._getUrlFromRequest.returns('http://' + base + ':80');
-        api._shouldBypassAuth.returns(true);
-        api._isUserAuthorized.returns(true);
         api._processTargetInstance.yieldsAsync();
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
@@ -486,8 +242,6 @@ describe('api.js unit test', function () {
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
         api._getUrlFromRequest.returns('http://' + base + ':80');
-        api._shouldBypassAuth.returns(true);
-        api._isUserAuthorized.returns(true);
 
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
