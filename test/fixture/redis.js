@@ -13,8 +13,8 @@ var seedData = naviRedisEntriesFixtures.elastic;
 
 module.exports.seed = function (done) {
   var count = callbackCount(done);
-  Object.keys(naviEntriesFixtures.api).forEach(function (key) {
-    var entry = naviEntriesFixtures.api[key];
+  Object.keys(naviEntriesFixtures).forEach(function (key) {
+    var entry = naviEntriesFixtures[key];
     redis.rpush('frontend:80.' + entry.elasticUrl, seedData, count.inc().next);
     redis.rpush('frontend:8080.' + entry.elasticUrl, seedData, count.inc().next);
     Object.keys(entry.directUrls).forEach(function (shortHash) {
@@ -30,8 +30,8 @@ module.exports.seed = function (done) {
 
 module.exports.clean = function (done) {
   var count = callbackCount(done);
-  Object.keys(naviEntriesFixtures.api).forEach(function (key) {
-    var entry = naviEntriesFixtures.api[key];
+  Object.keys(naviEntriesFixtures).forEach(function (key) {
+    var entry = naviEntriesFixtures[key];
     redis.del('frontend:80.' + entry.elastic, count.inc().next);
     redis.del('frontend:8080.' + entry.elastic, count.inc().next);
     Object.keys(entry.directUrls).forEach(function (shortHash) {
