@@ -14,7 +14,6 @@ var it = lab.test;
 
 var ErrorCat = require('error-cat');
 var redirectDisabled = require('middlewares/redirect-disabled');
-var ProxyServer = require('models/proxy.js');
 
 describe('lib/middlewares/redirect-disabled', function () {
   describe('exported middleware', function () {
@@ -315,12 +314,10 @@ describe('lib/middlewares/redirect-disabled', function () {
       errCatResponse = { id: 'ErrorCat Response' };
       sinon.stub(ErrorCat, 'create').returns(errCatResponse);
       proxy = sinon.stub();
-      sinon.stub(ProxyServer.prototype, 'proxyIfTargetHostExist').returns(proxy);
       done();
     })
     afterEach(function (done) {
       ErrorCat.create.restore();
-      ProxyServer.prototype.proxyIfTargetHostExist.restore();
       done();
     });
     beforeEach(function (done) {
@@ -348,7 +345,6 @@ describe('lib/middlewares/redirect-disabled', function () {
       });
       it('should throw 404 not found from error-cat', function (done) {
         redirectDisabled._proxyRequest(container, req, res, next);
-        sinon.assert.notCalled(ProxyServer.prototype.proxyIfTargetHostExist);
         sinon.assert.calledOnce(next);
         sinon.assert.calledWith(next, errCatResponse);
         sinon.assert.calledOnce(ErrorCat.create);
@@ -356,35 +352,12 @@ describe('lib/middlewares/redirect-disabled', function () {
         done();
       });
     });
-    describe('when no port is specified', function () {
-      beforeEach(function (done) {
-        req.headers.host = 'host';
-        done();
-      });
-      it('should proxy the request to the right host', function (done) {
-        redirectDisabled._proxyRequest(container, req, res, next);
-        sinon.assert.notCalled(next);
-        sinon.assert.notCalled(ErrorCat.create);
-        sinon.assert.calledOnce(ProxyServer.prototype.proxyIfTargetHostExist);
-        sinon.assert.calledOnce(proxy);
-        expect(proxy.lastCall.args[0].targetHost).to.equal('http://dockerHost:2000');
-        done();
-      });
-    });
-    describe('when a port is specified of 443', function () {
-      beforeEach(function (done) {
-        req.headers.host = 'host:443';
-        done();
-      });
-      it('should proxy the request to the right port on https', function (done) {
-        redirectDisabled._proxyRequest(container, req, res, next);
-        sinon.assert.notCalled(next);
-        sinon.assert.notCalled(ErrorCat.create);
-        sinon.assert.calledOnce(ProxyServer.prototype.proxyIfTargetHostExist);
-        sinon.assert.calledOnce(proxy);
-        expect(proxy.lastCall.args[0].targetHost).to.equal('https://dockerHost:3000');
-        done();
-      });
+    it('should set targetNaviEntryInstance and call next', function (done) {
+      redirectDisabled._proxyRequest(container, req, res, next);
+      sinon.assert.notCalled(ErrorCat.create);
+      sinon.assert.calledOnce(next);
+      expect(req.targetNaviEntryInstance).to.equal(container);
+      done();
     });
   });
 });
