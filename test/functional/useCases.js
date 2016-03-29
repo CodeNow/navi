@@ -124,7 +124,8 @@ describe('functional test: proxy to instance container', function () {
         done()
       })
     })
-    it.skip('TODO: should Proxy to the requested container', function (done) {
+    // Low priority, but we don't support this right now
+    it.skip('should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('f8k3v2');
       done();
@@ -141,7 +142,8 @@ describe('functional test: proxy to instance container', function () {
         done()
       })
     })
-    it.skip('TODO: should Look up Connections and proxy to the Connections container', function (done) {
+    // Low priority, but we don't support this right now
+    it.skip('should Look up Connections and proxy to the Connections container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('f8k3v2');
       done();
@@ -158,7 +160,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('TODO: should Proxy to the requested container', function (done) {
+    it('should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('f8k3v2');
       done();
@@ -193,7 +195,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('TODO: should Proxy to the requested container', function (done) {
+    it('should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('rukw3w');
       done();
