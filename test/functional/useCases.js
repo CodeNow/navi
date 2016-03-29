@@ -158,7 +158,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it.skip('TODO: should Proxy to the requested container', function (done) {
+    it('TODO: should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('f8k3v2');
       done();
