@@ -41,7 +41,7 @@ describe('lib/middlewares/redirect-disabled', function () {
         done();
       });
       it('should just call next', function (done) {
-        redirectDisabled(req, res, next);
+        redirectDisabled.middleware(req, res, next);
         sinon.assert.calledOnce(next);
         sinon.assert.notCalled(redirectDisabled._makeDecision);
         done();
@@ -53,7 +53,7 @@ describe('lib/middlewares/redirect-disabled', function () {
         done();
       });
       it('should try to make a decision about the request', function (done) {
-        redirectDisabled(req, res, next);
+        redirectDisabled.middleware(req, res, next);
         sinon.assert.notCalled(next);
         sinon.assert.calledOnce(redirectDisabled._makeDecision);
         done();

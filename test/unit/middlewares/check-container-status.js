@@ -54,7 +54,7 @@ describe('lib/middlewares/check-container-status', function () {
         done();
       });
       it('should just next without doing anything', function (done) {
-        checkContainerStatus(req, res, next);
+        checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(next);
         sinon.assert.notCalled(checkContainerStatus._getUrlFromNaviEntryInstance);
         sinon.assert.notCalled(checkContainerStatus._getTargetShortHash);
@@ -64,7 +64,7 @@ describe('lib/middlewares/check-container-status', function () {
     });
     describe('When the container is running', function () {
       it('should next with the generated url', function (done) {
-        checkContainerStatus(req, res, next);
+        checkContainerStatus.middleware(req, res, next);
         sinon.assert.notCalled(checkContainerStatus._getTargetShortHash);
         sinon.assert.notCalled(errorPage.generateErrorUrl);
         sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);
@@ -78,7 +78,7 @@ describe('lib/middlewares/check-container-status', function () {
         done();
       });
       it('should next with the generated url', function (done) {
-        checkContainerStatus(req, res, next);
+        checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(checkContainerStatus._getTargetShortHash);
         sinon.assert.calledWith(checkContainerStatus._getTargetShortHash, req);
         sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);
@@ -98,7 +98,7 @@ describe('lib/middlewares/check-container-status', function () {
         done();
       });
       it('should next with the generated url', function (done) {
-        checkContainerStatus(req, res, next);
+        checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(checkContainerStatus._getTargetShortHash);
         sinon.assert.calledWith(checkContainerStatus._getTargetShortHash, req);
         sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);

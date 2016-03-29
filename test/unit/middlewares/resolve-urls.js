@@ -41,7 +41,7 @@ describe('lib/middlewares/resolve-urls', function () {
       };
       var res = {};
       var next = sinon.stub();
-      resolveUrls(req, res, next);
+      resolveUrls.middleware(req, res, next);
       sinon.assert.calledOnce(next);
       sinon.assert.calledTwice(resolveUrls.resolveUrl);
       done();
