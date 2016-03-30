@@ -181,7 +181,7 @@ describe('proxy.js unit test', function () {
         'access-control-allow-methods': methodsStr,
         'access-control-allow-headers': req.headers['access-control-request-headers'],
         'access-control-allow-credentials': 'true',
-        'runnable-instance-name': instanceName
+        'x-runnable-instance-name': instanceName
       });
       done();
     });
