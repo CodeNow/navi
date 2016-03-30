@@ -13,6 +13,9 @@ var Server = require('models/server');
 var api = require('models/api');
 var redis = require('models/redis');
 var dataFetch = require('middlewares/data-fetch');
+var resolveUrls = require('middlewares/resolve-urls');
+var redirectDisabled = require('middlewares/redirect-disabled');
+var checkContainerStatus = require('middlewares/check-container-status');
 
 var lab = exports.lab = Lab.script();
 
@@ -26,6 +29,18 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
 
 describe('server.js unit test', function () {
   var proxyServer = new Server();
+  beforeEach(function (done) {
+    sinon.stub(resolveUrls, 'middleware').yields();
+    sinon.stub(redirectDisabled, 'middleware').yields();
+    sinon.stub(checkContainerStatus, 'middleware').yields();
+    done();
+  });
+  afterEach(function (done) {
+    resolveUrls.middleware.restore();
+    redirectDisabled.middleware.restore();
+    checkContainerStatus.middleware.restore();
+    done();
+  });
   beforeEach(function (done) {
     redis.removeAllListeners();
     done();

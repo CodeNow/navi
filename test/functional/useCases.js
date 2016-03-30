@@ -92,8 +92,6 @@ describe('functional test: proxy to instance container', function () {
       requestParams.headers.origin = referrer
     }
     request(requestParams, function (err, res) {
-      console.log('res.statusCode', res.statusCode);
-      console.log('res.body', res.body);
       cb(err, res);
     });
   }
@@ -126,13 +124,12 @@ describe('functional test: proxy to instance container', function () {
         done()
       })
     })
-    it('should Proxy to the requested container --FAILING--')
-    // This test fails. It's low priority though
-    // it('should Proxy to the requested container', function (done) {
-    //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain('f8k3v2');
-    //   done();
-    // })
+    // Low priority, but we don't support this right now
+    it.skip('should Proxy to the requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('f8k3v2');
+      done();
+    })
   })
   describe('Url:Elastic, IsBrowser:False, RedirectEnabled:True, Referrer:True', function () {
     var response;
@@ -145,13 +142,12 @@ describe('functional test: proxy to instance container', function () {
         done()
       })
     })
-    it('should Look up Connections and proxy to the Connections container --FAILING--');
-    // This test fails. It's low priority though
-    // it('should Look up Connections and proxy to the Connections container', function (done) {
-    //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain('f8k3v2');
-    //   done();
-    // })
+    // Low priority, but we don't support this right now
+    it.skip('should Look up Connections and proxy to the Connections container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('f8k3v2');
+      done();
+    })
   })
   describe('Url:Direct, IsBrowser:False, RedirectEnabled:True, Referrer:True', function () {
     var response;
@@ -164,13 +160,11 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it('should Proxy to the requested container --FAILING--');
-    // This test fails. It's low priority though
-    // it('should Proxy to the requested container', function (done) {
-    //   expect(response.statusCode).to.equal(200);
-    //   expect(response.body).to.contain('f8k3v2');
-    //   done();
-    // })
+    it('should Proxy to the requested container', function (done) {
+      expect(response.statusCode).to.equal(200);
+      expect(response.body).to.contain('f8k3v2');
+      done();
+    })
   })
   describe('Url:Elastic, IsBrowser:True, RedirectEnabled:False, Referrer:True', function () {
     var response;
@@ -189,6 +183,7 @@ describe('functional test: proxy to instance container', function () {
       done();
     })
   })
+
   describe('Url:Direct, IsBrowser:True, RedirectEnabled:False, Referrer:True', function () {
     var response;
     beforeEach(function (done) {
@@ -200,7 +195,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it.skip('TODO: should Proxy to the requested container', function (done) {
+    it('should Proxy to the requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('rukw3w');
       done();
@@ -217,7 +212,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it.skip('should Look up Connections and proxy to the Connections container', function (done) {
+    it('should Look up Connections and proxy to the Connections container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('r4v7ve');
       done();
@@ -335,7 +330,7 @@ describe('functional test: proxy to instance container', function () {
         done();
       })
     })
-    it.skip('should Proxy to requested container', function (done) {
+    it('should Proxy to requested container', function (done) {
       expect(response.statusCode).to.equal(200);
       expect(response.body).to.contain('rukw3w');
       done();

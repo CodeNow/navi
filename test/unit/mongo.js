@@ -215,7 +215,8 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
-                { elasticUrl: refererUrl}
+                { elasticUrl: refererUrl},
+                { elasticUrl: refererUrl.replace('frontend-', '')}
               ]
             }]
           });
@@ -270,7 +271,8 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
-                { elasticUrl: refererUrl}
+                { elasticUrl: refererUrl},
+                { elasticUrl: refererUrl.replace('frontend-', '')}
               ]
             }]
           });
