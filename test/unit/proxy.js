@@ -86,7 +86,8 @@ describe('proxy.js unit test', function () {
     it('should proxy if target exist', function(done) {
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
-          .withArgs(testReq, sinon.match.any, {target: testHost}).calledOnce).to.be.true();
+          .withArgs(testReq, sinon.match.any, { target: testHost, secure: false })
+          .calledOnce).to.be.true();
 
         proxyServer.proxy.web.restore();
         done();
@@ -110,7 +111,8 @@ describe('proxy.js unit test', function () {
 
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
-          .withArgs(expectedReq, sinon.match.any, {target: testHost}).calledOnce).to.be.true();
+          .withArgs(expectedReq, sinon.match.any, { target: testHost, secure: false })
+          .calledOnce).to.be.true();
 
         proxyServer.proxy.web.restore();
         done();
@@ -138,7 +140,8 @@ describe('proxy.js unit test', function () {
         target: {
           host: testHostname,
           port: testPort
-        }
+        },
+        secure: false
       })).to.be.true();
       proxyServer.proxy.ws.restore();
       done();
