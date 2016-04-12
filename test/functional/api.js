@@ -35,10 +35,13 @@ describe('functional test: proxy to instance container', function () {
   var testHost = '0.0.0.0';
   var testPort = 39940;
   var testPort2 = 39941;
+  var testPort3 = 39944;
   var testResponse = 'non-browser running container';
   var testResponseFeatureBranch = 'non-browser running container feature branch 1';
+  var testResponseIsolatedBranch = 'non-browser running container isolated branch 1';
   var testServerMasterInstance;
   var testServerFeatureBranchInstance;
+  var testServerIsolatedBranchInstance;
 
   before(function (done) {
     testServerMasterInstance = TestServer.create(testPort, testHost, testResponse, done);
@@ -46,6 +49,10 @@ describe('functional test: proxy to instance container', function () {
   before(function (done) {
     testServerFeatureBranchInstance =
       TestServer.create(testPort2, testHost, testResponseFeatureBranch, done);
+  });
+  before(function (done) {
+    testServerIsolatedBranchInstance =
+      TestServer.create(testPort3, testHost, testResponseIsolatedBranch, done);
   });
   before(function (done) {
     testErrorServer = TestServer.create(
@@ -56,6 +63,9 @@ describe('functional test: proxy to instance container', function () {
   });
   after(function (done) {
     testServerFeatureBranchInstance.close(done);
+  });
+  after(function (done) {
+    testServerIsolatedBranchInstance.close(done);
   });
   after(function (done) {
     testErrorServer.close(done);
@@ -266,7 +276,7 @@ describe('functional test: proxy to instance container', function () {
                 return done(err);
               }
               expect(res.statusCode).to.equal(200);
-              expect(res.body).to.equal(testResponseFeatureBranch + ';' + elasticUrl + '/');
+              expect(res.body).to.equal(testResponseIsolatedBranch + ';' + elasticUrl + '/');
               done();
             });
           });

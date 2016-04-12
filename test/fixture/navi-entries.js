@@ -153,7 +153,7 @@ var api = {
       masterPod: false,
       dockerHost: '0.0.0.0',
       ports: {
-        '80': 39941,
+        '80': 39944,
         '8080': 23423
       },
       running: true,
