@@ -54,6 +54,9 @@ describe('lib/middlewares/resolve-urls', function () {
     var url;
     var naviEntry;
     beforeEach(function (done) {
+      sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({
+        shortHash: '1234'
+      })
       directUrl = 'fb1-foo-bar.runnableapp.com';
       elasticUrl = 'foo-bar.runnableapp.com';
       req = {
@@ -80,6 +83,7 @@ describe('lib/middlewares/resolve-urls', function () {
     });
 
     afterEach(function (done) {
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore()
       done();
     });
 
@@ -142,6 +146,9 @@ describe('lib/middlewares/resolve-urls', function () {
         done()
       });
       it('should resolve the direct url', function (done) {
+        resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          shortHash: 'fb1'
+        })
         results = resolveUrls.resolveUrl(req, url, naviEntry);
         expect(results).to.equal('fb1');
         done()

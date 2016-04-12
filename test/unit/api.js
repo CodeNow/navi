@@ -20,6 +20,7 @@ var naviEntriesFixtures = require('../fixture/navi-entries');
 var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
 var redis = require('models/redis');
 var errorPage = require('models/error-page.js');
+var resolveUrls = require('middlewares/resolve-urls');
 
 var afterEach = lab.afterEach;
 var beforeEach = lab.beforeEach;
@@ -164,6 +165,7 @@ describe('api.js unit test', function () {
     describe('target owner not member of authenticated users orgs', function () {
       var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
+        sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({})
         sinon.stub(api, '_getUrlFromRequest');
         sinon.stub(api, '_getTargetHostElastic');
         sinon.stub(api, '_processTargetInstance');
@@ -171,6 +173,7 @@ describe('api.js unit test', function () {
       });
 
       afterEach(function (done) {
+        resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore();
         api._getUrlFromRequest.restore();
         api._getTargetHostElastic.restore();
         api._processTargetInstance.restore();
@@ -221,6 +224,8 @@ describe('api.js unit test', function () {
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
           sinon.assert.calledOnce(api._processTargetInstance);
+          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, base);
           done();
         });
       });
