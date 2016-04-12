@@ -17,6 +17,7 @@ var sinon = require('sinon');
 var cache = require('cache');
 var mongo = require('models/mongo');
 var naviEntryFixtures = require('../fixture/navi-entries');
+var resolveUrls = require('middlewares/resolve-urls');
 
 var lab = exports.lab = Lab.script();
 
@@ -87,6 +88,7 @@ describe('lib/models/mongodb', function () {
 
     beforeEach(function (done) {
       sinon.stub(cache, 'set');
+      sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({});
       keypather.set(mongo, '_naviEntriesCollection.find', function () {});
       sinon.stub(mongo._naviEntriesCollection, 'find').returns({
         toArray: sinon.stub().yieldsAsync(mongoError)
@@ -97,6 +99,7 @@ describe('lib/models/mongodb', function () {
 
     afterEach(function (done) {
       cache.set.restore();
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore();
       mongo._naviEntriesCollection.find.restore();
       mongo._fetchNaviEntryHandleCacheOrMongo.restore();
       done();
@@ -123,6 +126,8 @@ describe('lib/models/mongodb', function () {
 
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find, sinon.match.object);
+
+          sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -168,6 +173,7 @@ describe('lib/models/mongodb', function () {
             }]
           });
 
+          sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
             true, null, mongoResponse, 'api-staging-codenow.runnableapp.com',
@@ -181,6 +187,10 @@ describe('lib/models/mongodb', function () {
       it('should fetch two navientries documents if refererUrl', function (done) {
         var elasticUrl = 'api-staging-codenow.runnableapp.com';
         var refererUrl = 'frontend-staging-codenow.runnableapp.com';
+        var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
+        resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          elasticUrl: calculatedElastic
+        });
         var naviEntriesDocument = {
           elasticUrl: elasticUrl
         };
@@ -216,10 +226,13 @@ describe('lib/models/mongodb', function () {
               $or: [
                 { elasticUrl: elasticUrl},
                 { elasticUrl: refererUrl},
-                { elasticUrl: refererUrl.replace('frontend-', '')}
+                { elasticUrl: calculatedElastic}
               ]
             }]
           });
+
+          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, refererUrl);
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -242,6 +255,10 @@ describe('lib/models/mongodb', function () {
         var naviEntriesDocumentReferer = {
           elasticUrl: refererUrl
         };
+        var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
+        resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          elasticUrl: calculatedElastic
+        });
 
         var mongoResponse = [naviEntriesDocument, naviEntriesDocumentReferer].reverse();
         var fetchNaviEntryHandleCacheOrMongoResponse = {};
@@ -272,10 +289,14 @@ describe('lib/models/mongodb', function () {
               $or: [
                 { elasticUrl: elasticUrl},
                 { elasticUrl: refererUrl},
-                { elasticUrl: refererUrl.replace('frontend-', '')}
+                { elasticUrl: calculatedElastic}
               ]
             }]
           });
+
+          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, refererUrl);
+
           expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
           done();
         });
