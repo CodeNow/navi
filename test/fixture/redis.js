@@ -18,11 +18,12 @@ module.exports.seed = function (done) {
     redis.rpush('frontend:80.' + entry.elasticUrl, seedData, count.inc().next);
     redis.rpush('frontend:8080.' + entry.elasticUrl, seedData, count.inc().next);
     Object.keys(entry.directUrls).forEach(function (shortHash) {
+      var doubleHyphen = (entry.directUrls[shortHash].isolated) ? '--' : '-';
       redis.rpush(
-        'frontend:80.' + shortHash + '-' + entry.elasticUrl,
+        'frontend:80.' + shortHash + doubleHyphen + entry.elasticUrl,
         naviRedisEntriesFixtures.direct, count.inc().next);
       redis.rpush(
-        'frontend:8080.' + shortHash + '-' + entry.elasticUrl,
+        'frontend:8080.' + shortHash + doubleHyphen + entry.elasticUrl,
         naviRedisEntriesFixtures.direct, count.inc().next);
     });
   });
@@ -35,10 +36,11 @@ module.exports.clean = function (done) {
     redis.del('frontend:80.' + entry.elastic, count.inc().next);
     redis.del('frontend:8080.' + entry.elastic, count.inc().next);
     Object.keys(entry.directUrls).forEach(function (shortHash) {
+      var doubleHyphen = (entry.directUrls[shortHash].isolated) ? '--' : '-';
       redis.del(
-        'frontend:80.' + shortHash + '-' + entry.elasticUrl, count.inc().next);
+        'frontend:80.' + shortHash + doubleHyphen + entry.elasticUrl, count.inc().next);
       redis.del(
-        'frontend:8080.' + shortHash + '-' + entry.elasticUrl, count.inc().next);
+        'frontend:8080.' + shortHash + doubleHyphen + entry.elasticUrl, count.inc().next);
     });
   });
 };

@@ -217,10 +217,8 @@ describe('lib/middlewares/redirect-disabled', function () {
     beforeEach(function (done) {
       req = {
         resolvedHostId: 'ghjkl',
-        hipacheEntry: {
-          elastic: 'customServerElastic.runnableapp.com'
-        },
         naviEntry: {
+          elasticUrl: 'customServerElastic.runnableapp.com',
           directUrls: {
             'referredShortHash': {
               id: 'referredShortHash',
