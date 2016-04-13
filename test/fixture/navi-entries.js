@@ -78,6 +78,21 @@ var refererNaviEntry = {
         shortHash: 'rukw3w'
       }]
     },
+    '214d23d': {
+      branch: 'frontend-feature-branch1',
+      masterPod: false,
+      dockerHost: '0.0.0.2',
+      ports: {
+        '80': 39948,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: [{
+        elasticUrl: 'api-staging-codenow.runnableapp.com',
+        shortHash: '214d23d'
+      }],
+      isolated: 'adasdasdasds'
+    }
   },
   userMappings: {
     '847390': 'bbbbb2'
@@ -133,6 +148,19 @@ var api = {
       running: true,
       dependencies: []
     },
+    '214d23d': {
+      branch: 'feature-branch1',
+      masterPod: false,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39944,
+        '8080': 23423
+      },
+      running: true,
+      isIsolationGroupMaster: true,
+      isolated: 'adasdasdasds',
+      dependencies: []
+    }
   },
   userMappings: {
     '847390': 'f8k3v2'

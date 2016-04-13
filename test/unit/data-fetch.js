@@ -8,6 +8,7 @@ var api = require('models/api');
 var dataFetch = require('middlewares/data-fetch.js');
 var mongo = require('models/mongo');
 var redis = require('models/redis');
+var resolveUrls = require('middlewares/resolve-urls');
 
 var lab = exports.lab = Lab.script();
 var afterEach = lab.afterEach;
@@ -18,8 +19,10 @@ var it = lab.test;
 
 describe('data-fetch.js unit test', function() {
   describe('mw', function() {
-    var testReqUrl = 'http://xyz-localhost:4242';
+    var testReqHost = 'xyz-localhost';
+    var testReqUrl = 'http://' + testReqHost + ':4242';
     beforeEach(function(done) {
+      sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({});
       sinon.stub(api, '_getUrlFromRequest').returns(testReqUrl);
       sinon.stub(mongo, 'fetchNaviEntry');
       sinon.stub(redis, 'lrange');
@@ -27,6 +30,7 @@ describe('data-fetch.js unit test', function() {
     });
 
     afterEach(function (done) {
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore();
       api._getUrlFromRequest.restore();
       mongo.fetchNaviEntry.restore();
       redis.lrange.restore();
@@ -41,6 +45,7 @@ describe('data-fetch.js unit test', function() {
       redis.lrange.yieldsAsync(testErr);
       dataFetch.middleware(testReq, {}, function (err) {
         expect(err).to.equal(testErr);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -52,6 +57,7 @@ describe('data-fetch.js unit test', function() {
       redis.lrange.yieldsAsync(null, ['not parseable']);
       dataFetch.middleware(testReq, {}, function (err) {
         expect(err).to.be.instanceOf(Error);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -66,6 +72,7 @@ describe('data-fetch.js unit test', function() {
         if (err) { return done(err); }
         sinon.assert.calledOnce(redis.lrange);
         sinon.assert.calledWith(redis.lrange, 'frontend:4242.xyz-localhost', 0, 1);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -80,6 +87,7 @@ describe('data-fetch.js unit test', function() {
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.hipacheEntry).to.deep.equal(testEntry);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -92,7 +100,8 @@ describe('data-fetch.js unit test', function() {
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
       mongo.fetchNaviEntry.yieldsAsync(testErr);
       dataFetch.middleware(testReq, {}, function (err) {
-        expect(err).to.equal(testErr);
+        expect(err).to.equal(testErr)
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);;
         done();
       });
     });
@@ -107,6 +116,7 @@ describe('data-fetch.js unit test', function() {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', undefined);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -123,6 +133,7 @@ describe('data-fetch.js unit test', function() {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', 'otherhost');
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -139,6 +150,7 @@ describe('data-fetch.js unit test', function() {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', 'otherhost');
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -155,6 +167,7 @@ describe('data-fetch.js unit test', function() {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, 'xyz-localhost', undefined);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });
@@ -165,12 +178,17 @@ describe('data-fetch.js unit test', function() {
           referer: 'http://otherhost:4242'
         }
       };
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+        elasticUrl: 'testHost'
+      })
       redis.lrange.yieldsAsync(null, [JSON.stringify({direct: true})]);
       mongo.fetchNaviEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
-        sinon.assert.calledWith(mongo.fetchNaviEntry, 'localhost', 'otherhost');
+        sinon.assert.calledWith(mongo.fetchNaviEntry, 'testHost', 'otherhost');
+        sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+        sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, testReqHost);
         done();
       });
     });
@@ -187,6 +205,7 @@ describe('data-fetch.js unit test', function() {
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.naviEntry).to.deep.equal(testEntry);
+        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         done();
       });
     });

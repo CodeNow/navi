@@ -35,10 +35,13 @@ describe('functional test: proxy to instance container', function () {
   var testHost = '0.0.0.0';
   var testPort = 39940;
   var testPort2 = 39941;
+  var testPort3 = 39944;
   var testResponse = 'non-browser running container';
   var testResponseFeatureBranch = 'non-browser running container feature branch 1';
+  var testResponseIsolatedBranch = 'non-browser running container isolated branch 1';
   var testServerMasterInstance;
   var testServerFeatureBranchInstance;
+  var testServerIsolatedBranchInstance;
 
   before(function (done) {
     testServerMasterInstance = TestServer.create(testPort, testHost, testResponse, done);
@@ -46,6 +49,10 @@ describe('functional test: proxy to instance container', function () {
   before(function (done) {
     testServerFeatureBranchInstance =
       TestServer.create(testPort2, testHost, testResponseFeatureBranch, done);
+  });
+  before(function (done) {
+    testServerIsolatedBranchInstance =
+      TestServer.create(testPort3, testHost, testResponseIsolatedBranch, done);
   });
   before(function (done) {
     testErrorServer = TestServer.create(
@@ -56,6 +63,9 @@ describe('functional test: proxy to instance container', function () {
   });
   after(function (done) {
     testServerFeatureBranchInstance.close(done);
+  });
+  after(function (done) {
+    testServerIsolatedBranchInstance.close(done);
   });
   after(function (done) {
     testErrorServer.close(done);
@@ -226,6 +236,47 @@ describe('functional test: proxy to instance container', function () {
               }
               expect(res.statusCode).to.equal(200);
               expect(res.body).to.equal(testResponseFeatureBranch + ';' + elasticUrl + '/');
+              done();
+            });
+          });
+        });
+      });
+
+      describe('isolated', function () {
+
+        it('should use the referer navi entry for navigation', function (done) {
+          var elasticUrl = 'api-staging-codenow.runnableapp.com';
+          var frontHost = '214d23d--frontend-staging-codenow.runnableapp.com';
+          var frontElasticUrl = 'frontend-staging-codenow.runnableapp.com';
+          request({
+            followRedirect: false,
+            jar: j,
+            headers: {
+              host: frontHost,
+              'User-Agent': chromeUserAgent
+            },
+            url: 'http://localhost:'+process.env.HTTP_PORT
+          }, function (err, res) {
+            if (err) {
+              return done(err);
+            }
+            expect(res.statusCode).to.equal(307);
+            expect(res.headers.location).to.equal('http://' + frontElasticUrl + ':80');
+            request({
+              followRedirect: false,
+              jar: j,
+              headers: {
+                'user-agent': chromeUserAgent,
+                host: elasticUrl,
+                referer: 'http://frontend-staging-codenow.runnableapp.com'
+              },
+              url: 'http://localhost:' + process.env.HTTP_PORT
+            }, function (err, res) {
+              if (err) {
+                return done(err);
+              }
+              expect(res.statusCode).to.equal(200);
+              expect(res.body).to.equal(testResponseIsolatedBranch + ';' + elasticUrl + '/');
               done();
             });
           });
