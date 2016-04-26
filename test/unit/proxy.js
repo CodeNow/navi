@@ -16,14 +16,26 @@ var noop = require('101/noop');
 var keypather = require('keypather')();
 var createResStream = require('../../lib/create-res-stream.js');
 var scriptInjectResStreamFactory = require('../../lib/script-inject-res-stream.js');
+var Intercom = require('intercom-client')
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
 
 describe('proxy.js unit test', function () {
   var proxyServer;
+  var intercomClient;
   beforeEach(function(done) {
+    intercomClient = {
+      users: {
+        create: sinon.stub()
+      }
+    };
+    sinon.stub(Intercom, 'Client').returns(intercomClient);
     proxyServer = new ProxyServer();
+    done();
+  });
+  afterEach(function (done) {
+    Intercom.Client.restore();
     done();
   });
   describe('proxy error handler', function() {
@@ -73,7 +85,10 @@ describe('proxy.js unit test', function () {
     var testRes = {};
     var testReq = {
       targetHost: testHost,
-      res: testRes
+      res: testRes,
+      naviEntry: {
+        ownerUsername: 'testOwnerUsername'
+      }
     };
     var testMw;
     beforeEach(function(done) {
@@ -89,6 +104,16 @@ describe('proxy.js unit test', function () {
           .withArgs(testReq, sinon.match.any, { target: testHost, secure: false })
           .calledOnce).to.be.true();
 
+        sinon.assert.calledOnce(intercomClient.users.create);
+        sinon.assert.calledWith(intercomClient.users.create, {
+          user_id: 'navi-testOwnerUsername',
+          update_last_request_at: true,
+          companies: [{
+            company_id: 'testOwnerUsername',
+            name: 'testOwnerUsername'
+          }]
+        });
+
         proxyServer.proxy.web.restore();
         done();
       });
@@ -101,19 +126,23 @@ describe('proxy.js unit test', function () {
       var req = {
         targetHost: testHost + '?' + testQuery,
         headers: {},
-        url: testPath
+        url: testPath,
+        naviEntry: {
+          ownerUsername: 'testOwnerUsername'
+        }
       };
       var expectedReq = {
         targetHost: testHost + '?' + testQuery,
         headers: {},
-        url: testPath + '?' + testQuery
+        url: testPath + '?' + testQuery,
+        naviEntry: {
+          ownerUsername: 'testOwnerUsername'
+        }
       };
 
       sinon.stub(proxyServer.proxy, 'web', function() {
-        expect(proxyServer.proxy.web
-          .withArgs(expectedReq, sinon.match.any, { target: testHost, secure: false })
-          .calledOnce).to.be.true();
-
+        sinon.assert.calledOnce(proxyServer.proxy.web)
+        sinon.assert.calledWith(proxyServer.proxy.web, expectedReq, sinon.match.any, { target: testHost, secure: false })
         proxyServer.proxy.web.restore();
         done();
       });
