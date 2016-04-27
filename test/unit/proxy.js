@@ -119,6 +119,16 @@ describe('proxy.js unit test', function () {
       });
       testMw(testReq, testRes);
     });
+
+    it('should not send data to intercom if the naviEntry.ownerUsername does not exist', function (done) {
+      delete testReq.naviEntry.ownerUsername
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        sinon.assert.notCalled(intercomClient.users.create);
+        proxyServer.proxy.web.restore();
+        done();
+      });
+      testMw(testReq, testRes);
+    });
     it('should keep path info and append query', function(done) {
       var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';
