@@ -38,6 +38,26 @@ describe('proxy.js unit test', function () {
     Intercom.Client.restore();
     done();
   });
+  describe('when intercom ids are not set', function () {
+    var storage = {}
+    beforeEach(function (done) {
+      storage.INTERCOM_APP_ID = process.env.INTERCOM_APP_ID;
+      storage.INTERCOM_API_KEY = process.env.INTERCOM_API_KEY;
+      delete process.env.INTERCOM_APP_ID;
+      delete process.env.INTERCOM_API_KEY;
+      done();
+    });
+    afterEach(function (done) {
+      process.env.INTERCOM_APP_ID = storage.INTERCOM_APP_ID;
+      process.env.INTERCOM_API_KEY = storage.INTERCOM_API_KEY;
+      done();
+    });
+    it('should not initialize intercomClient', function (done) {
+      proxyServer = new ProxyServer();
+      expect(proxyServer.intercomClient).to.not.exist();
+      done();
+    });
+  });
   describe('proxy error handler', function() {
     it('should proxy to error page if target unresponsive', function(done) {
       var testRes = {};
