@@ -129,7 +129,7 @@ describe('proxy.js unit test', function () {
           user_id: 'navi-testOwnerUsername',
           update_last_request_at: true,
           companies: [{
-            company_id: 'testOwnerUsername',
+            company_id: 'testOwnerUsername'.toLowerCase(),
             name: 'testOwnerUsername'
           }]
         });
