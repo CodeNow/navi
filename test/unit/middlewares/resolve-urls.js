@@ -5,6 +5,7 @@ require('loadenv.js');
 var Code = require('code');
 var Lab = require('lab');
 var sinon = require('sinon');
+var url = require('url');
 
 var resolveUrls = require('middlewares/resolve-urls');
 
@@ -32,6 +33,7 @@ describe('lib/middlewares/resolve-urls', function () {
           referer: 'referer',
           host: 'host'
         },
+        parsedReqUrl: url.parse('http://host'),
         naviEntry: {
           id: 'naviEntry',
           referrerNaviEntry: {
