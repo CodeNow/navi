@@ -6,21 +6,17 @@ require('loadenv.js');
 
 var Lab = require('lab');
 var expect = require('code').expect;
-var put = require('101/put');
 var sinon = require('sinon');
-var noop = require('101/noop');
+var url = require('url');
 
-var lab = exports.lab = Lab.script();
 
-//var errorPage = require('models/error-page.js');
 var api = require('models/api.js');
-var log = require('middlewares/logger')(__filename).log;
-var mongo = require('models/mongo');
+var errorPage = require('models/error-page.js');
 var naviEntriesFixtures = require('../fixture/navi-entries');
 var naviRedisEntriesFixture = require('../fixture/navi-redis-entries');
-var redis = require('models/redis');
-var errorPage = require('models/error-page.js');
 var resolveUrls = require('middlewares/resolve-urls');
+
+var lab = exports.lab = Lab.script();
 
 var afterEach = lab.afterEach;
 var beforeEach = lab.beforeEach;
@@ -166,7 +162,6 @@ describe('api.js unit test', function () {
       var base = 'api-staging-codenow.runnableapp.com';
       beforeEach(function (done) {
         sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({})
-        sinon.stub(api, '_getUrlFromRequest');
         sinon.stub(api, '_getTargetHostElastic');
         sinon.stub(api, '_processTargetInstance');
         done();
@@ -174,7 +169,6 @@ describe('api.js unit test', function () {
 
       afterEach(function (done) {
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore();
-        api._getUrlFromRequest.restore();
         api._getTargetHostElastic.restore();
         api._processTargetInstance.restore();
         done();
@@ -192,10 +186,11 @@ describe('api.js unit test', function () {
             origin: 'http://frontend-staging-codenow.runnableapp.com',
             host: base + ':80'
           },
+          reqUrl: 'http://' + base + ':80',
+          parsedReqUrl: url.parse('http://' + base + ':80'),
           hipacheEntry: JSON.parse(naviRedisEntriesFixture.elastic),
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
-        api._getUrlFromRequest.returns('http://' + base + ':80');
         api._getTargetHostElastic.yieldsAsync();
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
@@ -216,10 +211,11 @@ describe('api.js unit test', function () {
             origin: 'http://frontend-staging-codenow.runnableapp.com',
             host: base + ':80'
           },
+          reqUrl: 'http://' + base + ':80',
+          parsedReqUrl: url.parse('http://' + base + ':80'),
           hipacheEntry: naviRedisEntriesFixture.direct,
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
-        api._getUrlFromRequest.returns('http://' + base + ':80');
         api._processTargetInstance.yieldsAsync();
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
@@ -243,10 +239,11 @@ describe('api.js unit test', function () {
             origin: 'http://frontend-staging-codenow.runnableapp.com',
             host: base + ':80'
           },
+          reqUrl: 'http://' + base + ':80',
+          parsedReqUrl: url.parse('http://' + base + ':80'),
           hipacheEntry: naviRedisEntriesFixture.direct,
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
-        api._getUrlFromRequest.returns('http://' + base + ':80');
 
         api.getTargetHost(req, {}, function (err) {
           if (err) { return done(err); }
