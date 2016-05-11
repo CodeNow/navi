@@ -16,47 +16,21 @@ var noop = require('101/noop');
 var keypather = require('keypather')();
 var createResStream = require('../../lib/create-res-stream.js');
 var scriptInjectResStreamFactory = require('../../lib/script-inject-res-stream.js');
-var Intercom = require('intercom-client')
+var orion = require('@runnable/orion')
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
 
 describe('proxy.js unit test', function () {
   var proxyServer;
-  var intercomClient;
   beforeEach(function(done) {
-    intercomClient = {
-      users: {
-        create: sinon.stub()
-      }
-    };
-    sinon.stub(Intercom, 'Client').returns(intercomClient);
+    sinon.stub(orion.users, 'create')
     proxyServer = new ProxyServer();
     done();
   });
   afterEach(function (done) {
-    Intercom.Client.restore();
+    orion.users.create.restore()
     done();
-  });
-  describe('when intercom ids are not set', function () {
-    var storage = {}
-    beforeEach(function (done) {
-      storage.INTERCOM_APP_ID = process.env.INTERCOM_APP_ID;
-      storage.INTERCOM_API_KEY = process.env.INTERCOM_API_KEY;
-      delete process.env.INTERCOM_APP_ID;
-      delete process.env.INTERCOM_API_KEY;
-      done();
-    });
-    afterEach(function (done) {
-      process.env.INTERCOM_APP_ID = storage.INTERCOM_APP_ID;
-      process.env.INTERCOM_API_KEY = storage.INTERCOM_API_KEY;
-      done();
-    });
-    it('should not initialize intercomClient', function (done) {
-      proxyServer = new ProxyServer();
-      expect(proxyServer.intercomClient).to.not.exist();
-      done();
-    });
   });
   describe('proxy error handler', function() {
     it('should proxy to error page if target unresponsive', function(done) {
@@ -124,8 +98,8 @@ describe('proxy.js unit test', function () {
           .withArgs(testReq, sinon.match.any, { target: testHost, secure: false })
           .calledOnce).to.be.true();
 
-        sinon.assert.calledOnce(intercomClient.users.create);
-        sinon.assert.calledWith(intercomClient.users.create, {
+        sinon.assert.calledOnce(orion.users.create);
+        sinon.assert.calledWith(orion.users.create, {
           user_id: 'navi-testOwnerUsername',
           update_last_request_at: true,
           companies: [{
@@ -143,12 +117,25 @@ describe('proxy.js unit test', function () {
     it('should not send data to intercom if the naviEntry.ownerUsername does not exist', function (done) {
       delete testReq.naviEntry.ownerUsername
       sinon.stub(proxyServer.proxy, 'web', function() {
-        sinon.assert.notCalled(intercomClient.users.create);
+        sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
       testMw(testReq, testRes);
     });
+
+    it('should not send data to intercom if the req.cookies.isModerating exists', function (done) {
+      testReq.cookies = {
+        isModerating: '1'
+      }
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        sinon.assert.notCalled(orion.users.create);
+        proxyServer.proxy.web.restore();
+        done();
+      });
+      testMw(testReq, testRes);
+    });
+
     it('should keep path info and append query', function(done) {
       var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';

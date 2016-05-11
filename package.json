@@ -29,6 +29,7 @@
   "homepage": "https://github.com/CodeNow/navi",
   "dependencies": {
     "101": "^1.2.0",
+    "@runnable/orion": "^1.1.0",
     "async": "^1.4.2",
     "bluebird": "^3.0.6",
     "boom": "^2.6.1",
@@ -44,7 +45,6 @@
     "express-domain-middleware": "^0.1.0",
     "express-session": "^1.11.1",
     "http-proxy": "^1.12.0",
-    "intercom-client": "^2.8.0",
     "ip": "^1.1.0",
     "keypather": "^1.10.1",
     "lru-cache": "^3.2.0",
