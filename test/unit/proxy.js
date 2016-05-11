@@ -123,6 +123,19 @@ describe('proxy.js unit test', function () {
       });
       testMw(testReq, testRes);
     });
+
+    it('should not send data to intercom if the req.cookies.isModerating exists', function (done) {
+      testReq.cookies = {
+        isModerating: '1'
+      }
+      sinon.stub(proxyServer.proxy, 'web', function() {
+        sinon.assert.notCalled(orion.users.create);
+        proxyServer.proxy.web.restore();
+        done();
+      });
+      testMw(testReq, testRes);
+    });
+
     it('should keep path info and append query', function(done) {
       var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';

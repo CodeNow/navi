@@ -37,6 +37,7 @@
     "callback-count": "^0.2.0",
     "cluster-man": "^1.1.1",
     "connect-redis": "^2.2.0",
+    "cookie-parser": "^1.4.1",
     "cors": "^2.6.0",
     "dotenv": "^1.0.0",
     "error-cat": "git+https://git@github.com/Runnable/error-cat.git#v1.3.4",
