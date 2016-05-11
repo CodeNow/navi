@@ -16,7 +16,7 @@ var noop = require('101/noop');
 var keypather = require('keypather')();
 var createResStream = require('../../lib/create-res-stream.js');
 var scriptInjectResStreamFactory = require('../../lib/script-inject-res-stream.js');
-var orion = require('orion')
+var orion = require('@runnable/orion')
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
