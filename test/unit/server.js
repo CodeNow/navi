@@ -8,6 +8,8 @@ var Lab = require('lab');
 var expect = require('code').expect;
 var mongodb = require('mongodb');
 var sinon = require('sinon');
+var http = require('http');
+var https = require('https');
 
 var Server = require('models/server');
 var api = require('models/api');
@@ -49,25 +51,62 @@ describe('server.js unit test', function () {
     redis.removeAllListeners();
     done();
   });
+
   describe('start', function () {
+    beforeEach(function (done) {
+      sinon.stub(proxyServer.httpServer, 'listen');
+      sinon.stub(proxyServer.httpsServer, 'listen');
+      sinon.stub(mongodb.MongoClient, 'connect');
+      done();
+    });
+
     it('should start http server', function (done) {
-      sinon.stub(proxyServer.server, 'listen').yieldsAsync();
+      proxyServer.httpServer.listen.yieldsAsync();
+      proxyServer.httpsServer.listen.yieldsAsync();
+
       proxyServer.start(function (err) {
         if (err) { return done(err); }
-        expect(proxyServer.server.listen
+        expect(proxyServer.httpServer.listen
           .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-        proxyServer.server.listen.restore();
+        proxyServer.httpServer.listen.restore();
         done();
       });
     });
-    it('should error if mongo connect fails', function (done) {
+
+    it('should start https server', function (done) {
+      proxyServer.httpServer.listen.yieldsAsync();
+      proxyServer.httpsServer.listen.yieldsAsync();
+
+      proxyServer.start(function (err) {
+        if (err) { return done(err); }
+        expect(proxyServer.httpServer.listen
+          .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
+        proxyServer.httpServer.listen.restore();
+        done();
+      });
+    });
+
+    it('should error if http listen fails', function (done) {
       var mongoErr = new Error('mongo err');
-      sinon.stub(proxyServer.server, 'listen').yieldsAsync();
-      sinon.stub(mongodb.MongoClient, 'connect').yieldsAsync(mongoErr);
+      proxyServer.httpServer.listen.yieldsAsync(mongoErr);
+
       proxyServer.start(function (err) {
         expect(err.message).to.equal('mongo err');
-        expect(proxyServer.server.listen.callCount).to.equal(0);
-        proxyServer.server.listen.restore();
+        expect(proxyServer.httpServer.listen.callCount).to.equal(0);
+        proxyServer.httpServer.listen.restore();
+        mongodb.MongoClient.connect.restore();
+        done();
+      });
+    });
+
+    it('should error if mongo connect fails', function (done) {
+      var mongoErr = new Error('mongo err');
+      mongodb.MongoClient.connect.yieldsAsync(mongoErr);
+
+      proxyServer.start(function (err) {
+        expect(err.message).to.equal('mongo err');
+        expect(proxyServer.httpServer.listen.callCount).to.equal(0);
+        proxyServer.httpServer.listen.restore();
         mongodb.MongoClient.connect.restore();
         done();
       });
@@ -75,11 +114,11 @@ describe('server.js unit test', function () {
   });
   describe('stop', function () {
     it('should close http server', function (done) {
-      sinon.stub(proxyServer.server, 'close').yields();
+      sinon.stub(proxyServer.httpServer, 'close').yields();
       proxyServer.stop(function (err) {
         if (err) { return done(err); }
-        expect(proxyServer.server.close.calledOnce).to.be.true();
-        proxyServer.server.close.restore();
+        expect(proxyServer.httpServer.close.calledOnce).to.be.true();
+        proxyServer.httpServer.close.restore();
         done();
       });
     });
