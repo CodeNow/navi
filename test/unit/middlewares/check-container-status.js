@@ -118,8 +118,9 @@ describe('lib/middlewares/check-container-status', function () {
     var req;
     beforeEach(function (done) {
       req = {
-        headers: {
-          host: 'foo.com'
+        parsedReqUrl: {
+          protocol: 'http:',
+          port: '80',
         },
         targetNaviEntryInstance: {
           dockerHost: 'dockerHost',
@@ -139,9 +140,11 @@ describe('lib/middlewares/check-container-status', function () {
     });
     describe('when port 443 is specified', function () {
       beforeEach(function (done) {
-        req.headers.host = req.headers.host + ':443';
+        req.parsedReqUrl.protocol = 'https:';
+        req.parsedReqUrl.port = '443';
         done();
       });
+
       it('should resolve a url with https and on the right port', function (done) {
         expect(checkContainerStatus._getUrlFromNaviEntryInstance(req)).to.equal('https://dockerHost:4000');
         done();

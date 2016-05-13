@@ -19,6 +19,7 @@ var resolveUrls = require('middlewares/resolve-urls');
 var redirectDisabled = require('middlewares/redirect-disabled');
 var checkContainerStatus = require('middlewares/check-container-status');
 var Intercom = require('intercom-client');
+var mongo = require('models/mongo');
 
 var lab = exports.lab = Lab.script();
 
@@ -47,6 +48,7 @@ describe('server.js unit test', function () {
     checkContainerStatus.middleware.restore();
     done();
   });
+
   beforeEach(function (done) {
     redis.removeAllListeners();
     done();
@@ -54,21 +56,38 @@ describe('server.js unit test', function () {
 
   describe('start', function () {
     beforeEach(function (done) {
+      sinon.stub(proxyServer, '_setupMiddleware').returns();
       sinon.stub(proxyServer.httpServer, 'listen');
       sinon.stub(proxyServer.httpsServer, 'listen');
-      sinon.stub(mongodb.MongoClient, 'connect');
+      sinon.stub(mongo, 'start');
       done();
+    });
+
+    afterEach(function (done) {
+      mongo.start.restore();
+      done();
+    });
+
+    it('should _setupMiddleware', function (done) {
+      proxyServer.httpServer.listen.yieldsAsync();
+      proxyServer.httpsServer.listen.yieldsAsync();
+      mongo.start.yieldsAsync();
+
+      proxyServer.start(function () {
+        sinon.assert.calledOnce(proxyServer._setupMiddleware);
+        done();
+      });
     });
 
     it('should start http server', function (done) {
       proxyServer.httpServer.listen.yieldsAsync();
       proxyServer.httpsServer.listen.yieldsAsync();
+      mongo.start.yieldsAsync();
 
       proxyServer.start(function (err) {
         if (err) { return done(err); }
-        expect(proxyServer.httpServer.listen
-          .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-        proxyServer.httpServer.listen.restore();
+        sinon.assert.calledOnce(proxyServer.httpServer.listen);
+        sinon.assert.calledWith(proxyServer.httpServer.listen, process.env.HTTP_PORT);
         done();
       });
     });
@@ -76,53 +95,66 @@ describe('server.js unit test', function () {
     it('should start https server', function (done) {
       proxyServer.httpServer.listen.yieldsAsync();
       proxyServer.httpsServer.listen.yieldsAsync();
+      mongo.start.yieldsAsync();
 
       proxyServer.start(function (err) {
         if (err) { return done(err); }
-        expect(proxyServer.httpServer.listen
-          .withArgs(process.env.HTTP_PORT).calledOnce).to.be.true();
-        proxyServer.httpServer.listen.restore();
+        sinon.assert.calledOnce(proxyServer.httpsServer.listen);
+        sinon.assert.calledWith(proxyServer.httpsServer.listen, process.env.HTTPS_PORT);
         done();
       });
     });
 
     it('should error if http listen fails', function (done) {
-      var mongoErr = new Error('mongo err');
-      proxyServer.httpServer.listen.yieldsAsync(mongoErr);
+      var err = new Error('failed');
+      proxyServer.httpServer.listen.yieldsAsync(err);
+      mongo.start.yieldsAsync();
 
       proxyServer.start(function (err) {
-        expect(err.message).to.equal('mongo err');
-        expect(proxyServer.httpServer.listen.callCount).to.equal(0);
-        proxyServer.httpServer.listen.restore();
-        mongodb.MongoClient.connect.restore();
+        expect(err.message).to.equal('failed');
         done();
       });
     });
 
     it('should error if mongo connect fails', function (done) {
       var mongoErr = new Error('mongo err');
-      mongodb.MongoClient.connect.yieldsAsync(mongoErr);
+      mongo.start.yieldsAsync(mongoErr);
 
       proxyServer.start(function (err) {
         expect(err.message).to.equal('mongo err');
-        expect(proxyServer.httpServer.listen.callCount).to.equal(0);
-        proxyServer.httpServer.listen.restore();
-        mongodb.MongoClient.connect.restore();
         done();
       });
     });
   });
+
   describe('stop', function () {
-    it('should close http server', function (done) {
-      sinon.stub(proxyServer.httpServer, 'close').yields();
+    beforeEach(function (done) {
+      sinon.stub(proxyServer.httpServer, 'close');
+      sinon.stub(proxyServer.httpsServer, 'close');
+      sinon.stub(mongo, 'stop');
+      done();
+    });
+
+    afterEach(function (done) {
+      mongo.stop.restore();
+      done();
+    });
+
+    it('should close everything', function (done) {
+      mongo.stop.yieldsAsync();
+      proxyServer.httpsServer.close.yieldsAsync();
+      proxyServer.httpServer.close.yieldsAsync();
+
       proxyServer.stop(function (err) {
         if (err) { return done(err); }
-        expect(proxyServer.httpServer.close.calledOnce).to.be.true();
-        proxyServer.httpServer.close.restore();
+        sinon.assert.calledOnce(mongo.stop);
+        sinon.assert.calledOnce(proxyServer.httpsServer.close);
+        sinon.assert.calledOnce(proxyServer.httpServer.close);
         done();
       });
     });
   });
+
   describe('_handleUserWsRequest', function () {
     var _handleUserWsRequest;
     beforeEach(function (done) {

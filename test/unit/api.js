@@ -35,7 +35,6 @@ describe('api.js unit test', function () {
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
     it('should add 80', function (done) {
       var test = api._getUrlFromRequest({
-        isBrowser: true,
         headers: {
           host: base
         }
@@ -44,19 +43,32 @@ describe('api.js unit test', function () {
       done();
     });
 
-    it('should add https', function (done) {
+    it('should add https when secure', function (done) {
       var test = api._getUrlFromRequest({
-        isBrowser: true,
         headers: {
-          host: base+':443'
+          host: base
+        },
+        secure: true
+      });
+      expect(test).to.equal('https://'+ base +':443');
+      done();
+    });
+
+    it('should add https when encrypted', function (done) {
+      var test = api._getUrlFromRequest({
+        headers: {
+          host: base
+        },
+        connection: {
+          encrypted: true
         }
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
     });
+
     it('should add 80 to subdomain', function (done) {
       var test = api._getUrlFromRequest({
-        isBrowser: true,
         headers: {
           host: 'dat.sub.domain.' + base
         }
@@ -64,19 +76,20 @@ describe('api.js unit test', function () {
       expect(test).to.equal(result);
       done();
     });
+
     it('should add https to subdomain', function (done) {
       var test = api._getUrlFromRequest({
-        isBrowser: true,
         headers: {
           host: 'dat.sub.domain.' + base + ':443'
-        }
+        },
+        secure: true
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
     });
+
     it('should be valid for correct hostname', function (done) {
       var test = api._getUrlFromRequest({
-        isBrowser: true,
         headers: {
           host: base + ':100'
         }
