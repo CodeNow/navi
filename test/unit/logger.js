@@ -72,11 +72,19 @@ describe('lib/logger.js unit test', function () {
         var serialized = logger._serializers.req({
           method: 'GET',
           url: 'some-url',
-          isInternalRequest: true
+          connection: {
+            encrypted: true
+          },
+          headers: {
+            host: 'host'
+          },
+          secure: true,
         });
+        expect(serialized.encrypted).to.equal(true);
+        expect(serialized.host).to.equal('host');
         expect(serialized.method).to.equal('GET');
+        expect(serialized.secure).to.equal(true);
         expect(serialized.url).to.equal('some-url');
-        expect(serialized.isInternalRequest).to.equal(true);
         done();
       });
     });
