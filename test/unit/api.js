@@ -30,11 +30,11 @@ describe('api.js unit test', function () {
     done();
   });
 
-  describe('api._getUrlFromRequest', function () {
+  describe('api.getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
     it('should add 80', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: base
         }
@@ -44,7 +44,7 @@ describe('api.js unit test', function () {
     });
 
     it('should add https when secure', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: base
         },
@@ -55,7 +55,7 @@ describe('api.js unit test', function () {
     });
 
     it('should add https when encrypted', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: base
         },
@@ -68,7 +68,7 @@ describe('api.js unit test', function () {
     });
 
     it('should add 80 to subdomain', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: 'dat.sub.domain.' + base
         }
@@ -78,7 +78,7 @@ describe('api.js unit test', function () {
     });
 
     it('should add https to subdomain', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: 'dat.sub.domain.' + base + ':443'
         },
@@ -89,7 +89,7 @@ describe('api.js unit test', function () {
     });
 
     it('should be valid for correct hostname', function (done) {
-      var test = api._getUrlFromRequest({
+      var test = api.getUrlFromRequest({
         headers: {
           host: base + ':100'
         }

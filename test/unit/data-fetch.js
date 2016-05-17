@@ -23,7 +23,7 @@ describe('data-fetch.js unit test', function() {
     var testReqUrl = 'http://' + testReqHost + ':4242';
     beforeEach(function(done) {
       sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({});
-      sinon.stub(api, '_getUrlFromRequest').returns(testReqUrl);
+      sinon.stub(api, 'getUrlFromRequest').returns(testReqUrl);
       sinon.stub(mongo, 'fetchNaviEntry');
       sinon.stub(redis, 'lrange');
       done();
@@ -31,7 +31,7 @@ describe('data-fetch.js unit test', function() {
 
     afterEach(function (done) {
       resolveUrls.splitDirectUrlIntoShortHashAndElastic.restore();
-      api._getUrlFromRequest.restore();
+      api.getUrlFromRequest.restore();
       mongo.fetchNaviEntry.restore();
       redis.lrange.restore();
       done();
