@@ -62,6 +62,49 @@ describe('data-fetch.js unit test', function() {
       });
     });
 
+    it('should not set isHttps if not secure or not encrypted', function(done) {
+      var testReq = {
+        headers: {}
+      };
+      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
+      mongo.fetchNaviEntry.yieldsAsync();
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        expect(testReq.isHttps).to.be.null();
+        done();
+      });
+    });
+
+    it('should set isHttps true if secure and not encrypted', function(done) {
+      var testReq = {
+        headers: {},
+        secure: true
+      };
+      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
+      mongo.fetchNaviEntry.yieldsAsync();
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        expect(testReq.isHttps).to.be.true();
+        done();
+      });
+    });
+
+    it('should set isHttps true if not secure but encrypted', function(done) {
+      var testReq = {
+        headers: {},
+        connection: {
+          encrypted: true
+        }
+      };
+      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
+      mongo.fetchNaviEntry.yieldsAsync();
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        expect(testReq.isHttps).to.be.true();
+        done();
+      });
+    });
+
     it('should pass correct args to lrange', function(done) {
       var testReq = {
         headers: {}
