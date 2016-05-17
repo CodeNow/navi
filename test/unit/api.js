@@ -101,13 +101,13 @@ describe('api.js unit test', function () {
 
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
-      sinon.stub(api, '_getDestinationProxyUrl');
+      sinon.stub(api, 'getTargetUrl');
       sinon.stub(errorPage, 'generateErrorUrl').returns('TestErrorHost')
       done();
     });
 
     afterEach(function (done) {
-      api._getDestinationProxyUrl.restore();
+      api.getTargetUrl.restore();
       errorPage.generateErrorUrl.restore()
       done();
     });
@@ -138,7 +138,7 @@ describe('api.js unit test', function () {
     });
 
     it('should set req.targetHost to container host & port if running', function (done) {
-      api._getDestinationProxyUrl.returns('http://0.0.0.0:600');
+      api.getTargetUrl.returns('http://0.0.0.0:600');
       var req = {};
       var reqUrl = 'api-staging-codenow.runnableapp.com';
       api._processTargetInstance({
