@@ -43,25 +43,12 @@ describe('api.js unit test', function () {
       done();
     });
 
-    it('should add https when secure', function (done) {
+    it('should add https when isHttps', function (done) {
       var test = api.getUrlFromRequest({
         headers: {
           host: base
         },
-        secure: true
-      });
-      expect(test).to.equal('https://'+ base +':443');
-      done();
-    });
-
-    it('should add https when encrypted', function (done) {
-      var test = api.getUrlFromRequest({
-        headers: {
-          host: base
-        },
-        connection: {
-          encrypted: true
-        }
+        isHttps: true
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
@@ -82,7 +69,7 @@ describe('api.js unit test', function () {
         headers: {
           host: 'dat.sub.domain.' + base + ':443'
         },
-        secure: true
+        isHttps: true
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
