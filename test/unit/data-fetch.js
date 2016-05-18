@@ -211,6 +211,25 @@ describe('data-fetch.js unit test', function () {
         done();
       });
     });
+
+    it('should update reqUrl & parsedReqUrl with port 80 if failed and https', function (done) {
+      var testReq = {
+        headers: {},
+        secure: true
+      };
+      var testRaw = 'raw';
+      api.getUrlFromRequest.onFirstCall().returns('https://happygolucky.net:443');
+      redis.lrange.onFirstCall().yieldsAsync(null, []);
+      redis.lrange.onSecondCall().yieldsAsync(null, testRaw);
+      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        var uri = 'http://happygolucky.net:80';
+        expect(testReq.reqUrl).to.equal(uri);
+        expect(testReq.parsedReqUrl).to.deep.equal(url.parse(uri));
+        done();
+      });
+    });
   }); // end mw
 
   describe('getMongoEntry', function () {

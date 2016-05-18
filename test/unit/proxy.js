@@ -74,6 +74,7 @@ describe('proxy.js unit test', function () {
       proxyServer.proxy.emit('error', 'err', testReq, testRes);
     });
   });
+
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
     var testRes = {};
@@ -89,9 +90,11 @@ describe('proxy.js unit test', function () {
       testMw = proxyServer.proxyIfTargetHostExist();
       done();
     });
+
     it('should next if no target', function(done) {
       testMw({}, null, done);
     });
+
     it('should proxy if target exist', function(done) {
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
@@ -127,13 +130,71 @@ describe('proxy.js unit test', function () {
     it('should not send data to intercom if the req.cookies.isModerating exists', function (done) {
       testReq.cookies = {
         isModerating: '1'
-      }
+      };
       sinon.stub(proxyServer.proxy, 'web', function() {
         sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
       testMw(testReq, testRes);
+    });
+
+    it('should add headers on start for http', function (done) {
+      testReq.isHttps = false;
+      testReq.parsedReqUrl = {
+        port: '1738'
+      };
+      testReq.headers = {
+        host: 'localhost'
+      };
+      sinon.stub(proxyServer.proxy, 'web').returns();
+      sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
+        expect(event).to.equal('start');
+        fn();
+        var remoteAddr = '::ffff:' + process.env.USERLAND_IP;
+
+        expect(testReq.headers['x-forwarded-for']).to.equal(remoteAddr);
+        expect(testReq.headers['x-real-ip']).to.equal(remoteAddr);
+        expect(testReq.headers['x-forwarded-protocol']).to.equal('http');
+        expect(testReq.headers['x-forwarded-proto']).to.equal('http');
+        expect(testReq.headers['x-forwarded-port']).to.equal('1738');
+        expect(testReq.headers['x-forwarded-host'])
+          .to.equal(testReq.headers.host);
+      });
+
+      testMw(testReq, testRes);
+      proxyServer.proxy.web.restore();
+      proxyServer.proxy.on.restore();
+      done();
+    });
+
+    it('should add headers on start for https', function (done) {
+      testReq.isHttps = true;
+      testReq.parsedReqUrl = {
+        port: '1738'
+      };
+      testReq.headers = {
+        host: 'poolparty.co'
+      };
+      sinon.stub(proxyServer.proxy, 'web').returns();
+      sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
+        expect(event).to.equal('start');
+        fn();
+        var remoteAddr = '::ffff:' + process.env.USERLAND_IP;
+
+        expect(testReq.headers['x-forwarded-for']).to.equal(remoteAddr);
+        expect(testReq.headers['x-real-ip']).to.equal(remoteAddr);
+        expect(testReq.headers['x-forwarded-protocol']).to.equal('https');
+        expect(testReq.headers['x-forwarded-proto']).to.equal('https');
+        expect(testReq.headers['x-forwarded-port']).to.equal('443');
+        expect(testReq.headers['x-forwarded-host'])
+          .to.equal(testReq.headers.host);
+      });
+
+      testMw(testReq, testRes);
+      proxyServer.proxy.web.restore();
+      proxyServer.proxy.on.restore();
+      done();
     });
 
     it('should keep path info and append query', function(done) {
@@ -166,6 +227,7 @@ describe('proxy.js unit test', function () {
       testMw(req, testRes);
     });
   });
+
   describe('proxyWsIfTargetHostExist', function () {
     it('should destroy socket if no host and port', function(done) {
       proxyServer.proxyWsIfTargetHostExist({}, {
