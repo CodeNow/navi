@@ -13,6 +13,7 @@ var expect = Code.expect;
 var it = lab.test;
 
 
+var Api = require('models/api.js');
 var checkContainerStatus = require('middlewares/check-container-status');
 var errorPage = require('models/error-page.js');
 
@@ -35,13 +36,13 @@ describe('lib/middlewares/check-container-status', function () {
     });
 
     beforeEach(function (done) {
-      sinon.stub(checkContainerStatus, '_getUrlFromNaviEntryInstance').returns('_getUrlFromNaviEntryInstance');
+      sinon.stub(Api, 'getTargetUrl').returns('getTargetUrl');
       sinon.stub(checkContainerStatus, '_getTargetShortHash').returns('_getTargetShortHash');
       sinon.stub(errorPage, 'generateErrorUrl').returns('generateErrorUrl');
       done();
     });
     afterEach(function (done) {
-      checkContainerStatus._getUrlFromNaviEntryInstance.restore();
+      Api.getTargetUrl.restore();
       checkContainerStatus._getTargetShortHash.restore();
       errorPage.generateErrorUrl.restore();
       done();
@@ -56,7 +57,7 @@ describe('lib/middlewares/check-container-status', function () {
       it('should just next without doing anything', function (done) {
         checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(next);
-        sinon.assert.notCalled(checkContainerStatus._getUrlFromNaviEntryInstance);
+        sinon.assert.notCalled(Api.getTargetUrl);
         sinon.assert.notCalled(checkContainerStatus._getTargetShortHash);
         sinon.assert.notCalled(errorPage.generateErrorUrl);
         done();
@@ -67,7 +68,7 @@ describe('lib/middlewares/check-container-status', function () {
         checkContainerStatus.middleware(req, res, next);
         sinon.assert.notCalled(checkContainerStatus._getTargetShortHash);
         sinon.assert.notCalled(errorPage.generateErrorUrl);
-        sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);
+        sinon.assert.calledOnce(Api.getTargetUrl);
         sinon.assert.calledOnce(next);
         done();
       });
@@ -81,11 +82,11 @@ describe('lib/middlewares/check-container-status', function () {
         checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(checkContainerStatus._getTargetShortHash);
         sinon.assert.calledWith(checkContainerStatus._getTargetShortHash, req);
-        sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);
-        sinon.assert.calledWith(checkContainerStatus._getUrlFromNaviEntryInstance, req);
+        sinon.assert.calledOnce(Api.getTargetUrl);
+        sinon.assert.calledWith(Api.getTargetUrl, req.parsedReqUrl, req.targetNaviEntryInstance);
         sinon.assert.calledOnce(errorPage.generateErrorUrl);
         sinon.assert.calledWith(errorPage.generateErrorUrl, 'dock_removed', {
-          elasticUrl: '_getUrlFromNaviEntryInstance',
+          elasticUrl: 'getTargetUrl',
           shortHash: '_getTargetShortHash'
         });
         sinon.assert.calledOnce(next);
@@ -101,55 +102,17 @@ describe('lib/middlewares/check-container-status', function () {
         checkContainerStatus.middleware(req, res, next);
         sinon.assert.calledOnce(checkContainerStatus._getTargetShortHash);
         sinon.assert.calledWith(checkContainerStatus._getTargetShortHash, req);
-        sinon.assert.calledOnce(checkContainerStatus._getUrlFromNaviEntryInstance);
-        sinon.assert.calledWith(checkContainerStatus._getUrlFromNaviEntryInstance, req);
+        sinon.assert.calledOnce(Api.getTargetUrl);
+        sinon.assert.calledWith(Api.getTargetUrl, req.parsedReqUrl, req.targetNaviEntryInstance);
         sinon.assert.calledOnce(errorPage.generateErrorUrl);
         sinon.assert.calledWith(errorPage.generateErrorUrl, 'not_running', {
-          elasticUrl: '_getUrlFromNaviEntryInstance',
+          elasticUrl: 'getTargetUrl',
           shortHash: '_getTargetShortHash'
         });
         sinon.assert.calledOnce(next);
         done();
       });
     })
-  });
-
-  describe('_getUrlFromNaviEntryInstance', function () {
-    var req;
-    beforeEach(function (done) {
-      req = {
-        parsedReqUrl: {
-          protocol: 'http:',
-          port: '80',
-        },
-        targetNaviEntryInstance: {
-          dockerHost: 'dockerHost',
-          ports: {
-            '80': 3000,
-            '443': 4000
-          }
-        }
-      };
-      done();
-    });
-    describe('when no port is specified', function () {
-      it('should resolve a url with http and on the right port', function (done) {
-        expect(checkContainerStatus._getUrlFromNaviEntryInstance(req)).to.equal('http://dockerHost:3000');
-        done();
-      });
-    });
-    describe('when port 443 is specified', function () {
-      beforeEach(function (done) {
-        req.parsedReqUrl.protocol = 'https:';
-        req.parsedReqUrl.port = '443';
-        done();
-      });
-
-      it('should resolve a url with https and on the right port', function (done) {
-        expect(checkContainerStatus._getUrlFromNaviEntryInstance(req)).to.equal('https://dockerHost:4000');
-        done();
-      });
-    });
   });
 
   describe('_getTargetShortHash', function () {

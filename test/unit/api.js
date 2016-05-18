@@ -88,7 +88,7 @@ describe('api.js unit test', function () {
 
   describe('getTargetUrl', function () {
     it('should return http url', function (done) {
-      var out = api.getTargetUrl(false, url.parse('http://10.0.0.1:4242'), {
+      var out = api.getTargetUrl(url.parse('http://10.0.0.1:4242'), {
         dockerHost: '123.0.0.0',
         ports: {
           '4242': '12345'
@@ -99,47 +99,13 @@ describe('api.js unit test', function () {
     });
 
     it('should return https url', function (done) {
-      var out = api.getTargetUrl(false, url.parse('https://10.0.0.1:443'), {
+      var out = api.getTargetUrl(url.parse('https://10.0.0.1:443'), {
         dockerHost: '123.0.0.0',
         ports: {
           '443': '12345'
         }
       });
       expect(out).to.equal('https://123.0.0.0:12345');
-      done();
-    });
-
-    it('should return http url isHttps 443', function (done) {
-      var out = api.getTargetUrl(true, url.parse('https://10.0.0.1:80'), {
-        dockerHost: '123.0.0.0',
-        ports: {
-          '443': '12345',
-          '80': '12345'
-        }
-      });
-      expect(out).to.equal('https://123.0.0.0:12345');
-      done();
-    });
-
-    it('should return http url isHttps !443 !80', function (done) {
-      var out = api.getTargetUrl(true, url.parse('https://10.0.0.1:81'), {
-        dockerHost: '123.0.0.0',
-        ports: {
-          '81': '12345'
-        }
-      });
-      expect(out).to.equal('https://123.0.0.0:12345');
-      done();
-    });
-
-    it('should return http url isHttps !443 80', function (done) {
-      var out = api.getTargetUrl(true, url.parse('https://10.0.0.1:80'), {
-        dockerHost: '123.0.0.0',
-        ports: {
-          '80': '12345'
-        }
-      });
-      expect(out).to.equal('http://123.0.0.0:12345');
       done();
     });
   }); // end getTargetUrl
