@@ -144,7 +144,9 @@ describe('proxy.js unit test', function () {
       testReq.parsedReqUrl = {
         port: '1738'
       };
-      testReq.headers = {};
+      testReq.headers = {
+        host: 'localhost'
+      };
       sinon.stub(proxyServer.proxy, 'web').returns();
       sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
         expect(event).to.equal('start');
@@ -156,6 +158,8 @@ describe('proxy.js unit test', function () {
         expect(testReq.headers['x-forwarded-protocol']).to.equal('http');
         expect(testReq.headers['x-forwarded-proto']).to.equal('http');
         expect(testReq.headers['x-forwarded-port']).to.equal('1738');
+        expect(testReq.headers['x-forwarded-host'])
+          .to.equal(testReq.headers.host);
       });
 
       testMw(testReq, testRes);
@@ -169,7 +173,9 @@ describe('proxy.js unit test', function () {
       testReq.parsedReqUrl = {
         port: '1738'
       };
-      testReq.headers = {};
+      testReq.headers = {
+        host: 'poolparty.co'
+      };
       sinon.stub(proxyServer.proxy, 'web').returns();
       sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
         expect(event).to.equal('start');
@@ -181,6 +187,8 @@ describe('proxy.js unit test', function () {
         expect(testReq.headers['x-forwarded-protocol']).to.equal('https');
         expect(testReq.headers['x-forwarded-proto']).to.equal('https');
         expect(testReq.headers['x-forwarded-port']).to.equal('443');
+        expect(testReq.headers['x-forwarded-host'])
+          .to.equal(testReq.headers.host);
       });
 
       testMw(testReq, testRes);
