@@ -139,64 +139,6 @@ describe('proxy.js unit test', function () {
       testMw(testReq, testRes);
     });
 
-    it('should add headers on start for http', function (done) {
-      testReq.isHttps = false;
-      testReq.parsedReqUrl = {
-        port: '1738'
-      };
-      testReq.headers = {
-        host: 'localhost'
-      };
-      sinon.stub(proxyServer.proxy, 'web').returns();
-      sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
-        expect(event).to.equal('start');
-        fn();
-        var remoteAddr = '::ffff:' + process.env.USERLAND_IP;
-
-        expect(testReq.headers['x-forwarded-for']).to.equal(remoteAddr);
-        expect(testReq.headers['x-real-ip']).to.equal(remoteAddr);
-        expect(testReq.headers['x-forwarded-protocol']).to.equal('http');
-        expect(testReq.headers['x-forwarded-proto']).to.equal('http');
-        expect(testReq.headers['x-forwarded-port']).to.equal('1738');
-        expect(testReq.headers['x-forwarded-host'])
-          .to.equal(testReq.headers.host);
-      });
-
-      testMw(testReq, testRes);
-      proxyServer.proxy.web.restore();
-      proxyServer.proxy.on.restore();
-      done();
-    });
-
-    it('should add headers on start for https', function (done) {
-      testReq.isHttps = true;
-      testReq.parsedReqUrl = {
-        port: '1738'
-      };
-      testReq.headers = {
-        host: 'poolparty.co'
-      };
-      sinon.stub(proxyServer.proxy, 'web').returns();
-      sinon.stub(proxyServer.proxy, 'on', function (event, fn) {
-        expect(event).to.equal('start');
-        fn();
-        var remoteAddr = '::ffff:' + process.env.USERLAND_IP;
-
-        expect(testReq.headers['x-forwarded-for']).to.equal(remoteAddr);
-        expect(testReq.headers['x-real-ip']).to.equal(remoteAddr);
-        expect(testReq.headers['x-forwarded-protocol']).to.equal('https');
-        expect(testReq.headers['x-forwarded-proto']).to.equal('https');
-        expect(testReq.headers['x-forwarded-port']).to.equal('443');
-        expect(testReq.headers['x-forwarded-host'])
-          .to.equal(testReq.headers.host);
-      });
-
-      testMw(testReq, testRes);
-      proxyServer.proxy.web.restore();
-      proxyServer.proxy.on.restore();
-      done();
-    });
-
     it('should keep path info and append query', function(done) {
       var testHost = 'http://detention-staging-codenow.runnableapp.com:80';
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';
