@@ -91,7 +91,7 @@ describe('data-fetch.js unit test', function () {
       });
     });
 
-    it('should not set isHttps if not secure or not encrypted', function (done) {
+    it('should not set isHttps if no header', function (done) {
       var testReq = {
         headers: {}
       };
@@ -99,30 +99,15 @@ describe('data-fetch.js unit test', function () {
       dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
-        expect(testReq.isHttps).to.be.null();
+        expect(testReq.isHttps).to.be.false();
         done();
       });
     });
 
-    it('should set isHttps true if secure and not encrypted', function (done) {
+    it('should set isHttps true if x-forwarded-proto = https', function (done) {
       var testReq = {
-        headers: {},
-        secure: true
-      };
-      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
-      dataFetch.middleware(testReq, {}, function (err) {
-        if (err) { return done(err); }
-        expect(testReq.isHttps).to.be.true();
-        done();
-      });
-    });
-
-    it('should set isHttps true if not secure but encrypted', function (done) {
-      var testReq = {
-        headers: {},
-        connection: {
-          encrypted: true
+        headers: {
+          'x-forwarded-proto': 'https'
         }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
@@ -133,6 +118,22 @@ describe('data-fetch.js unit test', function () {
         done();
       });
     });
+
+    it('should set isHttps false if x-forwarded-proto = http', function (done) {
+      var testReq = {
+        headers: {
+          'x-forwarded-proto': 'http'
+        }
+      };
+      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
+      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        expect(testReq.isHttps).to.be.false();
+        done();
+      });
+    });
+
 
     it('should pass correct args to lrange', function (done) {
       var testReq = {
@@ -165,8 +166,9 @@ describe('data-fetch.js unit test', function () {
 
     it('should cb error if 2nd lrange failed', function (done) {
       var testReq = {
-        headers: {},
-        secure: true
+        headers: {
+          'x-forwarded-proto': 'https'
+        }
       };
       redis.lrange.onFirstCall().yieldsAsync(null, []);
       redis.lrange.onSecondCall().yieldsAsync('better_error');
@@ -181,8 +183,9 @@ describe('data-fetch.js unit test', function () {
 
     it('should call lrange with port 80 if failed and https', function (done) {
       var testReq = {
-        headers: {},
-        secure: true
+        headers: {
+          'x-forwarded-proto': 'https'
+        }
       };
       redis.lrange.onFirstCall().yieldsAsync(null, []);
       redis.lrange.onSecondCall().yieldsAsync(null, [1, 2]);
@@ -197,8 +200,9 @@ describe('data-fetch.js unit test', function () {
 
     it('should call getMongoEntry with port 80 if failed and https', function (done) {
       var testReq = {
-        headers: {},
-        secure: true
+        headers: {
+          'x-forwarded-proto': 'https'
+        }
       };
       var testRaw = 'raw';
       redis.lrange.onFirstCall().yieldsAsync(null, []);
@@ -214,8 +218,9 @@ describe('data-fetch.js unit test', function () {
 
     it('should update reqUrl & parsedReqUrl with port 80 if failed and https', function (done) {
       var testReq = {
-        headers: {},
-        secure: true
+        headers: {
+          'x-forwarded-proto': 'https'
+        }
       };
       var testRaw = 'raw';
       api.getUrlFromRequest.onFirstCall().returns('https://happygolucky.net:443');
