@@ -6,10 +6,7 @@ require('loadenv');
 
 var Lab = require('lab');
 var expect = require('code').expect;
-var mongodb = require('mongodb');
 var sinon = require('sinon');
-var http = require('http');
-var https = require('https');
 
 var Server = require('models/server');
 var api = require('models/api');
@@ -58,7 +55,6 @@ describe('server.js unit test', function () {
     beforeEach(function (done) {
       sinon.stub(proxyServer, '_setupMiddleware').returns();
       sinon.stub(proxyServer.httpServer, 'listen');
-      sinon.stub(proxyServer.httpsServer, 'listen');
       sinon.stub(mongo, 'start');
       done();
     });
@@ -70,7 +66,6 @@ describe('server.js unit test', function () {
 
     it('should _setupMiddleware', function (done) {
       proxyServer.httpServer.listen.yieldsAsync();
-      proxyServer.httpsServer.listen.yieldsAsync();
       mongo.start.yieldsAsync();
 
       proxyServer.start(function () {
@@ -81,26 +76,12 @@ describe('server.js unit test', function () {
 
     it('should start http server', function (done) {
       proxyServer.httpServer.listen.yieldsAsync();
-      proxyServer.httpsServer.listen.yieldsAsync();
       mongo.start.yieldsAsync();
 
       proxyServer.start(function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(proxyServer.httpServer.listen);
         sinon.assert.calledWith(proxyServer.httpServer.listen, process.env.HTTP_PORT);
-        done();
-      });
-    });
-
-    it('should start https server', function (done) {
-      proxyServer.httpServer.listen.yieldsAsync();
-      proxyServer.httpsServer.listen.yieldsAsync();
-      mongo.start.yieldsAsync();
-
-      proxyServer.start(function (err) {
-        if (err) { return done(err); }
-        sinon.assert.calledOnce(proxyServer.httpsServer.listen);
-        sinon.assert.calledWith(proxyServer.httpsServer.listen, process.env.HTTPS_PORT);
         done();
       });
     });
@@ -130,7 +111,6 @@ describe('server.js unit test', function () {
   describe('stop', function () {
     beforeEach(function (done) {
       sinon.stub(proxyServer.httpServer, 'close');
-      sinon.stub(proxyServer.httpsServer, 'close');
       sinon.stub(mongo, 'stop');
       done();
     });
@@ -142,13 +122,11 @@ describe('server.js unit test', function () {
 
     it('should close everything', function (done) {
       mongo.stop.yieldsAsync();
-      proxyServer.httpsServer.close.yieldsAsync();
       proxyServer.httpServer.close.yieldsAsync();
 
       proxyServer.stop(function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.stop);
-        sinon.assert.calledOnce(proxyServer.httpsServer.close);
         sinon.assert.calledOnce(proxyServer.httpServer.close);
         done();
       });
