@@ -15,7 +15,6 @@ var dataFetch = require('middlewares/data-fetch');
 var resolveUrls = require('middlewares/resolve-urls');
 var redirectDisabled = require('middlewares/redirect-disabled');
 var checkContainerStatus = require('middlewares/check-container-status');
-var Intercom = require('intercom-client');
 var mongo = require('models/mongo');
 
 var lab = exports.lab = Lab.script();
@@ -31,7 +30,6 @@ var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
 describe('server.js unit test', function () {
   var proxyServer;
   beforeEach(function (done) {
-    sinon.stub(Intercom, 'Client');
     sinon.stub(resolveUrls, 'middleware').yields();
     sinon.stub(redirectDisabled, 'middleware').yields();
     sinon.stub(checkContainerStatus, 'middleware').yields();
@@ -39,7 +37,6 @@ describe('server.js unit test', function () {
     done();
   });
   afterEach(function (done) {
-    Intercom.Client.restore();
     resolveUrls.middleware.restore();
     redirectDisabled.middleware.restore();
     checkContainerStatus.middleware.restore();
