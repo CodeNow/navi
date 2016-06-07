@@ -118,18 +118,19 @@ describe('proxy.js unit test', function () {
     });
 
     it('should not send data to intercom if the naviEntry.ownerUsername does not exist', function (done) {
-      delete testReq.naviEntry.ownerUsername
+      var newTestReq = clone(testReq);
+      delete newTestReq.naviEntry.ownerUsername
       sinon.stub(proxyServer.proxy, 'web', function() {
         sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
-      testMw(testReq, testRes);
+      testMw(newTestReq, testRes);
     });
 
     it('should not send data to intercom if the req.cookies.isModerating exists', function (done) {
-      testReq.cookies = {
-        headers: ' mp_mixpanel__c=0; mp_mixpanel__c3=0; mp_mixpanel__c4=0; mp_mixpanel__c5=0; ' +
+      testReq.headers = {
+        cookie: ' mp_mixpanel__c=0; mp_mixpanel__c3=0; mp_mixpanel__c4=0; mp_mixpanel__c5=0; ' +
         'isModerating=495765; CSRF-TOKEN=UsgVTrkm-Yde4wC1KP3t5lFJjLSQfY3QeArY; ajs'
       };
       sinon.stub(proxyServer.proxy, 'web', function() {
