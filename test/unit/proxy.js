@@ -294,7 +294,7 @@ describe('proxy.js unit test', function () {
       };
       var res = createResStream(); // mock
 
-      proxyServer._streamRes(targetRes, proxiedRes, res);
+      proxyServer._streamRes(targetRes, proxiedRes, res, false);
       sinon.assert.calledWith(proxiedRes.pipe, res);
       done();
     });
@@ -313,9 +313,28 @@ describe('proxy.js unit test', function () {
         };
         var res = createResStream(); // mock
 
-        proxyServer._streamRes(targetRes, proxiedRes, res);
+        proxyServer._streamRes(targetRes, proxiedRes, res, true);
         sinon.assert.calledWith(proxiedRes.pipe, ctx.scriptInjectResStream.input);
         sinon.assert.calledWith(ctx.scriptInjectResStream.output.pipe, res);
+        done();
+      });
+      it('should not add script if redirectEnabled is false', function (done) {
+        var targetRes = {
+          headers: {
+            'content-type': 'text/html',
+            'content-encoding': 'gzip'
+          },
+          pipe: sinon.stub().returnsArg(0)
+        };
+        var proxiedRes = {
+          pipe: sinon.stub().returnsArg(0)
+        };
+        var res = createResStream(); // mock
+
+        proxyServer._streamRes(targetRes, proxiedRes, res, false);
+        sinon.assert.notCalled(proxiedRes.pipe, ctx.scriptInjectResStream.input);
+        sinon.assert.notCalled(ctx.scriptInjectResStream.output.pipe, res);
+        sinon.assert.calledWith(proxiedRes.pipe, res);
         done();
       });
     });
