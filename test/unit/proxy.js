@@ -332,9 +332,9 @@ describe('proxy.js unit test', function () {
         var res = createResStream(); // mock
 
         proxyServer._streamRes(targetRes, proxiedRes, res, false);
-        sinon.assert.notCalled(proxiedRes.pipe, ctx.scriptInjectResStream.input);
-        sinon.assert.notCalled(ctx.scriptInjectResStream.output.pipe, res);
+        sinon.assert.notCalled(ctx.scriptInjectResStream.output.pipe);
         sinon.assert.calledWith(proxiedRes.pipe, res);
+        sinon.assert.calledOnce(proxiedRes.pipe);
         done();
       });
     });
