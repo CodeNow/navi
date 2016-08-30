@@ -74,6 +74,7 @@ describe('proxy.js unit test', function () {
       proxyServer.proxy.emit('error', 'err', testReq, testRes);
     });
   });
+
   describe('proxyIfTargetHostExist', function () {
     var testHost = 'http://localhost:1234';
     var testRes = {};
@@ -89,9 +90,11 @@ describe('proxy.js unit test', function () {
       testMw = proxyServer.proxyIfTargetHostExist();
       done();
     });
+
     it('should next if no target', function(done) {
       testMw({}, null, done);
     });
+
     it('should proxy if target exist', function(done) {
       sinon.stub(proxyServer.proxy, 'web', function() {
         expect(proxyServer.proxy.web
@@ -115,19 +118,21 @@ describe('proxy.js unit test', function () {
     });
 
     it('should not send data to intercom if the naviEntry.ownerUsername does not exist', function (done) {
-      delete testReq.naviEntry.ownerUsername
+      var newTestReq = clone(testReq);
+      delete newTestReq.naviEntry.ownerUsername
       sinon.stub(proxyServer.proxy, 'web', function() {
         sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
-      testMw(testReq, testRes);
+      testMw(newTestReq, testRes);
     });
 
     it('should not send data to intercom if the req.cookies.isModerating exists', function (done) {
-      testReq.cookies = {
-        isModerating: '1'
-      }
+      testReq.headers = {
+        cookie: ' mp_mixpanel__c=0; mp_mixpanel__c3=0; mp_mixpanel__c4=0; mp_mixpanel__c5=0; ' +
+        'isModerating=495765; CSRF-TOKEN=UsgVTrkm-Yde4wC1KP3t5lFJjLSQfY3QeArY; ajs'
+      };
       sinon.stub(proxyServer.proxy, 'web', function() {
         sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
@@ -166,6 +171,7 @@ describe('proxy.js unit test', function () {
       testMw(req, testRes);
     });
   });
+
   describe('proxyWsIfTargetHostExist', function () {
     it('should destroy socket if no host and port', function(done) {
       proxyServer.proxyWsIfTargetHostExist({}, {

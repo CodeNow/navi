@@ -30,12 +30,11 @@ describe('api.js unit test', function () {
     done();
   });
 
-  describe('api._getUrlFromRequest', function () {
+  describe('api.getUrlFromRequest', function () {
     var base = 'repo-staging-codenow.runnableapp.com';
     var result = 'http://repo-staging-codenow.runnableapp.com:80';
     it('should add 80', function (done) {
-      var test = api._getUrlFromRequest({
-        isBrowser: true,
+      var test = api.getUrlFromRequest({
         headers: {
           host: base
         }
@@ -44,19 +43,19 @@ describe('api.js unit test', function () {
       done();
     });
 
-    it('should add https', function (done) {
-      var test = api._getUrlFromRequest({
-        isBrowser: true,
+    it('should add https when isHttps', function (done) {
+      var test = api.getUrlFromRequest({
         headers: {
-          host: base+':443'
-        }
+          host: base
+        },
+        isHttps: true
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
     });
+
     it('should add 80 to subdomain', function (done) {
-      var test = api._getUrlFromRequest({
-        isBrowser: true,
+      var test = api.getUrlFromRequest({
         headers: {
           host: 'dat.sub.domain.' + base
         }
@@ -64,19 +63,20 @@ describe('api.js unit test', function () {
       expect(test).to.equal(result);
       done();
     });
+
     it('should add https to subdomain', function (done) {
-      var test = api._getUrlFromRequest({
-        isBrowser: true,
+      var test = api.getUrlFromRequest({
         headers: {
           host: 'dat.sub.domain.' + base + ':443'
-        }
+        },
+        isHttps: true
       });
       expect(test).to.equal('https://'+ base +':443');
       done();
     });
+
     it('should be valid for correct hostname', function (done) {
-      var test = api._getUrlFromRequest({
-        isBrowser: true,
+      var test = api.getUrlFromRequest({
         headers: {
           host: base + ':100'
         }
@@ -86,16 +86,40 @@ describe('api.js unit test', function () {
     });
   });
 
+  describe('getTargetUrl', function () {
+    it('should return http url', function (done) {
+      var out = api.getTargetUrl(url.parse('http://10.0.0.1:4242'), {
+        dockerHost: '123.0.0.0',
+        ports: {
+          '4242': '12345'
+        }
+      });
+      expect(out).to.equal('http://123.0.0.0:12345');
+      done();
+    });
+
+    it('should return https url', function (done) {
+      var out = api.getTargetUrl(url.parse('https://10.0.0.1:443'), {
+        dockerHost: '123.0.0.0',
+        ports: {
+          '443': '12345'
+        }
+      });
+      expect(out).to.equal('https://123.0.0.0:12345');
+      done();
+    });
+  }); // end getTargetUrl
+
   describe('_processTargetInstance', function () {
     beforeEach(function (done) {
-      sinon.stub(api, '_getDestinationProxyUrl');
-      sinon.stub(errorPage, 'generateErrorUrl').returns('TestErrorHost')
+      sinon.stub(api, 'getTargetUrl');
+      sinon.stub(errorPage, 'generateErrorUrl').returns('TestErrorHost');
       done();
     });
 
     afterEach(function (done) {
-      api._getDestinationProxyUrl.restore();
-      errorPage.generateErrorUrl.restore()
+      api.getTargetUrl.restore();
+      errorPage.generateErrorUrl.restore();
       done();
     });
 
@@ -125,7 +149,7 @@ describe('api.js unit test', function () {
     });
 
     it('should set req.targetHost to container host & port if running', function (done) {
-      api._getDestinationProxyUrl.returns('http://0.0.0.0:600');
+      api.getTargetUrl.returns('http://0.0.0.0:600');
       var req = {};
       var reqUrl = 'api-staging-codenow.runnableapp.com';
       api._processTargetInstance({
