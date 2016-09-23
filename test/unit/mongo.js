@@ -143,7 +143,8 @@ describe('lib/models/mongodb', function () {
         var elasticUrl = 'api-staging-codenow.runnableapp.com';
         var calculatedElastic = 'staging-codenow.runnableapp.com';
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
-          elasticUrl: 'staging-codenow.runnableapp.com'
+          elasticUrl: 'staging-codenow.runnableapp.com',
+          shortHash: 'sad'
         });
         var mongoResponse = [naviEntriesDocument];
         var fetchNaviEntryHandleCacheOrMongoResponse = {};
@@ -174,7 +175,10 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
-                { elasticUrl: calculatedElastic}
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                }
               ]
             }]
           });
@@ -196,6 +200,7 @@ describe('lib/models/mongodb', function () {
         var refererUrl = 'frontend-staging-codenow.runnableapp.com';
         var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          shortHash: 'sad',
           elasticUrl: calculatedElastic
         });
         var naviEntriesDocument = {
@@ -232,9 +237,15 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
-                { elasticUrl: calculatedElastic},
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                },
                 { elasticUrl: refererUrl},
-                { elasticUrl: calculatedElastic}
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                }
               ]
             }]
           });
@@ -266,7 +277,8 @@ describe('lib/models/mongodb', function () {
         };
         var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
-          elasticUrl: calculatedElastic
+          elasticUrl: calculatedElastic,
+          shortHash: ''
         });
 
         var mongoResponse = [naviEntriesDocument, naviEntriesDocumentReferer].reverse();
@@ -297,9 +309,7 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
-                { elasticUrl: calculatedElastic},
                 { elasticUrl: refererUrl},
-                { elasticUrl: calculatedElastic}
               ]
             }]
           });

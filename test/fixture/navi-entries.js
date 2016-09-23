@@ -225,10 +225,32 @@ var apiRedirectDisabled = {
 };
 
 
+var apiRedirectEnabled = {
+  redirectEnabled: true,
+  elasticUrl: 'redirect-api-staging-codenow.runnableapp.com',
+  directUrls: {
+    'rw32we': {
+      branch: 'redirect-master',
+      masterPod: true,
+      dockerHost: '0.0.0.0',
+      ports: {
+        '80': 39960,
+        '8080': 23453
+      },
+      running: true,
+      dependencies: []
+    },
+  },
+  userMappings: {
+    '847390': 'rw32we'
+  },
+  ownerGithubId: 958313
+};
 module.exports = {
   // This property only set by mongo model if req has a referer
   refererNaviEntry: refererNaviEntry,
   whitelistedNaviEntry: whitelistedNaviEntry,
   api: api,
-  apiRedirectDisabled: apiRedirectDisabled
+  apiRedirectDisabled: apiRedirectDisabled,
+  apiRedirectEnabled: apiRedirectEnabled
 };
