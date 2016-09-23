@@ -140,7 +140,8 @@ describe('data-fetch.js unit test', function () {
           'x-forwarded-proto': 'https'
         }
       };
-      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.getMongoEntry.onFirstCall().yieldsAsync(new Error('this is an error'));
+      dataFetch.getMongoEntry.onSecondCall().yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledTwice(dataFetch.getMongoEntry);
@@ -155,11 +156,9 @@ describe('data-fetch.js unit test', function () {
           'x-forwarded-proto': 'https'
         }
       };
-      var testRaw = 'raw';
       api.getUrlFromRequest.onFirstCall().returns('https://happygolucky.net:443');
-      redis.lrange.onFirstCall().yieldsAsync(null, []);
-      redis.lrange.onSecondCall().yieldsAsync(null, testRaw);
-      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.getMongoEntry.onFirstCall().yieldsAsync(new Error('this is an error'));
+      dataFetch.getMongoEntry.onSecondCall().yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         var uri = 'http://happygolucky.net:80';
