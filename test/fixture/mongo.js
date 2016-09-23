@@ -17,8 +17,8 @@ module.exports.seed = function (done) {
       mySeed.push(dbSeedData[key]);
     });
     db.collection('navientries').insertMany(mySeed, function (err) {
-      if (err) { return done(err); }
-      done();
+      db.close();
+      done(err);
     });
   });
 };
@@ -28,9 +28,11 @@ module.exports.clean = function (done) {
     if (err) { return done(err); }
     db.collection('navientries').drop(function (err) {
       if (err && err.message !== 'ns not found') {
-        return done(err)
+        db.close();
+        return done(err);
       }
-      done()
+      db.close();
+      return done();
     });
   });
 };
