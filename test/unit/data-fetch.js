@@ -20,10 +20,21 @@ var it = lab.test;
 describe('data-fetch.js unit test', function () {
   var testReqHost = 'xyz-localhost';
   var testReqUrl = 'http://' + testReqHost + ':4242';
+  var testMongoEntryWith80;
   describe('mw', function () {
     beforeEach(function (done) {
+      testMongoEntryWith80 = {
+        directUrls: {
+          'asdasw': {
+            masterPod: true,
+            ports: {
+              '80': '7633'
+            }
+          }
+        }
+      }
       sinon.stub(api, 'getUrlFromRequest').returns(testReqUrl);
-      sinon.stub(dataFetch, 'getMongoEntry');
+      sinon.stub(dataFetch, 'getMongoEntry').yieldsAsync(null, testMongoEntryWith80);
       sinon.stub(redis, 'lrange');
       done();
     });
@@ -40,7 +51,6 @@ describe('data-fetch.js unit test', function () {
         headers: { origin: 'origin' }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrl).to.equal('origin');
@@ -53,7 +63,6 @@ describe('data-fetch.js unit test', function () {
         headers: { referer: 'referer' }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrl).to.equal('referer');
@@ -69,7 +78,6 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, []);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrlHostname).to.be.undefined();
@@ -83,7 +91,6 @@ describe('data-fetch.js unit test', function () {
         headers: {}
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.false();
@@ -98,7 +105,6 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.true();
@@ -113,7 +119,6 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.false();
@@ -125,7 +130,6 @@ describe('data-fetch.js unit test', function () {
       var testReq = {
         headers: {}
       };
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(dataFetch.getMongoEntry);
@@ -134,17 +138,16 @@ describe('data-fetch.js unit test', function () {
       });
     });
 
-    it('should call getMongoEntry with port 80 if failed and https', function (done) {
+    it('should call getMongoEntry with port 80 if the entry has the port and https', function (done) {
       var testReq = {
         headers: {
           'x-forwarded-proto': 'https'
         }
       };
-      dataFetch.getMongoEntry.onFirstCall().yieldsAsync(new Error('this is an error'));
-      dataFetch.getMongoEntry.onSecondCall().yieldsAsync();
+      dataFetch.getMongoEntry.yieldsAsync(null, testMongoEntryWith80);
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
-        sinon.assert.calledTwice(dataFetch.getMongoEntry);
+        sinon.assert.calledOnce(dataFetch.getMongoEntry);
         sinon.assert.calledWith(dataFetch.getMongoEntry, testReq);
         done();
       });
@@ -157,8 +160,7 @@ describe('data-fetch.js unit test', function () {
         }
       };
       api.getUrlFromRequest.onFirstCall().returns('https://happygolucky.net:443');
-      dataFetch.getMongoEntry.onFirstCall().yieldsAsync(new Error('this is an error'));
-      dataFetch.getMongoEntry.onSecondCall().yieldsAsync();
+      dataFetch.getMongoEntry.yieldsAsync(null, testMongoEntryWith80);
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         var uri = 'http://happygolucky.net:80';
@@ -234,7 +236,9 @@ describe('data-fetch.js unit test', function () {
 
     it('should call mongo with correct args ref', function (done) {
       testReq.refererUrlHostname = 'otherhost';
-      mongo.fetchNaviEntry.yieldsAsync();
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'localhost'
+      });
       resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
         shortHash: '',
         elasticUrl: 'localhost'
