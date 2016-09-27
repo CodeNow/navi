@@ -212,7 +212,7 @@ describe('api.js unit test', function () {
           },
           reqUrl: 'http://' + base + ':80',
           parsedReqUrl: url.parse('http://' + base + ':80'),
-          hipacheEntry: JSON.parse(naviRedisEntriesFixture.elastic),
+          isElastic: true,
           naviEntry: naviEntriesFixtures.refererNaviEntry
         };
         api._getTargetHostElastic.yieldsAsync();

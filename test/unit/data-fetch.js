@@ -20,10 +20,21 @@ var it = lab.test;
 describe('data-fetch.js unit test', function () {
   var testReqHost = 'xyz-localhost';
   var testReqUrl = 'http://' + testReqHost + ':4242';
+  var testMongoEntryWith80;
   describe('mw', function () {
     beforeEach(function (done) {
+      testMongoEntryWith80 = {
+        directUrls: {
+          'asdasw': {
+            masterPod: true,
+            ports: {
+              '80': '7633'
+            }
+          }
+        }
+      }
       sinon.stub(api, 'getUrlFromRequest').returns(testReqUrl);
-      sinon.stub(dataFetch, 'getMongoEntry');
+      sinon.stub(dataFetch, 'getMongoEntry').yieldsAsync(null, testMongoEntryWith80);
       sinon.stub(redis, 'lrange');
       done();
     });
@@ -35,25 +46,11 @@ describe('data-fetch.js unit test', function () {
       done();
     });
 
-    it('should next lrange error', function (done) {
-      var testReq = {
-        headers: {}
-      };
-      var testErr = new Error('test');
-      redis.lrange.yieldsAsync(testErr);
-      dataFetch.middleware(testReq, {}, function (err) {
-        expect(err).to.equal(testErr);
-        sinon.assert.notCalled(dataFetch.getMongoEntry);
-        done();
-      });
-    });
-
     it('should set refererUrl to origin', function (done) {
       var testReq = {
         headers: { origin: 'origin' }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrl).to.equal('origin');
@@ -66,7 +63,6 @@ describe('data-fetch.js unit test', function () {
         headers: { referer: 'referer' }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrl).to.equal('referer');
@@ -82,7 +78,6 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, []);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.refererUrlHostname).to.be.undefined();
@@ -96,7 +91,6 @@ describe('data-fetch.js unit test', function () {
         headers: {}
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.false();
@@ -111,7 +105,6 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.true();
@@ -126,25 +119,9 @@ describe('data-fetch.js unit test', function () {
         }
       };
       redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         expect(testReq.isHttps).to.be.false();
-        done();
-      });
-    });
-
-
-    it('should pass correct args to lrange', function (done) {
-      var testReq = {
-        headers: {}
-      };
-      redis.lrange.yieldsAsync(null, [1, 2]);
-      dataFetch.getMongoEntry.yieldsAsync();
-      dataFetch.middleware(testReq, {}, function (err) {
-        if (err) { return done(err); }
-        sinon.assert.calledOnce(redis.lrange);
-        sinon.assert.calledWith(redis.lrange, 'frontend:4242.xyz-localhost', 0, 1);
         done();
       });
     });
@@ -153,65 +130,25 @@ describe('data-fetch.js unit test', function () {
       var testReq = {
         headers: {}
       };
-      var testRaw = 'raw';
-      redis.lrange.yieldsAsync(null, testRaw);
-      dataFetch.getMongoEntry.yieldsAsync();
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(dataFetch.getMongoEntry);
-        sinon.assert.calledWith(dataFetch.getMongoEntry, testReq, testRaw);
+        sinon.assert.calledWith(dataFetch.getMongoEntry, testReq);
         done();
       });
     });
 
-    it('should cb error if 2nd lrange failed', function (done) {
+    it('should call getMongoEntry with port 80 if the entry has the port and https', function (done) {
       var testReq = {
         headers: {
           'x-forwarded-proto': 'https'
         }
       };
-      redis.lrange.onFirstCall().yieldsAsync(null, []);
-      redis.lrange.onSecondCall().yieldsAsync('better_error');
-      dataFetch.getMongoEntry.yieldsAsync();
-      dataFetch.middleware(testReq, {}, function (err) {
-        expect(err).to.equal('better_error');
-        sinon.assert.calledTwice(redis.lrange);
-        sinon.assert.notCalled(dataFetch.getMongoEntry);
-        done();
-      });
-    });
-
-    it('should call lrange with port 80 if failed and https', function (done) {
-      var testReq = {
-        headers: {
-          'x-forwarded-proto': 'https'
-        }
-      };
-      redis.lrange.onFirstCall().yieldsAsync(null, []);
-      redis.lrange.onSecondCall().yieldsAsync(null, [1, 2]);
-      dataFetch.getMongoEntry.yieldsAsync();
-      dataFetch.middleware(testReq, {}, function (err) {
-        if (err) { return done(err); }
-        sinon.assert.calledTwice(redis.lrange);
-        sinon.assert.calledWith(redis.lrange, 'frontend:80.xyz-localhost', 0, 1);
-        done();
-      });
-    });
-
-    it('should call getMongoEntry with port 80 if failed and https', function (done) {
-      var testReq = {
-        headers: {
-          'x-forwarded-proto': 'https'
-        }
-      };
-      var testRaw = 'raw';
-      redis.lrange.onFirstCall().yieldsAsync(null, []);
-      redis.lrange.onSecondCall().yieldsAsync(null, testRaw);
-      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.getMongoEntry.yieldsAsync(null, testMongoEntryWith80);
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(dataFetch.getMongoEntry);
-        sinon.assert.calledWith(dataFetch.getMongoEntry, testReq, testRaw);
+        sinon.assert.calledWith(dataFetch.getMongoEntry, testReq);
         done();
       });
     });
@@ -222,11 +159,8 @@ describe('data-fetch.js unit test', function () {
           'x-forwarded-proto': 'https'
         }
       };
-      var testRaw = 'raw';
       api.getUrlFromRequest.onFirstCall().returns('https://happygolucky.net:443');
-      redis.lrange.onFirstCall().yieldsAsync(null, []);
-      redis.lrange.onSecondCall().yieldsAsync(null, testRaw);
-      dataFetch.getMongoEntry.yieldsAsync();
+      dataFetch.getMongoEntry.yieldsAsync(null, testMongoEntryWith80);
       dataFetch.middleware(testReq, {}, function (err) {
         if (err) { return done(err); }
         var uri = 'http://happygolucky.net:80';
@@ -239,9 +173,11 @@ describe('data-fetch.js unit test', function () {
 
   describe('getMongoEntry', function () {
     var testReq;
+    var shortHashAndElastic;
     var testUrl = 'http://localhost:4242';
     beforeEach(function (done) {
-      sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns({});
+      shortHashAndElastic = {};
+      sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns(shortHashAndElastic);
       sinon.stub(mongo, 'fetchNaviEntry');
       testReq = {
         isHttps: false,
@@ -256,46 +192,40 @@ describe('data-fetch.js unit test', function () {
       done();
     });
 
-    it('should next lrange empty error', function (done) {
-      dataFetch.getMongoEntry(testReq, [], function (err) {
-        expect(err).to.be.instanceOf(Error);
-        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
-        done();
-      });
-    });
 
-    it('should next lrange un parse error', function (done) {
-      dataFetch.getMongoEntry(testReq, 'p', function (err) {
-        expect(err).to.be.instanceOf(Error);
-        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
-        done();
+    it('should add isElastic to req', function (done) {
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'localhost'
       });
-    });
-
-    it('should add hipacheEntry to req', function (done) {
-      var testEntry = { test: true };
-      mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.getMongoEntry(testReq, [JSON.stringify(testEntry)], function (err) {
+      dataFetch.getMongoEntry(testReq, function (err) {
         if (err) { return done(err); }
-        expect(testReq.hipacheEntry).to.deep.equal(testEntry);
+        expect(testReq.isElastic).to.deep.equal(true);
         done();
       });
     });
 
-    it('should next mongo err', function (done) {
-      var testErr = new Error('test');
-      mongo.fetchNaviEntry.yieldsAsync(testErr);
-      dataFetch.getMongoEntry(testReq, [JSON.stringify({})], function (err) {
-        expect(err).to.equal(testErr);
-        sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+    it('should add elasticUrl to req', function (done) {
+      shortHashAndElastic.elasticUrl = 'fdsfasdfasdfsadfsadf';
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'fdsfasdfasdfsadfsadf'
+      });
+      dataFetch.getMongoEntry(testReq, function (err) {
+        if (err) { return done(err); }
+        expect(testReq.elasticUrl).to.deep.equal(shortHashAndElastic.elasticUrl);
         done();
       });
     });
 
     it('should call mongo with correct args no ref', function (done) {
-      mongo.fetchNaviEntry.yieldsAsync();
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'localhost'
+      });
       testReq.refererUrlHostname = undefined;
-      dataFetch.getMongoEntry(testReq, [JSON.stringify({})], function (err) {
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+        shortHash: '',
+        elasticUrl: 'localhost'
+      });
+      dataFetch.getMongoEntry(testReq, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, url.parse(testUrl).hostname, undefined);
@@ -306,8 +236,14 @@ describe('data-fetch.js unit test', function () {
 
     it('should call mongo with correct args ref', function (done) {
       testReq.refererUrlHostname = 'otherhost';
-      mongo.fetchNaviEntry.yieldsAsync();
-      dataFetch.getMongoEntry(testReq, [JSON.stringify({})], function (err) {
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'localhost'
+      });
+      resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+        shortHash: '',
+        elasticUrl: 'localhost'
+      });
+      dataFetch.getMongoEntry(testReq, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
         sinon.assert.calledWith(mongo.fetchNaviEntry, url.parse(testUrl).hostname, 'otherhost');
@@ -317,15 +253,17 @@ describe('data-fetch.js unit test', function () {
     });
 
     it('should call mongo with correct args when direct', function (done) {
-      mongo.fetchNaviEntry.yieldsAsync();
+      mongo.fetchNaviEntry.yieldsAsync(null, {
+        elasticUrl: 'elasticUrl'
+      });
       resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
         shortHash: 'short',
         elasticUrl: 'elasticUrl'
       });
-      dataFetch.getMongoEntry(testReq, [JSON.stringify({direct: true})], function (err) {
+      dataFetch.getMongoEntry(testReq, function (err) {
         if (err) { return done(err); }
         sinon.assert.calledOnce(mongo.fetchNaviEntry);
-        sinon.assert.calledWith(mongo.fetchNaviEntry, 'elasticUrl', undefined);
+        sinon.assert.calledWith(mongo.fetchNaviEntry, 'localhost');
         sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
         sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, url.parse(testUrl).hostname);
         done();
@@ -335,7 +273,7 @@ describe('data-fetch.js unit test', function () {
     it('should add naviEntry to req', function (done) {
       var testEntry = { test: 'entry' };
       mongo.fetchNaviEntry.yieldsAsync(null, testEntry);
-      dataFetch.getMongoEntry(testReq, [JSON.stringify({})], function (err) {
+      dataFetch.getMongoEntry(testReq, function (err) {
         if (err) { return done(err); }
         expect(testReq.naviEntry).to.deep.equal(testEntry);
         done();

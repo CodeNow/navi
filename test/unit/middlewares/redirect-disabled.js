@@ -90,7 +90,7 @@ describe('lib/middlewares/redirect-disabled', function () {
     });
     describe('with a direct url', function () {
       beforeEach(function (done) {
-        req.hipacheEntry.elastic = false;
+        req.isElastic = false;
         done();
       });
       it('should try to proxy to the requested container', function (done) {
@@ -106,7 +106,7 @@ describe('lib/middlewares/redirect-disabled', function () {
     });
     describe('with an elastic url', function () {
       beforeEach(function (done) {
-        req.hipacheEntry.elastic = true;
+        req.isElastic = true;
         done();
       });
       describe('when a browser', function () {

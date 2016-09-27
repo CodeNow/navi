@@ -127,7 +127,7 @@ describe('lib/models/mongodb', function () {
           sinon.assert.calledOnce(mongo._naviEntriesCollection.find);
           sinon.assert.calledWith(mongo._naviEntriesCollection.find, sinon.match.object);
 
-          sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -141,7 +141,11 @@ describe('lib/models/mongodb', function () {
       it('should fetch one navientries document if !refererUrl', function (done) {
         var naviEntriesDocument = {};
         var elasticUrl = 'api-staging-codenow.runnableapp.com';
-
+        var calculatedElastic = 'staging-codenow.runnableapp.com';
+        resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          elasticUrl: 'staging-codenow.runnableapp.com',
+          shortHash: 'sad'
+        });
         var mongoResponse = [naviEntriesDocument];
         var fetchNaviEntryHandleCacheOrMongoResponse = {};
 
@@ -169,11 +173,18 @@ describe('lib/models/mongodb', function () {
                 { 'ipWhitelist.enabled': false }
               ]
             }, {
-              elasticUrl: elasticUrl
+              $or: [
+                { elasticUrl: elasticUrl},
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                }
+              ]
             }]
           });
 
-          sinon.assert.notCalled(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, elasticUrl);
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
             true, null, mongoResponse, 'api-staging-codenow.runnableapp.com',
@@ -189,6 +200,7 @@ describe('lib/models/mongodb', function () {
         var refererUrl = 'frontend-staging-codenow.runnableapp.com';
         var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
+          shortHash: 'sad',
           elasticUrl: calculatedElastic
         });
         var naviEntriesDocument = {
@@ -225,14 +237,22 @@ describe('lib/models/mongodb', function () {
             }, {
               $or: [
                 { elasticUrl: elasticUrl},
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                },
                 { elasticUrl: refererUrl},
-                { elasticUrl: calculatedElastic}
+                {
+                  elasticUrl: calculatedElastic,
+                  'directUrls.sad': { '$exists': true }
+                }
               ]
             }]
           });
 
-          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledTwice(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
           sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, refererUrl);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, elasticUrl);
 
           sinon.assert.calledOnce(mongo._fetchNaviEntryHandleCacheOrMongo);
           sinon.assert.calledWith(mongo._fetchNaviEntryHandleCacheOrMongo,
@@ -257,7 +277,8 @@ describe('lib/models/mongodb', function () {
         };
         var calculatedElastic = 'calculatedElastic-codenow.runnableapp.com';
         resolveUrls.splitDirectUrlIntoShortHashAndElastic.returns({
-          elasticUrl: calculatedElastic
+          elasticUrl: calculatedElastic,
+          shortHash: ''
         });
 
         var mongoResponse = [naviEntriesDocument, naviEntriesDocumentReferer].reverse();
@@ -289,13 +310,13 @@ describe('lib/models/mongodb', function () {
               $or: [
                 { elasticUrl: elasticUrl},
                 { elasticUrl: refererUrl},
-                { elasticUrl: calculatedElastic}
               ]
             }]
           });
 
-          sinon.assert.calledOnce(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
+          sinon.assert.calledTwice(resolveUrls.splitDirectUrlIntoShortHashAndElastic);
           sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, refererUrl);
+          sinon.assert.calledWith(resolveUrls.splitDirectUrlIntoShortHashAndElastic, elasticUrl);
 
           expect(response).to.equal(fetchNaviEntryHandleCacheOrMongoResponse);
           done();
