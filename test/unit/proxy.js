@@ -79,6 +79,7 @@ describe('proxy.js unit test', function () {
     var testHost = 'http://localhost:1234';
     var testRes = {};
     var testReq = {
+      header: sinon.stub().returns(null),
       targetHost: testHost,
       res: testRes,
       naviEntry: {
@@ -146,6 +147,7 @@ describe('proxy.js unit test', function () {
       var testQuery = 'status=running&ports=3000&ports=80&type=ports';
       var testPath = '/some/path';
       var req = {
+        header: sinon.stub().returns(null),
         targetHost: testHost + '?' + testQuery,
         headers: {},
         url: testPath,
@@ -154,6 +156,7 @@ describe('proxy.js unit test', function () {
         }
       };
       var expectedReq = {
+        header: sinon.match.func,
         targetHost: testHost + '?' + testQuery,
         headers: {},
         url: testPath + '?' + testQuery,
