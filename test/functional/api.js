@@ -120,7 +120,6 @@ describe('functional test: proxy to instance container', function () {
           },
           url: 'http://localhost:'+process.env.HTTP_PORT
         }, function (err, res) {
-          console.log(res.body)
           expect(res.statusCode).to.equal(404);
           done();
         });
