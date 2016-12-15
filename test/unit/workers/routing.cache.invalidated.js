@@ -3,12 +3,13 @@
  */
 'use strict';
 
-require('loadenv.js');
+require('loadenv')();
 
 var Lab = require('lab');
 var expect = require('code').expect;
 var ponos = require('ponos');
 var sinon = require('sinon');
+const joi = require('joi');
 
 var cache = require('cache');
 var workerRoutingCacheInvalidated = require('workers/routing.cache.invalidated');
@@ -34,20 +35,16 @@ describe('lib/workers/navi.cache.invalidated', function () {
     done();
   });
 
-  it('should throw if missing required data', function (done) {
-    workerRoutingCacheInvalidated({})
-      .then(function () {
-        throw new Error('should have thrown');
-      })
-      .catch(TaskFatalError, function (err) {
-        sinon.assert.notCalled(cache.del);
-        done();
-      })
-      .catch(done);
+  it('should expose joi validator requiring elasticUrl', function (done) {
+    joi.validate({}, workerRoutingCacheInvalidated.jobSchema, (err) => {
+      expect(err).to.exist();
+      expect(err).to.match(/elasticUrl/);
+      done();
+    });
   });
 
   it('should dispose cached navi-entry document', function (done) {
-    workerRoutingCacheInvalidated({
+    workerRoutingCacheInvalidated.task({
       elasticUrl: 'elastic-url-staging.runnableapp.com'
     })
       .then(function () {

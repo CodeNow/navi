@@ -2,7 +2,7 @@
  * @module test/unit/api
  */
 'use strict';
-require('loadenv.js');
+require('loadenv')();
 
 var Lab = require('lab');
 var expect = require('code').expect;

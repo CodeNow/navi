@@ -3,7 +3,7 @@
  */
 'use strict';
 
-require('loadenv.js');
+require('loadenv')();
 
 var Lab = require('lab');
 var clone = require('101/clone');
