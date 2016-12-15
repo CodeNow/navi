@@ -1,6 +1,6 @@
 'use strict';
 
-require('loadenv.js');
+require('loadenv')();
 
 var Lab = require('lab');
 var lab = exports.lab = Lab.script();

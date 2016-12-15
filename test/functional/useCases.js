@@ -1,5 +1,5 @@
 'use strict';
-require('../../lib/loadenv.js')();
+require('loadenv')();
 
 var Lab = require('lab');
 
@@ -11,7 +11,7 @@ var request = require('request');
 var url = require('url');
 var callbackCount = require('callback-count');
 
-var App = require('../../lib/app.js');
+var App = require('../../lib/server.js');
 var TestServer = require('../fixture/test-server.js');
 var naviEntries = require('../fixture/navi-entries');
 var mongo = require('models/mongo');
@@ -39,10 +39,10 @@ describe('functional test: proxy to instance container', function () {
 
   before(function (done) {
     app = new App();
-    app.start(done);
+    app.start().asCallback(done);
   });
   after(function (done) {
-    app.stop(done);
+    app.stop().asCallback(done);
   });
 
   var serversByID

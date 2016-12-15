@@ -1,6 +1,6 @@
 'use strict';
 
-require('loadenv.js');
+require('loadenv')();
 
 var Code = require('code');
 var Lab = require('lab');
