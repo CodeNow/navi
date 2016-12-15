@@ -12,7 +12,7 @@ var describe = lab.describe;
 var expect = Code.expect;
 var it = lab.test;
 
-var ErrorCat = require('error-cat');
+const RouteError = require('error-cat/errors/route-error');
 var redirectDisabled = require('middlewares/redirect-disabled');
 
 describe('lib/middlewares/redirect-disabled', function () {
@@ -306,20 +306,12 @@ describe('lib/middlewares/redirect-disabled', function () {
     var req;
     var res;
     var next;
-    var errCatResponse;
     var proxy;
     beforeEach(function (done) {
-      errCatResponse = { id: 'ErrorCat Response' };
-      sinon.stub(ErrorCat, 'create').returns(errCatResponse);
       proxy = sinon.stub();
       done();
     })
-    afterEach(function (done) {
-      ErrorCat.create.restore();
-      done();
-    });
     beforeEach(function (done) {
-
       container = {
         dockerHost: 'dockerHost',
         ports: {
@@ -344,16 +336,14 @@ describe('lib/middlewares/redirect-disabled', function () {
       it('should throw 404 not found from error-cat', function (done) {
         redirectDisabled._proxyRequest(container, req, res, next);
         sinon.assert.calledOnce(next);
-        sinon.assert.calledWith(next, errCatResponse);
-        sinon.assert.calledOnce(ErrorCat.create);
-        sinon.assert.calledWith(ErrorCat.create, 404, 'Not Found');
+        sinon.assert.calledWith(next, sinon.match.instanceOf(RouteError));
         done();
       });
     });
     it('should set targetNaviEntryInstance and call next', function (done) {
       redirectDisabled._proxyRequest(container, req, res, next);
-      sinon.assert.notCalled(ErrorCat.create);
       sinon.assert.calledOnce(next);
+      sinon.assert.neverCalledWith(next, sinon.match.instanceOf(RouteError));
       expect(req.targetNaviEntryInstance).to.equal(container);
       done();
     });
