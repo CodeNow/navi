@@ -67,7 +67,6 @@
   "devDependencies": {
     "code": "^1.5.0",
     "concat-stream": "^1.5.0",
-    "ip": "^1.0.1",
     "lab": "^6.2.0",
     "primus": "^3.0.2",
     "request": "^2.65.0",
