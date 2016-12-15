@@ -1,30 +1,30 @@
 'use strict';
 require('loadenv')();
 
-var Lab = require('lab');
+const Lab = require('lab');
 
-var lab = exports.lab = Lab.script();
+const lab = exports.lab = Lab.script();
 
-var expect = require('code').expect;
-var querystring = require('querystring');
-var request = require('request');
-var url = require('url');
+const expect = require('code').expect;
+const querystring = require('querystring');
+const request = require('request');
+const url = require('url');
 
-var App = require('../../lib/server.js');
-var TestServer = require('../fixture/test-server.js');
-var mongo = require('models/mongo');
-var fixtureMongo = require('../fixture/mongo');
-var fixtureRedis = require('../fixture/redis');
-var redis = require('models/redis');
+const App = require('../../lib/server.js');
+const TestServer = require('../fixture/test-server.js');
+const mongo = require('models/mongo');
+const fixtureMongo = require('../fixture/mongo');
+const fixtureRedis = require('../fixture/redis');
+const redis = require('models/redis');
 
-var after = lab.after;
-var afterEach = lab.afterEach;
-var before = lab.before;
-var beforeEach = lab.beforeEach;
-var describe = lab.describe;
-var it = lab.test;
+const after = lab.after;
+const afterEach = lab.afterEach;
+const before = lab.before;
+const beforeEach = lab.beforeEach;
+const describe = lab.describe;
+const it = lab.test;
 
-var chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
+const chromeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3)' +
   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36';
 
 describe('functional test: proxy to instance container', function () {

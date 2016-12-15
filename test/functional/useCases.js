@@ -39,10 +39,10 @@ describe('functional test: proxy to instance container', function () {
 
   before(function (done) {
     app = new App();
-    app.start(done);
+    app.start().asCallback(done);
   });
   after(function (done) {
-    app.stop(done);
+    app.stop().asCallback(done);
   });
 
   var serversByID
