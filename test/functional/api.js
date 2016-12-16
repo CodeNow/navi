@@ -76,7 +76,7 @@ describe('functional test: proxy to instance container', function () {
   afterEach(fixtureMongo.clean);
   before(function (done) {
     app = new App();
-    app.start().asCallback(done)
+    app.start().asCallback(done);
   });
   after(function (done) {
     app.stop().asCallback(done);
