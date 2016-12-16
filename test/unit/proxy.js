@@ -9,6 +9,7 @@ var beforeEach = lab.beforeEach;
 var afterEach = lab.afterEach;
 
 var expect = require('code').expect;
+const rabbitMQ = require('models/rabbitmq');
 var sinon = require('sinon');
 var pluck = require('101/pluck');
 var clone = require('101/clone');
@@ -26,10 +27,12 @@ describe('proxy.js unit test', function () {
   beforeEach(function(done) {
     sinon.stub(orion.users, 'create')
     proxyServer = new ProxyServer();
+    sinon.stub(rabbitMQ, 'publishApplicationUrlVisited').returns(Promise.resolve());
     done();
   });
   afterEach(function (done) {
     orion.users.create.restore()
+    rabbitMQ.publishApplicationUrlVisited.restore();
     done();
   });
   describe('proxy error handler', function() {
