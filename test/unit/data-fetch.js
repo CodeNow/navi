@@ -10,6 +10,7 @@ var dataFetch = require('middlewares/data-fetch.js');
 var mongo = require('models/mongo');
 var redis = require('models/redis');
 var resolveUrls = require('middlewares/resolve-urls');
+const RouteError = require('error-cat/errors/route-error');
 var lab = exports.lab = Lab.script();
 var afterEach = lab.afterEach;
 var beforeEach = lab.beforeEach;
@@ -175,14 +176,23 @@ describe('data-fetch.js unit test', function () {
     var testReq;
     var shortHashAndElastic;
     var testUrl = 'http://localhost:4242';
+    var naviEntry;
+
     beforeEach(function (done) {
       shortHashAndElastic = {};
       sinon.stub(resolveUrls, 'splitDirectUrlIntoShortHashAndElastic').returns(shortHashAndElastic);
       sinon.stub(mongo, 'fetchNaviEntry');
       testReq = {
         isHttps: false,
-        parsedReqUrl: url.parse(testUrl)
+        parsedReqUrl: url.parse(testUrl),
+        ip: '1.2.3.4'
       };
+      naviEntry = {
+        "elasticUrl": "sauron-staging-codenow.runnableapp.com",
+        "directUrls": {},
+        "ownerGithubId": 2335750,
+        "ownerUsername": "CodeNow"
+      }
       done();
     });
 
@@ -192,6 +202,57 @@ describe('data-fetch.js unit test', function () {
       done();
     });
 
+    it('should return a `RouteError` if there is no naviEntry', done => {
+      mongo.fetchNaviEntry.yieldsAsync(null, null);
+      dataFetch.getMongoEntry(testReq, function (err) {
+        expect(err).to.exist();
+        expect(err).to.be.an.instanceof(RouteError);
+        expect(err.output.statusCode).to.deep.equal(404);
+        done();
+      });
+    })
+
+    it('should return a `RouteError` if whitelist is enabled and no ips are defined', done => {
+      naviEntry.ipWhitelist = {
+        "enabled": true
+      }
+
+      mongo.fetchNaviEntry.yieldsAsync(null, naviEntry);
+      dataFetch.getMongoEntry(testReq, function (err) {
+        expect(err).to.exist();
+        expect(err).to.be.an.instanceof(RouteError);
+        expect(err.output.statusCode).to.deep.equal(404);
+        done();
+      });
+    })
+    
+    it('should return a `RouteError` if whitelist is enabled and request does not match whitelist', done => {
+      naviEntry.ipWhitelist = {
+        "enabled": true,
+        "ips": ['10.11.12.13','5.6.7.8']
+      }
+
+      mongo.fetchNaviEntry.yieldsAsync(null, naviEntry);
+      dataFetch.getMongoEntry(testReq, function (err) {
+        expect(err).to.exist();
+        expect(err).to.be.an.instanceof(RouteError);
+        expect(err.output.statusCode).to.deep.equal(404);
+        done();
+      });
+    })
+
+    it('should not return a `RouteError` if whitelist is enabled and request ip matches', done => {
+      naviEntry.ipWhitelist = {
+        "enabled": true,
+        "ips": ['1.2.3.4','5.6.7.8']
+      }
+
+      mongo.fetchNaviEntry.yieldsAsync(null, naviEntry);
+      dataFetch.getMongoEntry(testReq, function (err) {
+        expect(err).to.not.exist();
+        done();
+      });
+    })
 
     it('should add isElastic to req', function (done) {
       mongo.fetchNaviEntry.yieldsAsync(null, {

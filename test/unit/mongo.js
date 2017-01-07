@@ -169,11 +169,6 @@ describe('lib/models/mongodb', function () {
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
               $or: [
-                { 'ipWhitelist': { $exists: false } },
-                { 'ipWhitelist.enabled': false }
-              ]
-            }, {
-              $or: [
                 { elasticUrl: elasticUrl},
                 {
                   elasticUrl: calculatedElastic,
@@ -230,11 +225,6 @@ describe('lib/models/mongodb', function () {
           );
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
-              $or: [
-                { 'ipWhitelist': { $exists: false } },
-                { 'ipWhitelist.enabled': false }
-              ]
-            }, {
               $or: [
                 { elasticUrl: elasticUrl},
                 {
@@ -302,11 +292,6 @@ describe('lib/models/mongodb', function () {
           );
           expect(mongo._naviEntriesCollection.find.args[0][0], 'findResult').to.deep.equal({
             $and: [{
-              $or: [
-                { 'ipWhitelist': { $exists: false } },
-                { 'ipWhitelist.enabled': false }
-              ]
-            }, {
               $or: [
                 { elasticUrl: elasticUrl},
                 { elasticUrl: refererUrl},
