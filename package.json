@@ -34,9 +34,7 @@
     "@runnable/orion": "^1.1.0",
     "async": "^1.4.2",
     "bluebird": "^3.0.6",
-    "boom": "^2.6.1",
     "bunyan": "^1.4.0",
-    "callback-count": "^0.2.0",
     "connect-redis": "^2.2.0",
     "cors": "^2.6.0",
     "error-cat": "^3.0.0",
@@ -58,12 +56,12 @@
     "querystring": "^0.2.0",
     "redis": "^2.0.0",
     "response-stream": "0.0.0",
-    "rollbar": "^0.5.8",
     "through2": "^2.0.0",
     "user-agent-is-browser": "^0.1.0",
     "uuid": "^2.0.1"
   },
   "devDependencies": {
+    "callback-count": "^0.2.0",
     "code": "^1.5.0",
     "concat-stream": "^1.5.0",
     "lab": "^6.2.0",
