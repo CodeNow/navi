@@ -12,7 +12,9 @@
   "scripts": {
     "start": "NODE_PATH=./lib node --abort-on-uncaught-exception index.js",
     "test": "NODE_PATH=./lib lab -c -t 98 -v --leaks",
-    "test-watch": "nodemon --exec npm run test"
+    "test-watch": "nodemon --exec npm run test",
+    "compose-test-up": "docker-compose -f docker-compose-test.yml up --build",
+    "compose-test-down": "docker-compose -f docker-compose-test.yml down"
   },
   "repository": {
     "type": "git",
