@@ -211,12 +211,24 @@ describe('lib/middlewares/resolve-urls', function () {
     const elasticUrl = 'portal-staging-onelogin.runnableapp.com';
     const subbedElasticUrl = 'local.' + elasticUrl;
     const directUrl = shortHash + '-' + elasticUrl;
+    const subbedDirectUrl = 'local.' + directUrl;
     const isolatedDirectUrl = shortHash + '--' + elasticUrl;
-    const superHardOne = 'hello-what-could-possibly-go-wrong-staging-onelogin.runnableapp.com';
+    const superHardOne = 'what-could-possibly-go-wrong-staging-onelogin.runnableapp.com';
     let result;
     describe('directUrl', function () {
       it('should split out the shorthash and elasticUrl', function (done) {
         result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(directUrl);
+        expect(result).to.deep.equal({
+          shortHash: shortHash,
+          isolated: false,
+          elasticUrl: elasticUrl
+        });
+        done()
+      });
+    });
+    describe('subbedDirectUrl', function () {
+      it('should split out the shorthash and elasticUrll', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(subbedDirectUrl);
         expect(result).to.deep.equal({
           shortHash: shortHash,
           isolated: false,
