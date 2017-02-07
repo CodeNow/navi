@@ -213,7 +213,6 @@ describe('lib/middlewares/resolve-urls', function () {
     const directUrl = shortHash + '-' + elasticUrl;
     const subbedDirectUrl = 'local.' + directUrl;
     const isolatedDirectUrl = shortHash + '--' + elasticUrl;
-    const superHardOne = 'what-could-possibly-go-wrong-staging-onelogin.runnableapp.com';
     let result;
     describe('directUrl', function () {
       it('should split out the shorthash and elasticUrl', function (done) {
@@ -264,14 +263,6 @@ describe('lib/middlewares/resolve-urls', function () {
         expect(result).to.deep.equal({
           shortHash: '',
           elasticUrl: elasticUrl
-        });
-        done()
-      });
-      it('should return the superHardOne as an elastic url', function (done) {
-        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(superHardOne);
-        expect(result).to.deep.equal({
-          shortHash: '',
-          elasticUrl: superHardOne
         });
         done()
       });
