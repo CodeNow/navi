@@ -205,4 +205,67 @@ describe('lib/middlewares/resolve-urls', function () {
       });
     });
   });
+
+  describe('splitDirectUrlIntoShortHashAndElastic method', function () {
+    const shortHash = '12345';
+    const elasticUrl = 'portal-staging-onelogin.runnableapp.com';
+    const subbedElasticUrl = 'local.' + elasticUrl;
+    const directUrl = shortHash + '-' + elasticUrl;
+    const subbedDirectUrl = 'local.' + directUrl;
+    const isolatedDirectUrl = shortHash + '--' + elasticUrl;
+    let result;
+    describe('directUrl', function () {
+      it('should split out the shorthash and elasticUrl', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(directUrl);
+        expect(result).to.deep.equal({
+          shortHash: shortHash,
+          isolated: false,
+          elasticUrl: elasticUrl
+        });
+        done()
+      });
+    });
+    describe('subbedDirectUrl', function () {
+      it('should split out the shorthash and elasticUrll', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(subbedDirectUrl);
+        expect(result).to.deep.equal({
+          shortHash: shortHash,
+          isolated: false,
+          elasticUrl: elasticUrl
+        });
+        done()
+      });
+    });
+    describe('isolatedDirectUrl', function () {
+      it('should split out the shorthash and elasticUrl', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(isolatedDirectUrl);
+        expect(result).to.deep.equal({
+          shortHash: shortHash,
+          isolated: true,
+          elasticUrl: elasticUrl
+        });
+        done()
+      });
+    });
+    describe('subbedElasticUrl', function () {
+      it('should return the subbedElasticUrl', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(subbedElasticUrl);
+        expect(result).to.deep.equal({
+          shortHash: '',
+          elasticUrl: subbedElasticUrl
+        });
+        done()
+      });
+    });
+    describe('elasticUrl', function () {
+      it('should return the elasticUrl', function (done) {
+        result = resolveUrls.splitDirectUrlIntoShortHashAndElastic(elasticUrl);
+        expect(result).to.deep.equal({
+          shortHash: '',
+          elasticUrl: elasticUrl
+        });
+        done()
+      });
+    });
+  });
 });
