@@ -17,7 +17,6 @@ var noop = require('101/noop');
 var keypather = require('keypather')();
 var createResStream = require('../../lib/create-res-stream.js');
 var scriptInjectResStreamFactory = require('../../lib/script-inject-res-stream.js');
-var orion = require('@runnable/orion')
 
 var errorPage = require('models/error-page.js');
 var ProxyServer = require('../../lib/models/proxy.js');
@@ -25,13 +24,11 @@ var ProxyServer = require('../../lib/models/proxy.js');
 describe('proxy.js unit test', function () {
   var proxyServer;
   beforeEach(function(done) {
-    sinon.stub(orion.users, 'create')
     proxyServer = new ProxyServer();
     sinon.stub(rabbitMQ, 'publishApplicationUrlVisited').returns(Promise.resolve());
     done();
   });
   afterEach(function (done) {
-    orion.users.create.restore()
     rabbitMQ.publishApplicationUrlVisited.restore();
     done();
   });
@@ -105,16 +102,6 @@ describe('proxy.js unit test', function () {
           .withArgs(testReq, sinon.match.any, { target: testHost, secure: false })
           .calledOnce).to.be.true();
 
-        sinon.assert.calledOnce(orion.users.create);
-        sinon.assert.calledWith(orion.users.create, {
-          user_id: 'navi-testOwnerUsername',
-          update_last_request_at: true,
-          companies: [{
-            company_id: 'testOwnerUsername'.toLowerCase(),
-            name: 'testOwnerUsername'
-          }]
-        });
-
         proxyServer.proxy.web.restore();
         done();
       });
@@ -125,7 +112,6 @@ describe('proxy.js unit test', function () {
       var newTestReq = clone(testReq);
       delete newTestReq.naviEntry.ownerUsername
       sinon.stub(proxyServer.proxy, 'web', function() {
-        sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
@@ -138,7 +124,6 @@ describe('proxy.js unit test', function () {
         'isModerating=495765; CSRF-TOKEN=UsgVTrkm-Yde4wC1KP3t5lFJjLSQfY3QeArY; ajs'
       };
       sinon.stub(proxyServer.proxy, 'web', function() {
-        sinon.assert.notCalled(orion.users.create);
         proxyServer.proxy.web.restore();
         done();
       });
