@@ -61,7 +61,7 @@ describe('redis client', function () {
         {
           host: process.env.REDIS_IPADDRESS,
           port: process.env.REDIS_PORT,
-          connect_timeout: 5000,
+          retry_strategy: sinon.match.func,
           tls: {
             rejectUnauthorized: true,
             ca: [ 'bar' ]
@@ -79,7 +79,7 @@ describe('redis client', function () {
       {
         host: process.env.REDIS_IPADDRESS,
         port: process.env.REDIS_PORT,
-        connect_timeout: 5000
+        retry_strategy: sinon.match.func,
       }
     );
     done();
