@@ -71,6 +71,19 @@ describe('data-fetch.js unit test', function () {
       });
     });
 
+    it('should set refererUrl to referer with a subdomain', function (done) {
+      var testReq = {
+        headers: { referer: 'https://foo.bar.baz.boo.com/' }
+      };
+      redis.lrange.yieldsAsync(null, [JSON.stringify({})]);
+      dataFetch.middleware(testReq, {}, function (err) {
+        if (err) { return done(err); }
+        console.log(testReq.refererUrl);
+        expect(testReq.refererUrl).to.equal('https://baz.boo.com/');
+        done();
+      });
+    });
+
     it('should undefined refererUrl and refererUrlHostname if match', function (done) {
       var testReq = {
         headers: {
@@ -225,7 +238,7 @@ describe('data-fetch.js unit test', function () {
         done();
       });
     })
-    
+
     it('should return a `RouteError` if whitelist is enabled and request does not match whitelist', done => {
       naviEntry.ipWhitelist = {
         "enabled": true,
